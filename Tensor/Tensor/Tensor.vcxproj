@@ -112,7 +112,6 @@
   <ItemGroup>
     <ClInclude Include="ConcreteTensor.h" />
     <ClInclude Include="ConcreteTensor_detail.h" />
-    <ClInclude Include="detail_tensor.h" />
     <ClInclude Include="FunctionElement.h" />
     <ClInclude Include="FunctionTensor.h" />
     <ClInclude Include="FunctionTensor_detail.h" />

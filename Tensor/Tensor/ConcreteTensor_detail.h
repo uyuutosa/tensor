@@ -1,9 +1,6 @@
 #pragma once 
 #include "ConcreteTensor.h"
 
-//#pragma optimize ("", off)
-
-
 template<typename T>
 std::shared_ptr<tensor<T> > ConcreteTensor<T>::broadcast(std::shared_ptr<tensor<T> > obj) {
 	int maxDim(idx.size());

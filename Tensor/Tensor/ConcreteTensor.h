@@ -1,8 +1,8 @@
 #pragma once
-#include "tensor.h"
+#include "Tensor.h"
 
 
-//
+//! @class do
 
 template<typename T>
 class ConcreteTensor:

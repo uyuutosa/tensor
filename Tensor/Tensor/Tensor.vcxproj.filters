@@ -24,9 +24,6 @@
     <ClInclude Include="tensor_detail.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="detail_tensor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="tensor.h">
       <Filter>Header Files</Filter>
     </ClInclude>

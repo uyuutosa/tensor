@@ -1,3 +1,9 @@
+//!
+//! @file   Tensor.h
+//! @brief  The class can versatile calculation 
+//!         for multidimensional array.
+//! @author Yu Sato
+
 #pragma once
 #include <vector>
 #include <iostream>
@@ -5,26 +11,39 @@
 #include <map>
 #include <iomanip>
 #include <string>
-//#include "FunctionTensor.h"
 
-#define NUM_OF_WRAP      5
-#define NUM_OF_PRECISION 5
+#define NUM_OF_WRAP      5 //! < The number of turn down 
+                           //!   for output line.
+#define NUM_OF_PRECISION 5 //! < The precision of output value.
 
+//! @class 
 
 template <typename T>
 class tensor {
 public:
+
+	//! @brief Empty constructor.
     tensor(){}
 
+	//! @brief Constructor with input value, shape and sup. or subscript infomations.
+	//! @params[in] _v     input value(one dimensional array).
+	//! @params[in] _shape input shape value.
+	//! @params[in] _ud    input super(up) or subscript(down) value.
 	tensor(
 		std::vector<T> _v,
    		std::map<std::string, int> _shape,
    		std::map<std::string, int> _ud = std::map<std::string, int>());
 
+	//! @brief Constructor shape and sup. or subscript infomations.
+	//! @params[in] _shape input shape value.
+	//! @params[in] _ud    input super(up) or subscript(down) value.
 	tensor(
    		std::map<std::string, int> _shape,
    		std::map<std::string, int> _ud = std::map<std::string, int>());
 
+	//! @brief Constructor with input value and indices.
+	//! @params[in] _v      input value.
+	//! @params[in] indices index values(ex. "ijk").
 	tensor(
 		std::vector<std::vector<T> > _v,
    		std::string indices);
