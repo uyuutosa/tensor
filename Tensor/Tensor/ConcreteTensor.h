@@ -1,46 +1,85 @@
 #pragma once
-#include "Tensor.h"
+#include "_Tensor.h"
+#include <opencv2/opencv.hpp>
+//#pragma optimize("", off)
 
-
-//! @class do
 
 template<typename T>
 class ConcreteTensor:
-    public tensor<T>{
+    public _Tensor<T>{
 public:
+// Constructors ・‥…─*・‥…─*・‥…─*・‥…─*・‥…─*
+    ConcreteTensor():_Tensor<T>(){}
 
 	ConcreteTensor(
-		std::vector<T> _v,
+		std::vector<T*> &_v,
+   		std::vector<std::string> _idx,
    		std::map<std::string, int> _shape,
    		std::map<std::string, int> _ud = std::map<std::string, int>()):
-            tensor<T>(_v, _shape, _ud){}
+            _Tensor<T>(_v, _idx, _shape, _ud){}
+
+	ConcreteTensor(
+		std::vector<T*> &_v,
+   		std::map<std::string, int> _shape,
+   		std::map<std::string, int> _ud = std::map<std::string, int>()):
+            _Tensor<T>(_v, _shape, _ud){}
 
 	ConcreteTensor(
    		std::map<std::string, int> _shape,
    		std::map<std::string, int> _ud = std::map<std::string, int>()):
-            tensor<T>(_shape, _ud){}
+            _Tensor<T>(_shape, _ud){}
 
 	ConcreteTensor(
-		std::vector<std::vector<T> > _v,
+		std::vector<std::vector<T> > &_v,
    		std::string indices):
-            tensor<T>(_v, indicies){}
+            _Tensor<T>(_v, indicies){}
 
+//・Public member functions ・‥…─*・‥…─*・‥…─*・‥…─*・‥…─*
+    //// Manipulate of tensor・‥…─*・‥…─*・‥…─*・‥…─*・‥…─*
 
-    std::shared_ptr<tensor<T> > broadcast(std::shared_ptr<tensor<T> > obj);
+    //! @brief Deep copy of _Tensor<T>.
+    _Tensor<T>& clone();
+
+    //! @brief Gen of new _Tensor<T>.
+    virtual _Tensor<T>& gen(std::vector<T*> &_v, 
+                    std::map<std::string, int> _shape, 
+                    std::map<std::string, int> _ud=std::map<std::string, int>);
+
+    virtual _Tensor<T>& gen(std::map<std::string, int> _shape, 
+                    std::map<std::string, int> _ud=std::map<std::string, int>);
+
+	virtual _Tensor<T>&	gen(std::vector<T*> &_v,
+   		            std::vector<std::string> _idx,
+   		            std::map<std::string, int> _shape,
+                    std::map<std::string, int> _ud=std::map<std::string, int>);
+
 //・Operators・‥…─*・‥…─*・‥…─*・‥…─*・‥…─*
 
+	_Tensor<T>& operator + (_Tensor<T>& obj);
+	_Tensor<T>& operator - (_Tensor<T>& obj);
+	_Tensor<T>& operator * (_Tensor<T>& obj);
+	_Tensor<T>& operator / (_Tensor<T>& obj);
+	_Tensor<T>& operator ^ (_Tensor<T>& obj);
 
-	std::shared_ptr<tensor<T> > operator + (std::shared_ptr<tensor<T> > obj);
-	std::shared_ptr<tensor<T> > operator - (std::shared_ptr<tensor<T> > obj);
-	std::shared_ptr<tensor<T> > operator * (std::shared_ptr<tensor<T> > obj);
-	std::shared_ptr<tensor<T> > operator / (std::shared_ptr<tensor<T> > obj);
+	_Tensor<T>& operator + (T val);
+	_Tensor<T>& operator - (T val);
+	_Tensor<T>& operator * (T val);
+	_Tensor<T>& operator / (T val);
+	_Tensor<T>& operator ^ (T val);
 
-	std::shared_ptr<tensor<T> > operator + (T val);
-	std::shared_ptr<tensor<T> > operator - (T val);
-	std::shared_ptr<tensor<T> > operator * (T val);
-	std::shared_ptr<tensor<T> > operator / (T val);
+    _Tensor<T>& operator +=  (T val);
+    _Tensor<T>& operator -=  (T val);
+    _Tensor<T>& operator *=  (T val);
+    _Tensor<T>& operator /=  (T val);
+    _Tensor<T>& operator ^=  (T val);
+    _Tensor<T>& operator +=  (_Tensor<T> &obj);
+    _Tensor<T>& operator -=  (_Tensor<T> &obj);
+    _Tensor<T>& operator *=  (_Tensor<T> &obj);
+    _Tensor<T>& operator /=  (_Tensor<T> &obj);
+    _Tensor<T>& operator ^=  (_Tensor<T> &obj);
 
-	std::shared_ptr<tensor<T> > operator [](std::shared_ptr<tensor<T> > obj);
+    bool operator < (_Tensor<T> &obj);
+    bool operator > (_Tensor<T> &obj);
 };
 
 #include "ConcreteTensor_detail.h"

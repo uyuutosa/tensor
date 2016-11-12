@@ -1,152 +1,419 @@
 #pragma once 
 #include "ConcreteTensor.h"
 
+
+//・Public member functions ・‥…─*・‥…─*・‥…─*・‥…─*・‥…─*
+// Manipulate of tensor・‥…─*・‥…─*・‥…─*・‥…─*・‥…─*
 template<typename T>
-std::shared_ptr<tensor<T> > ConcreteTensor<T>::broadcast(std::shared_ptr<tensor<T> > obj) {
-	int maxDim(idx.size());
-	auto newIdx   = idx;
-	auto newShape = shape;
-	auto newUd    = ud;
-	int newSize(1);
-
-	// making corresnpondance between index names and Dimansion names.
-	std::string dupUd("");
-	for (auto a : obj->ud)
-		if (shape.count(a.first))
-			dupUd.push_back(*a.first.c_str());
-
-	for (auto a : dupUd) {
-		std::string str(1, a);
-		newShape.erase(str);
-	}
-
-	for (int i=0; i<obj->idx.size(); i++)
-		if(!shape.count(obj->idx[i]) && 
-			dupUd.find(obj->idx[i]) == std::string::npos)
-			newIdx.push_back(obj->idx[i]); // imcrement one more than maximum Dimumtsion.
-
-	for (auto a : obj->shape)
-		newShape[a.first] = a.second; // imcrement one more than maximum Dimumtsion.
-
-	for (int i = 0; i < newIdx.size(); i++)
-		newSize *= newShape[newIdx[i]];
-
-	return std::shared_ptr<tensor<T> >(
-        new ConcreteTensor<T>(
-		std::vector<T>(newSize, 0),
-		newShape));
+_Tensor<T>& ConcreteTensor<T>::clone(){
+	return *new auto(*this);
 }
 
 template<typename T>
-std::shared_ptr<tensor<T> > ConcreteTensor<T>::operator+(std::shared_ptr<tensor<T> > obj)
+_Tensor<T>&	ConcreteTensor<T>::gen(std::vector<T*> &_v,
+   		            std::vector<std::string> _idx,
+   		            std::map<std::string, int> _shape,
+                    std::map<std::string, int> _ud){
+
+	return *new ConcreteTensor<T>(_v, _idx, _shape, _ud);
+}
+
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::gen(std::vector<T*> &_v, 
+                std::map<std::string, int> _shape, 
+                std::map<std::string, int> _ud){
+
+	return *new ConcreteTensor<T>(_v, _shape, _ud);
+}
+
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::gen(
+    std::map<std::string, int> _shape, 
+    std::map<std::string, int> _ud){
+
+	return *new ConcreteTensor<T>(_shape, _ud);
+}
+
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::operator+(_Tensor<T>& obj)
 {
-	std::shared_ptr<tensor<T> > ret = broadcast(obj);
+	_Tensor<T>& ret      = broadcast(obj, true);
+	_Tensor<T>& noTrimed = broadcast(obj);
 
-    std::vector<T>& retV = ret->getV();
-	
-	for (int i = 0; i < ret->size(); i++)
-		retV[i] = ref(ret->genIndices(i)) + obj->ref(ret->genIndices(i));
+    int tmp = noTrimed.size();
+	for (int i = 0; i < tmp; i++){
+		*ret.ref(noTrimed.genIndices(i)) += *ref(noTrimed.genIndices(i)) + *obj.ref(noTrimed.genIndices(i));
+    }
 
 	return ret;
 }
 
 
 template<typename T>
-std::shared_ptr<tensor<T> > ConcreteTensor<T>::operator-(std::shared_ptr<tensor<T> > obj)
+_Tensor<T>& ConcreteTensor<T>::operator-(_Tensor<T>& obj)
 {
-	std::shared_ptr<tensor<T> > ret = broadcast(obj);
+	_Tensor<T>& ret      = broadcast(obj, true);
+	_Tensor<T>& noTrimed = broadcast(obj);
 
-    std::vector<T>& retV = ret->getV();
-	
-	for (int i = 0; i < ret->size(); i++)
-		retV[i] = ref(ret->genIndices(i)) - obj->ref(ret->genIndices(i));
+	for (int i = 0; i < noTrimed.size(); i++)
+		*ret.ref(noTrimed.genIndices(i)) += *ref(noTrimed.genIndices(i)) - *obj.ref(noTrimed.genIndices(i));
 
 	return ret;
 }
 
 template<typename T>
-std::shared_ptr<tensor<T> > ConcreteTensor<T>::operator*(std::shared_ptr<tensor<T> > obj)
+_Tensor<T>& ConcreteTensor<T>::operator*(_Tensor<T>& obj)
 {
-	std::shared_ptr<tensor<T> > ret = broadcast(obj);
-
-    std::vector<T>& retV = ret->getV();
-	
-	for (int i = 0; i < ret->size(); i++)
-		retV[i] = ref(ret->genIndices(i)) * obj->ref(ret->genIndices(i));
+	_Tensor<T>& ret      = broadcast(obj, true);
+	_Tensor<T>& noTrimed = broadcast(obj);
+    auto aa = shape;
+    this;
+	for (int i = 0; i < noTrimed.size(); i++){
+        if(obj.isFunctionTensor()){
+		    *ret.ref(noTrimed.genIndices(i)) +=  (*obj.ref(noTrimed.genIndices(i))) * (*ref(noTrimed.genIndices(i)));
+        } else {
+		    *ret.ref(noTrimed.genIndices(i)) +=  *ref(noTrimed.genIndices(i)) * (*obj.ref(noTrimed.genIndices(i)));
+        }
+    }
 
 	return ret;
 }
 
 template<typename T>
-std::shared_ptr<tensor<T> > ConcreteTensor<T>::operator/(std::shared_ptr<tensor<T> > obj)
+_Tensor<T>& ConcreteTensor<T>::operator/(_Tensor<T>& obj)
 {
-	std::shared_ptr<tensor<T> > ret = broadcast(obj);
+	_Tensor<T>& ret      = broadcast(obj, true);
+	_Tensor<T>& noTrimed = broadcast(obj);
 
-    std::vector<T>& retV = ret->getV();
+	for (int i = 0; i < noTrimed.size(); i++)
+		*ret.ref(noTrimed.genIndices(i)) += *ref(noTrimed.genIndices(i)) / *obj.ref(noTrimed.genIndices(i));
+
+	return ret;
+}
+
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::operator^(_Tensor<T>& obj)
+{
+	_Tensor<T>& ret      = broadcast(obj, true);
+	_Tensor<T>& noTrimed = broadcast(obj);
+
+	for (int i = 0; i < noTrimed.size(); i++){
+        T&tmp = *new T;
+        tmp = 1;
+	    for (int j = 0; j < *obj.ref(noTrimed.genIndices(i)); j++)
+            tmp *= *ref(noTrimed.genIndices(i));
+        *ret.ref(noTrimed.genIndices(i)) = tmp;
+    }
+            
+		    //ret.ref(noTrimed.genIndices(i)) += ref(noTrimed.genIndices(i)) ^ obj.ref(noTrimed.genIndices(i));
+
+	return ret;
+}
+
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::operator+=(_Tensor<T>& obj)
+{
+	_Tensor<T>& ret      = broadcast(obj, true);
+	_Tensor<T>& noTrimed = broadcast(obj);
+
+    int tmp = noTrimed.size();
+	for (int i = 0; i < tmp; i++){
+		*ret.ref(noTrimed.genIndices(i)) +=  *ref(noTrimed.genIndices(i)) + (*obj.ref(noTrimed.genIndices(i)));
+    }
+
+    v     = ret.getV();
+    shape = ret.shape;
+    ud    = ret.ud;
+	return *this;
+}
+
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::operator-=(_Tensor<T>& obj)
+{
+	_Tensor<T>& ret      = broadcast(obj, true);
+	_Tensor<T>& noTrimed = broadcast(obj);
+
+    int tmp = noTrimed.size();
+	for (int i = 0; i < tmp; i++){
+		*ret.ref(noTrimed.genIndices(i)) += *ref(noTrimed.genIndices(i)) - (*obj.ref(noTrimed.genIndices(i)));
+    }
+
+    v     = ret.getV();
+    shape = ret.shape;
+    ud    = ret.ud;
+	return *this;
+}
+
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::operator*=(_Tensor<T>& obj)
+{
+	_Tensor<T>& ret      = broadcast(obj, true);
+	_Tensor<T>& noTrimed = broadcast(obj);
+
+    int tmp = noTrimed.size();
+	for (int i = 0; i < tmp; i++){
+        if(obj.isFunctionTensor())
+		    *ret.ref(noTrimed.genIndices(i)) += (*obj.ref(noTrimed.genIndices(i))) * (*ref(noTrimed.genIndices(i)));
+        else
+		    *ret.ref(noTrimed.genIndices(i)) += *ref(noTrimed.genIndices(i)) * (*obj.ref(noTrimed.genIndices(i)));
+    }
+
+    v     = ret.getV();
+    shape = ret.shape;
+    ud    = ret.ud;
+	return *this;
+}
+
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::operator/=(_Tensor<T>& obj)
+{
+	_Tensor<T>& ret      = broadcast(obj, true);
+	_Tensor<T>& noTrimed = broadcast(obj);
+
+    int tmp = noTrimed.size();
+	for (int i = 0; i < tmp; i++){
+		*ret.ref(noTrimed.genIndices(i)) += *ref(noTrimed.genIndices(i)) / *obj.ref(noTrimed.genIndices(i));
+    }
+
+    v     = ret.getV();
+    shape = ret.shape;
+    ud    = ret.ud;
+	return *this;
+}
+
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::operator^=(_Tensor<T>& obj)
+{
+	_Tensor<T>& ret      = broadcast(obj, true);
+	_Tensor<T>& noTrimed = broadcast(obj);
+
+    int tmp = noTrimed.size();
+	for (int i = 0; i < tmp; i++){
+        T&tmp = *new T;
+        tmp = 1;
+	    for (int j = 0; j < *obj.ref(noTrimed.genIndices(i)); j++)
+            tmp *= *ref(noTrimed.genIndices(i));
+        *ret.ref(noTrimed.genIndices(i)) = tmp;
+    }
+
+    v     = ret.getV();
+    shape = ret.shape;
+    ud    = ret.ud;
+	return *this;
+}
+
+
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::operator+(T val){
 	
-	for (int i = 0; i < ret->size(); i++)
-		retV[i] = ref(ret->genIndices(i)) / obj->ref(ret->genIndices(i));
+	_Tensor<T>& ret = *new ConcreteTensor<T>(*this);
+
+    std::vector<T*>& retV = ret.getV();
+
+	for (int i = 0; i < ret.size(); i++)
+		*(retV[i]) += (val);
 
 	return ret;
 }
 
 
 template<typename T>
-std::shared_ptr<tensor<T> > ConcreteTensor<T>::operator+(T val){
+_Tensor<T>& ConcreteTensor<T>::operator-(T val){
+
+	_Tensor<T>& ret = *new ConcreteTensor<T>(*this);
 	
-	std::shared_ptr<tensor<T> > ret = std::shared_ptr<tensor<T> >(new ConcreteTensor<T>(*this));
-
-    std::vector<T>& retV = ret->getV();
-
-	for (int i = 0; i < ret->size(); i++)
-		retV[i] += val;
+    std::vector<T*>& retV = ret.getV();
+	for (int i = 0; i < ret.size(); i++)
+		(*retV[i]) -= (val);
 
 	return ret;
 }
 
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::operator*(T val){
+
+	_Tensor<T>& ret = *new ConcreteTensor<T>(*this);
+
+    std::vector<T*>& retV = ret.getV();
+	for (int i = 0; i < ret.size(); i++)
+		(*retV[i]) *= (val);
+	return ret;
+}
 
 template<typename T>
-std::shared_ptr<tensor<T> > ConcreteTensor<T>::operator-(T val){
+_Tensor<T>& ConcreteTensor<T>::operator/(T val){
 
-	std::shared_ptr<tensor<T> > ret = std::shared_ptr<tensor<T> >(new ConcreteTensor<T>(*this));
+	_Tensor<T>& ret = *new ConcreteTensor<T>(*this);
+
+    std::vector<T*>& retV = ret.getV();
+	for (int i = 0; i < ret.size(); i++)
+		(*retV[i]) /= (val);
+	return ret;
+}
+
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::operator^(T val){
+
+//	_Tensor<T>& ret = *new ConcreteTensor<T>(*this);
+	_Tensor<T>* ret = tu::ones<T>(shape, ud).getT();
+
+    std::vector<T*>& retV = ret->getV();
+    std::vector<T*>& V = getV();
+	for (int i = 0; i < ret->size(); i++)
+        for(int j=0; j<val; j++)
+		    (*retV[i]) *= (*V[i]);
+
+	return *ret;
+}
+
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::operator+=(T val){
 	
-    std::vector<T>& retV = ret->getV();
-	for (int i = 0; i < ret->size(); i++)
-		retV[i] -= val;
+	_Tensor<T>& ret = *new ConcreteTensor<T>(*this);
 
-	return ret;
+    std::vector<T*>& retV = ret.getV();
+
+	for (int i = 0; i < ret.size(); i++)
+		(*retV[i]) += (val);
+
+    v     = ret.getV();
+    shape = ret.shape;
+    ud    = ret.ud;
+	return *this;
 }
 
 template<typename T>
-std::shared_ptr<tensor<T> > ConcreteTensor<T>::operator*(T val){
+_Tensor<T>& ConcreteTensor<T>::operator-=(T val){
+	
+	_Tensor<T>& ret = *new ConcreteTensor<T>(*this);
 
-	std::shared_ptr<tensor<T> > ret = std::shared_ptr<tensor<T> >(new ConcreteTensor<T>(*this));
+    std::vector<T*>& retV = ret.getV();
 
-    std::vector<T>& retV = ret->getV();
-	for (int i = 0; i < ret->size(); i++)
-		retV[i] *= val;
-	return ret;
+	for (int i = 0; i < ret.size(); i++)
+		(*retV[i]) -= (val);
+
+
+    v     = ret.getV();
+    shape = ret.shape;
+    ud    = ret.ud;
+	return *this;
 }
 
 template<typename T>
-std::shared_ptr<tensor<T> > ConcreteTensor<T>::operator/(T val){
+_Tensor<T>& ConcreteTensor<T>::operator*=(T val){
+	
+	_Tensor<T>& ret = *new ConcreteTensor<T>(*this);
 
-	std::shared_ptr<tensor<T> > ret = std::shared_ptr<tensor<T> >(new ConcreteTensor<T>(*this));
+    std::vector<T*>& retV = ret.getV();
 
-    std::vector<T>& retV = ret->getV();
-	for (int i = 0; i < ret->size(); i++)
-		retV[i] /= val;
-	return ret;
+	for (int i = 0; i < ret.size(); i++)
+		(*retV[i]) *= (val);
+
+    v     = ret.getV();
+    shape = ret.shape;
+    ud    = ret.ud;
+	return *this;
 }
 
 template<typename T>
-std::shared_ptr<tensor<T> > ConcreteTensor<T>::operator [](std::shared_ptr<tensor<T> > obj){
-    std::vector<T>& idxV = getV();
-    std::vector<T>  retV(obj->size());
-    std::vector<T>& objV = obj->getV();
+_Tensor<T>& ConcreteTensor<T>::operator/=(T val){
+	
+	_Tensor<T>& ret = *new ConcreteTensor<T>(*this);
 
-	for (int i = 0; i < obj->size(); i++)
-        retV[i] = idxV[objV[i]];  
+    std::vector<T*>& retV = ret.getV();
 
-    return std::shared_ptr<tensor<T> >(new ConcreteTensor<T>(retV, obj->shape));
+	for (int i = 0; i < ret.size(); i++)
+		(*retV[i]) /= (val);
+
+    v     = ret.getV();
+    shape = ret.shape;
+    ud    = ret.ud;
+	return *this;
 }
+
+template<typename T>
+_Tensor<T>& ConcreteTensor<T>::operator^=(T val){
+
+	_Tensor<T>& ret = *tu::ones<T>(shape, ud).getT();
+
+    std::vector<T*>& retV = ret.getV();
+    std::vector<T*>& V = getV();
+	for (int i = 0; i < ret.size(); i++)
+        for(int j=0; j<val; j++)
+		    (*retV[i]) *= (*V[i]);
+
+    v     = retV;
+    shape = ret.shape;
+    ud    = ret.ud;
+	return *this;
+}
+
+
+template<typename T>
+bool ConcreteTensor<T>::operator<(_Tensor<T> &obj){
+
+    std::vector<T*>& objV = obj.getV();
+    std::vector<T*>& V = getV();
+	for (int i = 0; i < obj.size(); i++)
+        if((*V[i]) < (*objV[i]))
+            break;
+
+	return true;
+}
+
+template<typename T>
+bool ConcreteTensor<T>::operator>(_Tensor<T> &obj){
+
+    std::vector<T*>& objV = obj.getV();
+    std::vector<T*>& V = getV();
+	for (int i = 0; i < obj.size(); i++)
+        if((*V[i]) > (*objV[i]))
+            break;
+
+	return true;
+}
+//template<typename T>
+//_Tensor<T>& ConcreteTensor<T>::operator =(T& val){
+
+//	_Tensor<T>& ret =  ConcreteTensor<T>(*this);
+
+//    std::vector<T>& retV = ret.getV();
+//	for (int i = 0; i < ret.size(); i++)
+//		retV[i] = val;
+//	return ret;
+//}
+
+//template<typename T>
+//_Tensor<T>& ConcreteTensor<T>::operator [](_Tensor<T> &obj){
+//    std::vector<T>& idxV = getV();
+//    std::vector<T>& retV(obj.size());
+//    std::vector<T>& objV = obj.getV();
+
+//	for (int i = 0; i < obj.size(); i++)
+//        retV[i] = idxV[objV[i]];  
+
+//    return ConcreteTensor<T>(retV, obj.shape, obj.ud);
+//}
+
+//template<typename T>
+//_Tensor<T&>& ConcreteTensor<T>::operator [] (int _idx){
+
+//    std::map<std::string, int> retShape;
+//    for(auto pair: shape)
+//        if(idx[0] != pair.first)
+//            retShape[pair.first] = pair.second;
+
+//    std::map<std::string, int> retUd;
+//    for(auto pair: ud)
+//        if(idx[0] != pair.first)
+//            retUd[pair.first] = pair.second;
+
+//    std::shared_ptr<_Tensor<T&> > ret = std::shared_ptr<_Tensor<T> >(new ConcreteTensor<T>(retShape, retUd));
+
+//    std::vector<T&>& retV = ret.getV();
+
+//	for (int i = 0; i < ret.size(); i++)
+//		retV[i] = ref(ret.genIndices(i));
+
+//    return ret;
+//}
