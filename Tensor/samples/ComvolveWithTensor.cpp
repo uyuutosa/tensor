@@ -1,6 +1,7 @@
-#include <Tensor.h>
-#include <TensorUtil.h>
+#include "Tensor.h"
+#include "TensorUtil.h"
 #include <opencv2\opencv.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #define KERNEL_SIZE 10
 
