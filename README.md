@@ -1,6 +1,9 @@
 # tensor
 テンソルの様に演算が行えるC++ライブラリ
 
+まだ工事中です!笑い。
+![UnderConstruction](construction.png "Under construction")
+
 数式とプログラムの一対一対応による冗長なコーディング作業からの解放を目指して、
 いろんな規則を内包するインテリジェントな配列型を作っています。
 また面白いor効率的な演算規則の考案も行っています。
@@ -374,4 +377,4 @@ Up or donw  : (down, )
 ```
 このように、0番目と3番目の要素が100に書き換わりました。
 
-![UnderConstruction](construction.png "Under construction")
+
