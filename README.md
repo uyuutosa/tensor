@@ -1,7 +1,7 @@
 # tensor
 テンソルの様に演算が行えるC++ライブラリ
 
-まだ工事中です!笑い。
+まだ工事中です!笑。
 ![UnderConstruction](construction.png "Under construction")
 
 数式とプログラムの一対一対応による冗長なコーディング作業からの解放を目指して、
