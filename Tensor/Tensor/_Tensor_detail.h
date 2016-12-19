@@ -1,9 +1,9 @@
 #pragma once
 #include "_Tensor.h"
-//#pragma optimize ("", off)
+
 template<typename T>
 _Tensor<T>::_Tensor(
-	std::vector<T*> &_v,
+	std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
 	std::vector<std::string> _idx,
 	std::map<std::string, int> _shape,
 	std::map<std::string, int> _ud) :
@@ -13,20 +13,19 @@ _Tensor<T>::_Tensor(
 	ud(_ud),
     iniCnt(0)
 {
-    
     auto tmp = shape; 
     for(auto pair: shape)
         if(pair.second == 0)
             tmp.erase(pair.first);
     shape = tmp;
 
-
-    if(v[0] == nullptr)
-        for(auto& a: v)
-    	    a = new T;
+    if(v->size())
+        if((*v)[0].get() == nullptr)
+    	    for(auto a: *v)
+    		    a = std::shared_ptr<T>(new T);
 
     viewIdx = idx;
-	N      = v.size();
+	N      = v->size();
 	ndim   = idx.size();
 	step   = calcStep();
     viewStep = step;
@@ -37,7 +36,7 @@ _Tensor<T>::_Tensor(
 
 template<typename T>
 _Tensor<T>::_Tensor(
-	std::vector<T*> &_v,
+	std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
 	std::map<std::string, int> _shape,
 	std::map<std::string, int> _ud) :
 	v(_v),
@@ -52,16 +51,17 @@ _Tensor<T>::_Tensor(
             tmp.erase(pair.first);
     shape = tmp;
 
-    if(v[0] == nullptr)
-        for(auto& a: v)
-    	    a = new T;
+    if(v->size())
+        if((*v)[0].get() == nullptr)
+    	    for(auto a: *v)
+    		    a = std::shared_ptr<T>(new T);
 
 	for (auto pair : shape)
 		idx.push_back(pair.first);
 
     viewIdx = idx;
 
-	N      = v.size();
+	N      = v->size();
 	ndim   = idx.size();
 //	revIdx = genRevIdx();
 	step   = calcStep();
@@ -77,7 +77,7 @@ _Tensor<T>::_Tensor(
 	std::map<std::string, int> _ud) :
 	shape(_shape),
 	ud(_ud),
-    v(*new std::vector<T*>()),
+    v(std::shared_ptr<std::vector<std::shared_ptr<T>>>(new std::vector<std::shared_ptr<T>>())),
     iniCnt(0)
 {
     auto tmp = shape; 
@@ -93,10 +93,11 @@ _Tensor<T>::_Tensor(
     }
 
     viewIdx = idx;
-    v = *new std::vector<T*>(N, NULL);
+    v = std::shared_ptr<std::vector<std::shared_ptr<T>>>(new std::vector<std::shared_ptr<T>>(N, NULL));
 
-    for(auto& a: v)
-        a = new T;
+    if(v->size())
+        for(auto& a: *v)
+    	    a = std::shared_ptr<T>(new T());
     //getV() = *new std::vector<T>(N);
 
 	ndim   = idx.size();
@@ -109,20 +110,21 @@ _Tensor<T>::_Tensor(
 
 template<typename T>
 _Tensor<T>::_Tensor(
-	std::vector<std::vector<T*> > &_v,
+	std::shared_ptr<std::vector<std::vector<std::shared_ptr<T>>>> _v,
 	std::string indices):
     v(_v),
     iniCnt(0)
 	{
 
-    for(auto a: v)
-        a = new T;
+    if(v->size())
+        for(auto a: *v)
+    	    a = std::shared_ptr<T>(new T(0));
 
 
 	idx.push_back(indices.substr(0,1));
 	idx.push_back(indices.substr(1,1));
-	shape[idx[0]] = _v.size();
-	shape[idx[1]] = _v[0].size();
+	shape[idx[0]] = _v->size();
+	shape[idx[1]] = (*_v)[0]->size();
 	N = 1;
 
 	for (auto pair : shape) {
@@ -134,17 +136,19 @@ _Tensor<T>::_Tensor(
 //	revIdx = genRevIdx();
 	step   = calcStep();
 
-	v = * new std::vector<T*>(N, NULL);
+	v = std::shared_ptr<std::vector<std::shared_ptr<T>>>(new std::vector<T*>(N, NULL));
 	int cols(shape[idx[1]]);
 	for (int i = 0; i < N; i++)
-		v[i] = _v[i/cols][i%cols];
+		(*v)[i] = (*_v)[i/cols][i%cols];
 	
 }
 
-//ÅEPublic member functions ÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*
-
+//ÅEpublic member functions*ÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*
+// Manipulate of tensorÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*
 template<typename T>
-_Tensor<T>& _Tensor<T>::slice(std::map<std::string, int> minIndices, std::map<std::string, int> maxIndices){
+std::shared_ptr<_Tensor<T>> _Tensor<T>::slice(
+    std::map<std::string, int> minIndices, 
+    std::map<std::string, int> maxIndices){
 
     std::map<std::string, int> newShape;
     std::map<std::string, int> newUd;
@@ -165,19 +169,19 @@ _Tensor<T>& _Tensor<T>::slice(std::map<std::string, int> minIndices, std::map<st
         }
     }
 
-	_Tensor<T>& ret = gen(newShape, newUd);
+	auto ret = gen(newShape, newUd);
 
     bool tof(false);
-    for(int i=0; i<ret.size(); i++){
-        auto retIndices      = ret.genIndices(i);
-        auto thisIndices     = ret.genIndices(i);
+    for(int i=0; i<ret->size(); i++){
+        auto retIndices      = ret->genIndices(i);
+        auto thisIndices     = ret->genIndices(i);
 
         for(auto pair: thisIndices){
             if(minIndices.count(pair.first))
                 thisIndices[pair.first] += minIndices[pair.first];
         }
 
-		*ret.ref(retIndices) += *ref(thisIndices); 
+		*(ret->ref(retIndices)) += *ref(thisIndices); 
     }
 
 	return ret;
@@ -185,39 +189,37 @@ _Tensor<T>& _Tensor<T>::slice(std::map<std::string, int> minIndices, std::map<st
 
 template<typename T>
 template<typename U, typename W>
-_Tensor<U>& _Tensor<T>::convertTo(){
-    auto& retV = *new std::vector<U*>(size());
-    auto& V = getV();
+std::shared_ptr<_Tensor<U>> _Tensor<T>::convertTo(){
+    auto retV = std::shared_ptr<std::vector<std::shared_ptr<U>>>(new std::vector<std::shared_ptr<U>>(size()));
+    auto V = getV();
     for(int i=0; i<size(); i++)
-        retV[i] = (U*)V[i];
+        (*retV)[i] = std::shared_ptr<U>(new U(*(*V)[i]));
+        //(*retV)[i] = (std::shared_ptr<U>)(*V)[i];
 
-    return *new W(retV, shape, ud);
+    return std::shared_ptr<W>(new W(retV, shape, ud));
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::substitute(_Tensor<T> &obj, std::map<std::string, int> _indices){
+std::shared_ptr<_Tensor<T>> _Tensor<T>::substitute(
+    std::shared_ptr<_Tensor<T>> obj, 
+    std::map<std::string, int> _indices){
 
-    _Tensor<T>& ret = gen(v, idx, shape, ud);
+    auto ret = gen(v, idx, shape, ud);
 
-    for(int i=0; i<obj.size(); i++){
-        auto indices = obj.genIndices(i);
+    for(int i=0; i<obj->size(); i++){
+        auto indices = obj->genIndices(i);
         for(auto pair: _indices){
     	    indices[pair.first] = pair.second;
     	}
-        ret.ref(indices) = obj.ref(indices);
+        ret->ref(indices) = obj->ref(indices);
     }
     return ret;
 }
 
-template<typename T>
-bool _Tensor<T>::isFunctionTensor(){
-    return false;
-}
 
 template<typename T>
 template<typename U>
-_Tensor<U>& _Tensor<T>::merge(){
-    //_Tensor<U>& ret = gen(shape, ud);
+std::shared_ptr<_Tensor<U>> _Tensor<T>::merge(){
     std::map<std::string, int> newShape, newUd;
     
     for(auto pair: shape)
@@ -226,31 +228,30 @@ _Tensor<U>& _Tensor<T>::merge(){
     for(auto pair: ud)
         newUd[pair.first] = pair.second;
 
-    for(int i=0; i<v.size(); i++)
-        for(auto pair: v[i]->getShape())
+    for(int i=0; i<v->size(); i++)
+        for(auto pair: (*v)[i]->getShape())
             newShape[pair.first] = pair.second;
 
-    for(int i=0; i<v.size(); i++)
-        for(auto pair: v[i]->getUd())
+    for(int i=0; i<v->size(); i++)
+        for(auto pair: (*v)[i]->getUd())
             newUd[pair.first] = pair.second;
 
-    _Tensor<U>& ret = *new _Tensor<U>(newShape, newUd);
-//    ret = ret.broadcast(getV()[0].getT());
+    auto ret = std::shared_ptr<_Tensor<U>>(new _Tensor<U>(newShape, newUd));
 
-    for(int i=0; i<ret.size(); i++){
-        auto indices = ret.genIndices(i);
-        ret.ref(indices) = ref(indices)->getT()->ref(indices);
+    for(int i=0; i<ret->size(); i++){
+        auto indices = ret->genIndices(i);
+        ret->ref(indices) = ref(indices)->getT()->ref(indices);
     }
 	return ret;
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::putBack(std::string indices){
+std::shared_ptr<_Tensor<T>> _Tensor<T>::putBack(std::string indices){
     auto newIdx   = idx;
     auto trimedShape = shape;
 
 
-    int& tSize = *new int(1);
+    int tSize(1);
     std::map<std::string, int> residual;
     for(int i=0; i<indices.size(); i++){
         std::string compIdx(indices.substr(i,1));
@@ -270,54 +271,48 @@ _Tensor<T>& _Tensor<T>::putBack(std::string indices){
         tSize *= pair.second;
         
 
-    _Tensor<T>& ret = gen(v, newIdx, shape, ud);
+    auto ret = gen(v, newIdx, shape, ud);
 
 
-    ret.viewIdx  = idx;
-    ret.viewStep = step;
-    ret.trimedSize = tSize;
+    ret->viewIdx  = idx;
+    ret->viewStep = step;
+    ret->trimedSize = tSize;
 
     return ret;
 }
 
-//template<typename T>
-//_Tensor<T>& _Tensor<T>::clone(){
-//	return *new _Tensor<T>(v, shape, ud);
-//}
-
 template<typename T>
-_Tensor<T>& _Tensor<T>::clone(){
-	return *new auto(*this);
+std::shared_ptr<_Tensor<T>> _Tensor<T>::clone(){
+	return std::shared_ptr<_Tensor<T>>(new auto(*this));
 }
 
 template<typename T>
-_Tensor<T>&	_Tensor<T>::gen(
-                    std::vector<T*> &_v,
+std::shared_ptr<_Tensor<T>>	_Tensor<T>::gen(
+                    std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
    		            std::vector<std::string> _idx,
    		            std::map<std::string, int> _shape,
                     std::map<std::string, int> _ud){
-	return *new _Tensor<T>(_v, _idx, _shape, _ud);
+	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>(_v, _idx, _shape, _ud));
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::gen(
-                std::vector<T*> &_v, 
+std::shared_ptr<_Tensor<T>> _Tensor<T>::gen(
+                std::shared_ptr<std::vector<std::shared_ptr<T>>> _v, 
                 std::map<std::string, int> _shape, 
                 std::map<std::string, int> _ud){
-	return *new _Tensor<T>(_v, _shape, _ud);
+	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>(_v, _shape, _ud));
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::gen(
+std::shared_ptr<_Tensor<T>> _Tensor<T>::gen(
                     std::map<std::string, int> _shape, 
                     std::map<std::string, int> _ud){
-	return *new _Tensor<T>(_shape, _ud);
+	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>(_shape, _ud));
 }
 
-
 template<typename T>
-_Tensor<T>& _Tensor<T>::concat(
-    _Tensor<T>& obj, 
+std::shared_ptr<_Tensor<T>> _Tensor<T>::concat(
+    std::shared_ptr<_Tensor<T>> obj, 
     std::string thisIdx, 
     std::string objIdx, 
     std::string concaIdx, 
@@ -329,45 +324,45 @@ _Tensor<T>& _Tensor<T>::concat(
     for(auto pair: shape)
         newShape[pair.first] = pair.second;
 
-    for(auto pair: obj.shape)
+    for(auto pair: obj->shape)
         newShape[pair.first] = pair.second;
 
     for(auto pair: ud)
         newUd[pair.first] = pair.second;
 
-    for(auto pair: obj.ud)
+    for(auto pair: obj->ud)
         newUd[pair.first] = pair.second;
 
-    newShape[concaIdx] = shape[thisIdx] + obj.shape[objIdx];
+    newShape[concaIdx] = shape[thisIdx] + obj->shape[objIdx];
     newUd   [concaIdx] = udVal;
     newShape.erase(thisIdx);
     newShape.erase(objIdx);
     newUd.erase(thisIdx);
     newUd.erase(objIdx);
 
-    _Tensor<T>& ret = gen(newShape, newUd);
+    auto ret = gen(newShape, newUd);
 
     int sepNum(shape[thisIdx]);
-    for (int i=0; i<ret.size(); i++){
-        auto indices     = ret.genIndices(i);
+    for (int i=0; i<ret->size(); i++){
+        auto indices     = ret->genIndices(i);
         auto thisIndices = indices;
         auto objIndices  = indices;
 
         if (indices[concaIdx] >= sepNum){
             objIndices[objIdx] = indices[concaIdx] - sepNum;
             //objIndices.erase(objIdx);
-        	ret.ref(indices)   = obj.ref(objIndices);
+        	ret->ref(indices)   = obj->ref(objIndices);
         } else {
             thisIndices[thisIdx] = indices[concaIdx];
             //thisIndices.erase(thisIdx);
-            ret.ref(indices) = ref(thisIndices);
+            ret->ref(indices) = ref(thisIndices);
         }
     }
     return ret;
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::cud(std::map<std::string, int> map){
+std::shared_ptr<_Tensor<T>> _Tensor<T>::cud(std::map<std::string, int> map){
     auto newUd    = ud;
 
     for(auto pair: map)
@@ -377,7 +372,7 @@ _Tensor<T>& _Tensor<T>::cud(std::map<std::string, int> map){
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::cidx(std::map<std::string, std::string> map){
+std::shared_ptr<_Tensor<T>> _Tensor<T>::cidx(std::map<std::string, std::string> map){
     auto newIdx    = idx;
     auto newShape  = shape;
     auto newUd     = ud;
@@ -398,12 +393,39 @@ _Tensor<T>& _Tensor<T>::cidx(std::map<std::string, std::string> map){
 }
 
 template<typename T>
-void _Tensor<T>::setV(std::vector<T*> &obj) {
+std::shared_ptr<_Tensor<T>> _Tensor<T>::reshape(std::map<std::string, int> _shape, std::map<std::string, int> _ud){
+    auto ret = gen(_shape, _ud);
+    auto thisCpy = clone();
+
+    std::map<std::string, int> newShape;
+    std::map<std::string, int> newUd;
+
+    std::string indices;
+
+    for(auto pair: shape){
+        if(_shape.count(pair.first)){
+            indices.push_back(*const_cast<char *>(pair.first.c_str()));
+            //newUd[pair.first]    = newUd[pair.first];
+        }
+    }
+
+    ret = ret->putBack(indices);
+    thisCpy = thisCpy->putBack(indices);
+
+    for(int i=0; i<N; i++){
+        ret->ref(ret->genIndices(i)) = thisCpy->ref(thisCpy->genIndices(i));
+    }
+
+    return ret;
+}
+
+template<typename T>
+void _Tensor<T>::setV(std::shared_ptr<std::vector<std::shared_ptr<T>>> obj) {
     v = obj;
 }
 
 template<typename T>
-std::vector<T*>& _Tensor<T>::getV() const {
+std::shared_ptr<std::vector<std::shared_ptr<T>>> _Tensor<T>::getV() const {
 	return v;
 }
 
@@ -414,7 +436,7 @@ std::map<std::string, int> _Tensor<T>::genIndices(int i) {
 	std::map<std::string, int> ret;
 
 	for (int j = 0; j < ndim; j++) {
-		ret[idx[j]] = i/step[idx[j]];
+		ret[idx[j]] = i / step[idx[j]];
 		i %= step[idx[j]];
 	}
 
@@ -428,7 +450,7 @@ int _Tensor<T>::size()
 }
 
 template<typename T>
-T*& _Tensor<T>::ref(std::map<std::string, int> indices){
+std::shared_ptr<T>& _Tensor<T>::ref(std::map<std::string, int> indices){
 	std::map<std::string, int> ret;
 
     int sumIdx(0);
@@ -436,7 +458,7 @@ T*& _Tensor<T>::ref(std::map<std::string, int> indices){
 		if(isExistThisIndex(indices, idx[i]))
 			sumIdx += indices[viewIdx[i]] * viewStep[viewIdx[i]];
 
-	return v[sumIdx];
+	return (*v)[sumIdx];
 }
 
 template<typename T>
@@ -453,7 +475,7 @@ void _Tensor<T>::view(std::ostream& os){
 	os << "Num. of Dim.: " << ndim << std::endl;
 	os << std::endl;
 
-	os << "Up or donw  : (";
+	os << "Up or down  : (";
 
 	std::vector<std::string> ud_lut;
 	ud_lut.push_back("down");
@@ -481,12 +503,16 @@ bool _Tensor<T>::isRefTensor() {
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::getRefTensor() {
-	return *refTensor;
+bool _Tensor<T>::isFunctionTensor(){
+    return false;
+}
+template<typename T>
+std::shared_ptr<_Tensor<T>> _Tensor<T>::getRefTensor() {
+	return refTensor;
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::broadcast(_Tensor<T>& obj,
+std::shared_ptr<_Tensor<T>> _Tensor<T>::broadcast(std::shared_ptr<_Tensor<T>> obj,
 								 bool trimUd){
 	int  maxDim(idx.size());
 	auto newIdx = idx;
@@ -498,7 +524,7 @@ _Tensor<T>& _Tensor<T>::broadcast(_Tensor<T>& obj,
 	std::string dupUd("");
 	if (trimUd){
 		for (auto a : ud) {
-			for (auto b : obj.ud) {
+			for (auto b : obj->ud) {
 				if (a.first == b.first &&
 					a.second != b.second)
 					dupUd.push_back(*a.first.c_str());
@@ -508,16 +534,16 @@ _Tensor<T>& _Tensor<T>::broadcast(_Tensor<T>& obj,
 
 	for (auto a : ud){ 
 		newUd[a.first] = a.second;
-		for (auto b : obj.ud) 
+		for (auto b : obj->ud) 
 			newUd[b.first] = b.second;
     }
 
-	for (int i=0; i<obj.idx.size(); i++)
-		if(!shape.count(obj.idx[i]) && 
-			dupUd.find(obj.idx[i]) == std::string::npos)
-			newIdx.push_back(obj.idx[i]); // imcrement one more than maximum Dimumtsion.
+	for (int i=0; i<obj->idx.size(); i++)
+		if(!shape.count(obj->idx[i]) && 
+			dupUd.find(obj->idx[i]) == std::string::npos)
+			newIdx.push_back(obj->idx[i]); // imcrement one more than maximum Dimumtsion.
 
-	for (auto a : obj.shape) {
+	for (auto a : obj->shape) {
 		newShape[a.first] = a.second; // imcrement one more than maximum Dimumtsion.
 	}
 
@@ -542,16 +568,16 @@ _Tensor<T>& _Tensor<T>::broadcast(_Tensor<T>& obj,
 // MathÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::inv(std::string indices){
-	_Tensor<T>& ret =  gen(
-		*new std::vector<T*>(v),
+std::shared_ptr<_Tensor<T>> _Tensor<T>::inv(std::string indices){
+	std::shared_ptr<_Tensor<T>> ret =  gen(
+		std::shared_ptr<std::vector<std::shared_ptr<T>>>(new std::vector<std::shared_ptr<T>>(*v)),
 		shape,
 		ud);
 
-    ret = ret.putBack(indices);
+    ret = ret->putBack(indices);
 
     int jSize, kSize;
-    int tSize(ret.trimedSize); 
+    int tSize(ret->trimedSize); 
 
     if(shape.count(indices.substr(0,1)))
         jSize = shape[indices.substr(0,1)];
@@ -566,14 +592,14 @@ _Tensor<T>& _Tensor<T>::inv(std::string indices){
 	    for (int j = 0; j < jSize; j++){
             T* p = m.ptr<T>(j);
 	        for (int k = 0; k < kSize; k++){
-                p[k] = (double)(*ret.ref(ret.genIndices(i*jSize * kSize + j*kSize + k))); 
+                p[k] = (double)(*ret->ref(ret->genIndices(i*jSize * kSize + j*kSize + k))); 
                 //m.at<double>(j, k) = (double)ret.ref(ret.genIndices(i*jSize * kSize + j*kSize + k)); 
             }
         }
         m = m.inv();
 	    for (int j = 0; j < jSize; j++){
 	        for (int k = 0; k < kSize; k++)
-                *ret.ref(ret.genIndices(i*jSize * kSize + j*kSize + k)) =  m.at<T>(j, k); 
+                *ret->ref(ret->genIndices(i*jSize * kSize + j*kSize + k)) =  m.at<T>(j, k); 
         }
     }
 
@@ -581,52 +607,138 @@ _Tensor<T>& _Tensor<T>::inv(std::string indices){
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::sum(std::string indices){
+std::shared_ptr<_Tensor<T>> _Tensor<T>::sum(std::string indices){
     std::map<std::string, int> newShape;
-    std::map<std::string, int> newUd   ;
+    std::map<std::string, int> newUd;
 
     for(int i=0; i<indices.size(); i++){
         std::string s = indices.substr(i, 1);
         newShape[s] = shape[s];
-        newUd[s]    = ud[s] == 0 ? 1 : 0;
-    }
+        newUd[s] = ud[s] == 0 ? 1 : 0;
+    } 
 
-    _Tensor<T> o = *tu::ones<double>(newShape, newUd).getT();
-    auto& ret = *this * o;
-    return ret;    
+    auto o = tu::ones<T>(newShape, newUd).getT();
+    auto ret = *(this->convertTo<T, ConcreteTensor<T>>()) * o;
+
+    if(!ret->shape.size()){
+        newShape = std::map<std::string, int>();
+        newUd = std::map<std::string, int>();
+        newShape["null"] = 1;
+        newUd["null"]    = 0;
+        auto ret = std::shared_ptr<T>(new T(0));
+        for(auto a: *v)
+            *ret += *a;
+        auto retV = std::shared_ptr<std::vector<std::shared_ptr<T>>>(new std::vector<std::shared_ptr<T>>(1, ret));
+        return gen(retV, newShape, newUd);
+    } else 
+        return ret;
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::mean(std::string indices){
-    std::map<std::string, int> newShape;
-    std::map<std::string, int> newUd   ;
+std::shared_ptr<_Tensor<T>> _Tensor<T>::mean(std::string indices){
+    std::map<std::string, int> newShape = shape;
+    std::map<std::string, int> newUd = ud;
 
-    double n(1);
     for(int i=0; i<indices.size(); i++){
         std::string s = indices.substr(i, 1);
-        newShape[s] = shape[s];
-        n *= shape[s];
-        newUd[s]    = ud[s] == 0 ? 1 : 0;
+        if(newShape.count(s)){
+            newShape.erase(s);
+            newUd.erase(s);
+        }
+    } 
+
+    if(newShape.size()){
+        newShape["null"] = N;
+        newUd["null"]    = 0;
     }
 
-    _Tensor<T> o = *tu::ones<double>(newShape, newUd).getT();
-    auto& ret = *this * o / n;
+    auto o = tu::ones<T>(newShape, newUd).getT();
+    auto ret = *this * o / n;
     return ret;    
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::sign(){
-    auto &ret = gen(shape, ud);    
+std::shared_ptr<_Tensor<T>> _Tensor<T>::min(std::string indices){
+    std::map<std::string, int> newShape = shape;
+    std::map<std::string, int> newUd = ud;
 
-    auto& retV = ret.getV();
+    for(int i=0; i<indices.size(); i++){
+        std::string s = indices.substr(i, 1);
+        if(newShape.count(s)){
+            newShape.erase(s);
+            newUd.erase(s);
+        }
+    } 
+
+    if(newShape.size()){
+        newShape["null"] = N;
+        newUd["null"]    = 0;
+    }
+
+    auto ret = gen(newShape, newUd);
+
+    for(auto a: *ret->getV())
+        *a = *(*v)[0] * 9999999999; 
+
+	for (int i = 0; i < N; i++){
+		*ret->ref(genIndices(i)) = *ret->ref(genIndices(i)) > *ref(genIndices(i)) 
+                                    ? *ref(genIndices(i))
+                                    : *ret->ref(genIndices(i)); 
+    }
+
+	return ret;
+}
+
+template<typename T>
+std::shared_ptr<_Tensor<T>> _Tensor<T>::max(std::string indices){
+    std::map<std::string, int> newShape = shape;
+    std::map<std::string, int> newUd = ud;
+
+    for(int i=0; i<indices.size(); i++){
+        std::string s = indices.substr(i, 1);
+        if(newShape.count(s)){
+            newShape.erase(s);
+            newUd.erase(s);
+        }
+    } 
+
+    if(!newShape.size()){
+        newShape["null"] = 1;
+        newUd["null"]    = 0;
+        auto ret = gen(newShape, newUd);
+        auto maxVal = std::shared_ptr<T>(new T(0));
+        for(auto a: *v)
+            *maxVal = *maxVal < *a ? *a : *maxVal;
+        return gen(std::shared_ptr<std::vector<std::shared_ptr<T>>>(new std::vector<std::shared_ptr<T>>(1, maxVal)), newShape, newUd);
+    } else {
+
+        auto ret = gen(newShape, newUd);
+
+    	for(auto a: *ret->getV())
+    	    *a = *(*v)[0] * 0; 
+
+		for (int i = 0; i < N; i++){
+			*ret->ref(genIndices(i)) = *ret->ref(genIndices(i)) < *ref(genIndices(i)) 
+    	                                ? *ref(genIndices(i))
+    	                                : *ret->ref(genIndices(i)); 
+    	}
+		return ret;
+    }
+}
+
+template<typename T>
+std::shared_ptr<_Tensor<T>> _Tensor<T>::sign(){
+    auto ret = gen(shape, ud);    
+
+    auto retV = ret->getV();
 
     for(int i=0; i<N; i++)
-        if(v[i] > 0)
-           *retV[i] = 1;
-        else if(v[i] < 0)
-           *retV[i] = -1;
+        if(*(*v)[i] > 0)
+           *(*retV)[i] = 1;
+        else if(*(*v)[i] < 0)
+           *(*retV)[i] = -1;
         else 
-           *retV[i] = 0;
+           *(*retV)[i] = 0;
 
 
     return ret;    
@@ -634,7 +746,7 @@ _Tensor<T>& _Tensor<T>::sign(){
 
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::norm(std::string indices){
+std::shared_ptr<_Tensor<T>> _Tensor<T>::norm(std::string indices){
     std::map<std::string, int> newShape;
     std::map<std::string, int> newUd   ;
 
@@ -644,17 +756,15 @@ _Tensor<T>& _Tensor<T>::norm(std::string indices){
         newUd[s]    = ud[s] == 0 ? 1 : 0;
     }
 
-    _Tensor<T> o(*tu::ones<double>(newShape, newUd).getT());
-    _Tensor<T> o2(((*this) ^ 2) * o);
-    Tensor<T>  a (o2);
-    Tensor<T>  ret_t = tu::sqrt_t<T>(a);
-    _Tensor<T> ret(*ret_t.getT());
-    return ret;    
+    auto o = tu::ones<double>(newShape, newUd).getT();
+    auto o2 = ((*this) * (*this)) * o;
+    auto  ret_t = tu::sqrt_t<T>(o2);
+    return ret_t.getT();    
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::grad(_Tensor<T>& obj, std::map<std::string, int> indices, double delta){
-	return *new _Tensor<T>;
+std::shared_ptr<_Tensor<T>> _Tensor<T>::grad(std::shared_ptr<_Tensor<T>> obj, std::map<std::string, int> indices, double delta){
+	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>);
 }
 
 template<typename T>
@@ -669,187 +779,307 @@ void _Tensor<T>::genReferenceTensor(){
 
 template<typename T>
 template<typename U>
-_Tensor<U>& _Tensor<T>::operator *(U val) {
-	return _Tensor<U>();
+std::shared_ptr<_Tensor<U>> _Tensor<T>::operator *(U val) {
+	return std::shared_ptr<_Tensor<U>>(new _Tensor<U>());
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator+(_Tensor<T> &obj)
+std::shared_ptr<_Tensor<T>> _Tensor<T>::operator+(std::shared_ptr<_Tensor<T>> obj)
 {
-    _Tensor<T>& ret = *new _Tensor<T>();
-	return ret;
+	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>());
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator-(_Tensor<T> &obj)
+std::shared_ptr<_Tensor<T>> _Tensor<T>::operator-(std::shared_ptr<_Tensor<T>> obj)
 {
-    _Tensor<T>& ret = *new _Tensor<T>();
-	return ret;
+	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>());
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator*(_Tensor<T> &obj)
+std::shared_ptr<_Tensor<T>> _Tensor<T>::operator*(std::shared_ptr<_Tensor<T>> obj)
 {
-    _Tensor<T>& ret = *new _Tensor<T>();
-	return ret;
+	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>());
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator/(_Tensor<T> &obj)
+std::shared_ptr<_Tensor<T>> _Tensor<T>::operator/(std::shared_ptr<_Tensor<T>> obj)
 {
-    _Tensor<T>& ret = *new _Tensor<T>();
-	return ret;
+	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>());
+}
+
+//template<typename T>
+//std::shared_ptr<_Tensor<T>> _Tensor<T>::operator^(std::shared_ptr<_Tensor<T>> obj)
+//{
+//	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>());
+//}
+
+
+template<typename T>
+std::shared_ptr<_Tensor<T>> _Tensor<T>::operator+(T val){
+	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>());
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator^(_Tensor<T> &obj)
+std::shared_ptr<_Tensor<T>> _Tensor<T>::operator-(T val){
+	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>());
+}
+
+template<typename T>
+std::shared_ptr<_Tensor<T>> _Tensor<T>::operator*(T val){
+	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>());
+}
+
+template<typename T>
+std::shared_ptr<_Tensor<T>> _Tensor<T>::operator/(T val){
+	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>());
+}
+
+//template<typename T>
+//std::shared_ptr<_Tensor<T>> _Tensor<T>::operator^(T val){
+//	return std::shared_ptr<_Tensor<T>>(new _Tensor<T>());
+//}
+
+
+template<typename T>
+void _Tensor<T>::operator <<(T val){
+    *(*v)[iniCnt++] = val;
+}
+
+template<typename T>
+void _Tensor<T>::operator ,(T val){
+    *(*v)[iniCnt++] = val;
+}
+
+template<typename T>
+void _Tensor<T>::operator+=(std::shared_ptr<_Tensor<T>> obj)
 {
-    _Tensor<T>& ret = *new _Tensor<T>();
-	return ret;
 }
 
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator+(T val){
-    _Tensor<T>& ret = *new _Tensor<T>();
-	return ret;
-}
-
-template<typename T>
-_Tensor<T>& _Tensor<T>::operator-(T val){
-    _Tensor<T>& ret = *new _Tensor<T>();
-	return ret;
-}
-
-template<typename T>
-_Tensor<T>& _Tensor<T>::operator*(T val){
-    _Tensor<T>& ret = *new _Tensor<T>();
-	return ret;
-}
-
-template<typename T>
-_Tensor<T>& _Tensor<T>::operator/(T val){
-    _Tensor<T>& ret = *new _Tensor<T>();
-	return ret;
-}
-
-template<typename T>
-_Tensor<T>& _Tensor<T>::operator^(T val){
-    _Tensor<T>& ret = *new _Tensor<T>();
-	return ret;
-}
-
-template<typename T>
-_Tensor<T>& _Tensor<T>::operator <<(T val){
-    *v[iniCnt++] = val;
-	return *this;
-}
-
-template<typename T>
-_Tensor<T>& _Tensor<T>::operator ,(T val){
-    *v[iniCnt++] = val;
-	return *this;
-}
-
-template<typename T>
-_Tensor<T>& _Tensor<T>::operator+=(_Tensor<T> &obj)
+void _Tensor<T>::operator-=(std::shared_ptr<_Tensor<T>> obj)
 {
-    return *new _Tensor<T>();
 }
 
-
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator-=(_Tensor<T> &obj)
+void _Tensor<T>::operator*=(std::shared_ptr<_Tensor<T>> obj)
 {
-    return *new _Tensor<T>();
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator*=(_Tensor<T> &obj)
+void _Tensor<T>::operator/=(std::shared_ptr<_Tensor<T>> obj)
 {
-    return *new _Tensor<T>();
 }
 
+//template<typename T>
+//void _Tensor<T>::operator^=(std::shared_ptr<_Tensor<T>> obj)
+//{
+//}
+
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator/=(_Tensor<T> &obj)
+void _Tensor<T>::operator+=(T val)
 {
-    return *new _Tensor<T>();
 }
 
+
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator^=(_Tensor<T> &obj)
+void _Tensor<T>::operator-=(T val)
 {
-    return *new _Tensor<T>();
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator+=(T val)
+void _Tensor<T>::operator*=(T val)
 {
-    return *new _Tensor<T>();
 }
 
-
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator-=(T val)
+void _Tensor<T>::operator/=(T val)
 {
-    return *new _Tensor<T>();
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator*=(T val)
-{
-    return *new _Tensor<T>();
-}
-
-template<typename T>
-_Tensor<T>& _Tensor<T>::operator/=(T val)
-{
-    return *new _Tensor<T>();
-}
-
-template<typename T>
-_Tensor<T>& _Tensor<T>::operator=(T val)
+void _Tensor<T>::operator =(T val)
 {
     for (int i=0; i<N; i++){
-        *v[i] = val;
+        *(*v)[i] = val;
     }
-    return *this;
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator^=(T val)
+void _Tensor<T>::operator ^=(T val)
 {
-    return *new _Tensor<T>();
 }
 
 template<typename T>
-bool _Tensor<T>::operator<(_Tensor<T> &obj)
+std::shared_ptr<_Tensor<bool>> _Tensor<T>::operator == (T val)
 {
-    return false;
+	auto ret = std::shared_ptr<_Tensor<bool>>(new _Tensor<bool>(shape, ud));
+
+    auto retV = ret->getV();
+    auto v    = getV();
+
+	for (int i = 0; i < retV->size(); i++){
+        (*retV)[i] = std::shared_ptr<bool>(new bool(*(*v)[i] == val));
+    }
+
+	return ret;
 }
 
 template<typename T>
-bool _Tensor<T>::operator>(_Tensor<T> &obj)
+std::shared_ptr<_Tensor<bool>> _Tensor<T>::operator>(T val)
 {
-    return false;
+	auto ret = std::shared_ptr<_Tensor<bool>>(new _Tensor<bool>(shape, ud));
+
+    auto retV = ret->getV();
+    auto v    = getV();
+
+	for (int i = 0; i < retV->size(); i++){
+        (*retV)[i] = std::shared_ptr<bool>(new bool(*(*v)[i] > val));
+    }
+
+	return ret;
 }
 
 template<typename T>
-template<typename U>
-bool _Tensor<T>::operator<(U val)
+std::shared_ptr<_Tensor<bool>> _Tensor<T>::operator < (T val)
 {
-    return false;
+	auto ret = std::shared_ptr<_Tensor<bool>>(new _Tensor<bool>(shape, ud));
+
+    auto retV = ret->getV();
+    auto v    = getV();
+
+	for (int i = 0; i < retV->size(); i++){
+        (*retV)[i] = std::shared_ptr<bool>(new bool(*(*v)[i] < val));
+    }
+
+	return ret;
 }
 
 template<typename T>
-template<typename U>
-bool _Tensor<T>::operator>(U val)
+std::shared_ptr<_Tensor<bool>> _Tensor<T>::operator >= (T val)
 {
-    return false;
+	auto ret = std::shared_ptr<_Tensor<bool>>(new _Tensor<bool>(shape, ud));
+
+    auto retV = ret->getV();
+    auto v    = getV();
+
+	for (int i = 0; i < retV->size(); i++){
+        (*retV)[i] = std::shared_ptr<bool>(new bool(*(*v)[i] >= val));
+    }
+
+	return ret;
 }
 
 template<typename T>
-_Tensor<T>& _Tensor<T>::operator [] (std::map<std::string, int> &_indices){
+std::shared_ptr<_Tensor<bool>> _Tensor<T>::operator <= (T val)
+{
+	auto ret = std::shared_ptr<_Tensor<bool>>(new _Tensor<bool>(shape, ud));
+
+    auto retV = ret->getV();
+    auto v    = getV();
+
+	for (int i = 0; i < retV.size(); i++){
+        (*retV)[i] = std::shared_ptr<bool>(new bool(*(*v)[i] <= val));
+    }
+
+	return ret;
+}
+
+template<typename T>
+std::shared_ptr<_Tensor<bool>> _Tensor<T>::operator == (std::shared_ptr<_Tensor<T>> obj)
+{
+	auto ret = broadcast(obj, true)->convertTo<bool, ConcreteTensor<bool> >();
+	//auto ret      = broadcast(obj, true).convertTo<bool, ConcreteTensor<bool> >();
+	auto noTrimed = broadcast(obj);
+
+    std::map<std::string, int> indices;
+	for (int i = 0; i < noTrimed->size(); i++){
+        indices = noTrimed->genIndices(i);
+        ret->ref(indices) = std::shared_ptr<bool>(new bool(*ref(indices) == *obj->ref(indices)));
+    }
+
+	return ret;
+}
+
+template<typename T>
+std::shared_ptr<_Tensor<bool>> _Tensor<T>::operator > (std::shared_ptr<_Tensor<T>> obj)
+{
+	auto ret      = broadcast(obj, true).convertTo<bool, ConcreteTensor<bool> >();
+	auto noTrimed = broadcast(obj);
+
+    std::map<std::string, int> indices;
+	for (int i = 0; i < noTrimed->size(); i++){
+        indices = noTrimed->genIndices(i);
+        ret->ref(indices) = std::shared_ptr<bool>(new bool(*ref(indices) > *obj->ref(indices)));
+    }
+
+	return ret;
+}
+
+template<typename T>
+std::shared_ptr<_Tensor<bool>> _Tensor<T>::operator < (std::shared_ptr<_Tensor<T>> obj)
+{
+	auto ret      = broadcast(obj, true).convertTo<bool, ConcreteTensor<bool> >();
+	auto noTrimed = broadcast(obj);
+	auto noTrimed = broadcast(obj);
+
+    std::map<std::string, int> indices;
+	for (int i = 0; i < noTrimed->size(); i++){
+        indices = noTrimed->genIndices(i);
+        ret->ref(indices) = std::shard_ptr<bool>(new bool(*ref(indices) < *obj->ref(indices)));
+    }
+
+	return ret;
+}
+
+template<typename T>
+std::shared_ptr<_Tensor<bool>> _Tensor<T>::operator >= (std::shared_ptr<_Tensor<T>> obj)
+{
+	auto ret   = broadcast(obj, true).convertTo<bool, ConcreteTensor<bool> >();
+	auto noTrimed = broadcast(obj);
+
+    std::map<std::string, int> indices;
+	for (int i = 0; i < noTrimed->size(); i++){
+        indices = noTrimed->genIndices(i);
+        ret->ref(indices) = std::shard_ptr<bool>(new bool(*ref(indices) >= *obj->ref(indices)));
+    }
+
+	return ret;
+}
+
+template<typename T>
+std::shared_ptr<_Tensor<bool>> _Tensor<T>::operator <= (std::shared_ptr<_Tensor<T>> obj)
+{
+	auto ret   = broadcast(obj, true).convertTo<bool, ConcreteTensor<bool> >();
+	auto noTrimed = broadcast(obj);
+	auto noTrimed = broadcast(obj);
+
+    std::map<std::string, int> indices;
+	for (int i = 0; i < noTrimed->size(); i++){
+        indices = noTrimed->genIndices(i);
+        ret->ref(indices) = std::shared_ptr<bool>(new bool(*ref(indices) <= *obj->ref(indices)));
+    }
+
+	return ret;
+}
+
+
+//template<typename T>
+//template<typename U>
+//bool _Tensor<T>::operator<(U val)
+//{
+//    return false;
+//}
+
+//template<typename T>
+//template<typename U>
+//bool _Tensor<T>::operator>(U val)
+//{
+//    return false;
+//}
+
+template<typename T>
+std::shared_ptr<_Tensor<T>> _Tensor<T>::operator [] (std::map<std::string, int> &_indices){
     std::map<std::string, int> shape2(shape);
     std::map<std::string, int> ud2(ud);
 
@@ -860,15 +1090,15 @@ _Tensor<T>& _Tensor<T>::operator [] (std::map<std::string, int> &_indices){
         }
     }
 
-	_Tensor<T>& ret = gen(shape2, ud2);
+	auto ret = gen(shape2, ud2);
 
-	for (int i = 0; i < ret.size(); i++){
-        auto indices = ret.genIndices(i);
+	for (int i = 0; i < ret->size(); i++){
+        auto indices = ret->genIndices(i);
         auto thisIndices = indices;
         for(auto pair: _indices){
             thisIndices[pair.first] = pair.second;
         }
-		ret.ref(indices) = ref(thisIndices);
+		ret->ref(indices) = ref(thisIndices);
     }
 
 	return ret;
@@ -876,17 +1106,61 @@ _Tensor<T>& _Tensor<T>::operator [] (std::map<std::string, int> &_indices){
 
 template<typename T>
 template<typename U>
-_Tensor<T>& _Tensor<T>::operator [] (_Tensor<U> &obj){
-    auto& ret = gen(obj.shape, obj.ud);
-    auto& V = getV();
-    auto& objV = obj.getV();
-    auto& retV = ret.getV();
+std::shared_ptr<_Tensor<T>> _Tensor<T>::operator [] (std::shared_ptr<_Tensor<U>> obj){
+    auto ret = gen(obj->shape, obj->ud);
+    auto V = getV();
+    auto objV = obj->getV();
+    auto retV = ret->getV();
 
-    for(int i=0; i < obj.size(); i++){
-        retV[i] = V[*objV[i]];
+    int index(0);
+    for(int i=0; i < obj->size(); i++){
+        index = *(*objV)[i];
+        if( index < N)
+            (*retV)[i] = std::shared_ptr<T>(new T(*(*V)[index]));
+    }
+	return ret;
+}
+
+template<typename T>
+template<typename U>
+std::shared_ptr<_Tensor<T>> _Tensor<T>::suffix (std::shared_ptr<_Tensor<U>> obj, std::string sfx){
+
+    std::shared_ptr<_Tensor<U>> obj2 = obj->clone();
+    std::string objSuffix;
+
+    for (auto pair: obj2->shape)
+        objSuffix = pair.first;
+
+    std::map<std::string, std::string> indices;
+    indices[objSuffix] = sfx;
+    obj2 = obj2->cidx(indices);
+        
+    auto newShape = shape;
+    auto newUd    = ud;
+    if(newShape.count(sfx)){
+        newShape[sfx] = obj2->shape[sfx];
+        newUd[sfx] = obj2->ud[sfx];
+    }
+    
+	auto ret = gen(newShape, newUd);
+	//_Tensor<T>& ret = * new _Tensor<double>(newShape, newUd);
+
+    for(auto a: *ret->getV())
+        *a = *(*v)[0] * 0; 
+
+    int tmp = ret->size();
+	for (int i = 0; i < tmp; i++){
+        auto map = ret->genIndices(i);
+        for(auto pair: obj2->genIndices(i))
+            if(ret->shape.count(pair.first) != 0){
+                auto aaa = ret->genIndices(i);
+                auto aa = *obj2->ref(aaa);
+                map[pair.first] = aa;
+            }
+		ret->ref(ret->genIndices(i)) = ref(map);
     }
 
-    return ret;
+	return ret;
 }
 
 //ÅEprotected member functions ÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*ÅEÅdÅcÑü*
@@ -911,7 +1185,7 @@ void _Tensor<T>::putLeftBracket(int i, std::ostream &os) {
 	for (int j = 0; j < ndim-1; j++) {
 		if (i % step[idx[j]]) {
 			os << " ";
-		} //else if (step[idx[j]] == 1)
+		} 
 	}
 	if (i) 
 		os << " ";
@@ -931,7 +1205,7 @@ void _Tensor<T>::putValue(int i, std::ostream &os) {
 	os 
 		<< std::setw(NUM_OF_PRECISION+2)
 		<< std::setprecision(NUM_OF_PRECISION) 
-		<< *ref(genIndices(i)) 
+		<< (T)*ref(genIndices(i)) 
 		<< ", ";
 
 	if (i != 0 && 
@@ -944,7 +1218,7 @@ void _Tensor<T>::putValue(int i, std::ostream &os) {
 			<< std::setw(NUM_OF_PRECISION-4)
 			<< std::setfill(' ') << " ";
 	}
-
+    
 
 }
 
@@ -972,5 +1246,3 @@ template<typename T>
 bool _Tensor<T>::isExistThisIndex(std::map<std::string, int> indices, std::string i) {
 	return indices.count(i);
 }
-
-

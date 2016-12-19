@@ -1,9 +1,9 @@
 #pragma once
 #include "Tensor.h"
-//#pragma optimize ("", off)
+////#pragma optimize ("", off)
 template<typename T>
 Tensor<T>::Tensor(
-	std::vector<T*> &_v,
+	std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
 	std::vector<std::string> _idx,
 	std::map<std::string, int> _shape,
 	std::map<std::string, int> _ud):
@@ -15,10 +15,10 @@ Tensor<T>::Tensor(
 
 template<typename T>
 Tensor<T>::Tensor(
-	std::vector<T*> &_v,
+	std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
 	std::map<std::string, int> _shape,
 	std::map<std::string, int> _ud) :
-    _t(new ConcreteTensor<T>(_v, _shape, _ud)), refCnt(new int(1)),
+    _t(std::shared_ptr<_Tensor<T>>(new ConcreteTensor<T>(_v, _shape, _ud))), refCnt(new int(1)),
     shape(_shape), ud(_ud)
 {
 }
@@ -27,16 +27,16 @@ template<typename T>
 Tensor<T>::Tensor(
 	std::map<std::string, int> _shape,
 	std::map<std::string, int> _ud) :
-    _t(new ConcreteTensor<T>(_shape, _ud)), refCnt(new int(1)),
+    _t(std::shared_ptr<_Tensor<T>>(new ConcreteTensor<T>(_shape, _ud))), refCnt(new int(1)),
     shape(_shape), ud(_ud)
 { 
 }
 
 template<typename T>
 Tensor<T>::Tensor(
-	std::vector<std::vector<T*> > &_v,
+	std::shared_ptr<std::vector<std::vector<std::shared_ptr<T>>>> _v,
 	std::string indices):
-    _t(new ConcreteTensor<T>(_v, _indices)), refCnt(new int(1)),
+    _t(std::shared_ptr<_Tensor<T>>(new ConcreteTensor<T>(_v, _shape, _ud))), refCnt(new int(1)),
     shape(_shape), ud(_ud)
 {
 }
@@ -80,6 +80,17 @@ Tensor<T> Tensor<T>::mean(std::string indices){
 }
 
 template<typename T>
+Tensor<T> Tensor<T>::min(std::string indices){
+    return Tensor<T>(_t->min(indices));
+}
+
+template<typename T>
+Tensor<T> Tensor<T>::max(std::string indices){
+    return Tensor<T>(_t->max(indices));
+    //return Tensor<T>(_t->max(indices));
+}
+
+template<typename T>
 Tensor<T> Tensor<T>::sign(){
     return Tensor<T>(_t->sign());
 }
@@ -96,7 +107,7 @@ Tensor<T> Tensor<T>::putBack(std::string indices){
 
 
 template<typename T>
-Tensor<T>& Tensor<T>::cidx(std::string first, ...){
+Tensor<T> Tensor<T>::cidx(std::string first, ...){
     va_list args;
     va_start(args, first);
 
@@ -109,7 +120,7 @@ Tensor<T>& Tensor<T>::cidx(std::string first, ...){
             name = std::string(va_arg(args, char*));
         if (!name.size()){
             va_end(args);
-            return *new Tensor<T>(_t.cidx(ret));
+            return Tensor<T>(_t->cidx(ret));
         }
         if(cnt % 2)
             ret[name] = va_arg(args, char*);
@@ -118,7 +129,7 @@ Tensor<T>& Tensor<T>::cidx(std::string first, ...){
 }
 
 template<typename T>
-Tensor<T>& Tensor<T>::cud(std::string first, ...){
+Tensor<T> Tensor<T>::cud(std::string first, ...){
     va_list args;
     va_start(args, first);
 
@@ -131,7 +142,7 @@ Tensor<T>& Tensor<T>::cud(std::string first, ...){
             name = std::string(va_arg(args, char*));
         if (!name.size()){
             va_end(args);
-            return *new Tensor<T>(_t.cud(ret));
+            return Tensor<T>(_t->cud(ret));
         }
         if(cnt % 2)
             ret[name] = va_arg(args, int);
@@ -140,47 +151,52 @@ Tensor<T>& Tensor<T>::cud(std::string first, ...){
 }
 
 template<typename T>
+Tensor<T> Tensor<T>::reshape(std::map<std::string, int> _shape, std::map<std::string, int> _ud){
+    return Tensor<T>(_t->reshape(_shape, _ud));
+}
+
+template<typename T>
 Tensor<T> Tensor<T>::grad(Tensor<T>& obj, std::map<std::string, int> indices, double delta){
-    return Tensor<T>(_t->grad(*obj._t, indices, delta));
+    return Tensor<T>(_t->grad(obj._t, indices, delta));
 }
 
 template<typename T>
 Tensor<T> Tensor<T>::substitute(Tensor<T> &obj, std::map<std::string, int> _indices){
-    return Tensor<T>(_t->substitute(*obj._t, _indices));
+    return Tensor<T>(_t->substitute(obj._t, _indices));
 }
 
 template<typename T>
 template<typename U>
-Tensor<U>& Tensor<T>::merge(){
-    _Tensor<U>& ret_t = _t->merge<U>();
-    Tensor<U>&  ret   = *new Tensor<U>(ret_t);
-    ret.shape         = std::map<std::string, int>(ret_t.shape);
-    ret.ud            = std::map<std::string, int>(ret_t.ud);
+Tensor<U> Tensor<T>::merge(){
+
+    Tensor<U>  ret(_t->clone()->merge<U>()->convertTo<U, ConcreteTensor<U>>());
+//    ret.shape         = std::map<std::string, int>(ret_t->shape);
+//    ret.ud            = std::map<std::string, int>(ret_t->ud);
     return ret;
 }
 
 template<typename T>
 Tensor<T> Tensor<T>::concat(Tensor<T>& obj, std::string thisIdx, std::string objIdx, std::string concaIdx, int udVal){
-    return Tensor<T>(_t->concat(*obj.getT(), thisIdx, objIdx, concaIdx, udVal));
+    return Tensor<T>(_t->concat(obj.getT(), thisIdx, objIdx, concaIdx, udVal));
 }
 
 template<typename T>
-_Tensor<T>* Tensor<T>::getT(){
+std::shared_ptr<_Tensor<T>> Tensor<T>::getT(){
     return _t;
 }
 
 template<typename T>
-std::vector<T*>& Tensor<T>::getV(){
+std::shared_ptr<std::vector<std::shared_ptr<T>>> Tensor<T>::getV(){
     return _t->getV();
 }
 
 template<typename T>
-std::map<std::string, int>& Tensor<T>::getShape(){
+std::map<std::string, int> Tensor<T>::getShape(){
     return _t->shape;
 }
 
 template<typename T>
-std::map<std::string, int>& Tensor<T>::getUd(){
+std::map<std::string, int> Tensor<T>::getUd(){
     return _t->ud;
 }
 
@@ -197,120 +213,115 @@ void Tensor<T>::substituteFunc(void* _f, std::map<std::string, int> indices){
 
 template<typename T>
 template<typename U>
-Tensor<U> Tensor<T>::operator *(U& val) {
-	return Tensor<U>( *_t * val);
+Tensor<U> Tensor<T>::operator * (U& val) {
+	return Tensor<U>(*_t * val);
 }
 
 template<typename T>
-Tensor<T> Tensor<T>::operator+(Tensor<T>& obj)
+Tensor<T> Tensor<T>::operator + (Tensor<T>& obj)
 { 
-	return Tensor<T>( *_t + *obj._t);
+	return Tensor<T>(*_t + obj._t);
 }
 
 
 template<typename T>
-Tensor<T> Tensor<T>::operator-(Tensor<T>& obj)
+Tensor<T> Tensor<T>::operator - (Tensor<T>& obj)
 {
-	return Tensor<T>( *_t - *obj._t);
+	return Tensor<T>(*_t - obj._t);
 }
 
 template<typename T>
-Tensor<T> Tensor<T>::operator*(Tensor<T>& obj)
+Tensor<T> Tensor<T>::operator * (Tensor<T>& obj)
 {
     if(obj.getT()->isFunctionTensor())
-    	return Tensor<T>( (*obj._t) * (*_t));
+	    return Tensor<T>(*obj._t * _t);
     else
-	    return Tensor<T>( *_t * (*obj._t));
+	    return Tensor<T>(*_t * obj._t);
 }
 
 template<typename T>
-Tensor<T> Tensor<T>::operator/(Tensor<T>& obj)
+Tensor<T> Tensor<T>::operator / (Tensor<T>& obj)
 {
-	return Tensor<T>( *_t / (*obj._t));
+	return Tensor<T>(*_t / obj._t);
 }
 
 template<typename T>
-Tensor<T>& Tensor<T>::operator =(T val)
+void Tensor<T>::operator =(T val)
 {
     *_t =  val;
-    //*_t =  val;
-    return *this;
 }
 
 template<typename T>
-Tensor<T>& Tensor<T>::operator=(Tensor<T>& obj)
+void Tensor<T>::operator = (Tensor<T>& obj)
 {
     //if(!--(*refCnt))
     //    delete _t;
-    *_t     = *obj._t;
-    refCnt = obj.refCnt;
-    ++(*refCnt);
-    return obj;
+    _t     = obj._t;
+//    refCnt = obj.refCnt;
 }
 
 
 template<typename T>
-Tensor<T> Tensor<T>::operator+(T val){
+Tensor<T> Tensor<T>::operator + (T val){
 	return Tensor<T>(*_t + val);
 }
 
-
 template<typename T>
-Tensor<T> Tensor<T>::operator-(T val){
+Tensor<T> Tensor<T>::operator - (T val){
 	return Tensor<T>(*_t - val);
 }
 
 template<typename T>
-Tensor<T> Tensor<T>::operator*(T val){
+Tensor<T> Tensor<T>::operator * (T val){
 	return Tensor<T>(*_t * val);
 }
 
 template<typename T>
-Tensor<T> Tensor<T>::operator/(T val){
+Tensor<T> Tensor<T>::operator / (T val){
 	return Tensor<T>(*_t / val);
 }
 
-template<typename T>
-Tensor<T> Tensor<T>::operator^(T val){
-	return Tensor<T>(*_t ^ val);
-}
+//template<typename T>
+//Tensor<T> Tensor<T>::operator ^ (T val){
+//	return Tensor<T>(*_t ^ val);
+//}
 
 template<typename T>
-Tensor<T>& Tensor<T>::operator+=(Tensor<T> &obj)
+Tensor<T>& Tensor<T>::operator += (Tensor<T> &obj)
 {
-    *_t += *obj._t;
+    *_t += obj._t;
 	return *this;
 }
 
 
 template<typename T>
-Tensor<T>& Tensor<T>::operator-=(Tensor<T> &obj)
+Tensor<T>& Tensor<T>::operator -= (Tensor<T> &obj)
 {
-    *_t -= *obj._t;
+    *_t -= obj._t;
 	return *this;
 }
 
 template<typename T>
-Tensor<T>& Tensor<T>::operator*=(Tensor<T> &obj)
+Tensor<T>& Tensor<T>::operator *= (Tensor<T> &obj)
 {
     if(obj.getT()->isFunctionTensor()){
-        *_t = *obj._t * *_t;
+        *_t = (*obj._t * _t);
     } else {
-        *_t *= *obj._t;
+        *_t *= obj._t;
     }
 	return *this;
 }
 
 template<typename T>
-Tensor<T>& Tensor<T>::operator/=(Tensor<T> &obj)
+Tensor<T>& Tensor<T>::operator /= (Tensor<T> &obj)
 {
-    *_t /= *obj._t;
+    *_t /= obj._t;
 	return *this;
 }
 
 
 template<typename T>
-Tensor<T>& Tensor<T>::operator+=(T val)
+Tensor<T>& Tensor<T>::operator += (T val)
 {
     *_t += val;
 	return *this;
@@ -318,31 +329,98 @@ Tensor<T>& Tensor<T>::operator+=(T val)
 
 
 template<typename T>
-Tensor<T>& Tensor<T>::operator-=(T val)
+Tensor<T>& Tensor<T>::operator -= (T val)
 {
     *_t -= val;
 	return *this;
 }
 
 template<typename T>
-Tensor<T>& Tensor<T>::operator*=(T val)
+Tensor<T>& Tensor<T>::operator *= (T val)
 {
     *_t *= val;
 	return *this;
 }
 
 template<typename T>
-Tensor<T>& Tensor<T>::operator/=(T val)
+Tensor<T>& Tensor<T>::operator /= (T val)
 {
     *_t /= val;
 	return *this;
 }
 
+//template<typename T>
+//Tensor<T>& Tensor<T>::operator ^= (T val)
+//{
+//    *_t ^= val;
+//	return *this;
+//}
+
 template<typename T>
-Tensor<T>& Tensor<T>::operator^=(T val)
+Tensor<bool> Tensor<T>::operator == (T val)
 {
-    *_t ^= val;
-	return *this;
+    auto retT = (*_t == val);
+	return Tensor<bool>(retT);
+}
+
+template<typename T>
+Tensor<bool> Tensor<T>::operator > (T val)
+{
+    auto retT = (*_t > val);
+	return Tensor<bool>(retT);
+}
+
+template<typename T>
+Tensor<bool> Tensor<T>::operator < (T val)
+{
+    auto retT = (*_t < val);
+	return Tensor<bool>(retT);
+}
+
+template<typename T>
+Tensor<bool> Tensor<T>::operator >= (T val)
+{
+    auto retT = (*_t >= val);
+	return Tensor<bool>(retT);
+}
+
+template<typename T>
+Tensor<bool> Tensor<T>::operator <= (T val)
+{
+    auto retT = (*_t <= val);
+	return Tensor<bool>(retT);
+}
+
+template<typename T>
+Tensor<bool> Tensor<T>::operator == (Tensor<T>& obj)
+{
+    auto retT = (*_t == obj.getT());
+	return Tensor<bool>(retT);
+}
+
+template<typename T>
+Tensor<bool> Tensor<T>::operator > (Tensor<T>& obj)
+{
+    auto retT = (*_t > obj.getT());
+	return Tensor<bool>(retT);
+}
+
+template<typename T>
+Tensor<bool> Tensor<T>::operator < (Tensor<T>& obj)
+{
+    auto retT = (*_t > obj.getT());
+	return Tensor<bool>(retT);
+}
+
+template<typename T>
+template<typename U>
+Tensor<T> Tensor<T>::suffix(Tensor<U> &obj, std::string sfx)
+{
+    //ConcreteTensor<U> &ret = *new _Tensor<U>();
+ //   auto ret = std::shared_ptr<_Tensor<T>>(new ConcreteTensor<T>());
+    auto ret = _t->suffix(obj.getT(), sfx);
+	return Tensor<T>(ret);
+	//return Tensor<T>(dynamic_cast<ConcreteTensor<T>&>(ret));
 }
 
 template<typename T>
@@ -354,52 +432,52 @@ Tensor<T> Tensor<T>::operator [] (std::map<std::string, int> &_indices)
 template<typename T>
 template<typename U>
 Tensor<T> Tensor<T>::operator []  (Tensor<U> &obj){
-	return Tensor<T>((*_t)[*obj.getT()]);
+	return Tensor<T>((*_t)[obj.getT()]);
 }
 
 template<typename T>
 Tensor<T>& Tensor<T>::operator <<(T val){
-    *_t << val;
+    (*_t << val);
 	return *this;
 }
 
 template<typename T>
 Tensor<T>& Tensor<T>::operator ,(T val){
-    *_t , val;
+    (*_t , val);
 	return *this;
 }
 
 template<typename T>
-T*& Tensor<T>::ref(std::map<std::string, int> indices){
+std::shared_ptr<T>& Tensor<T>::ref(std::map<std::string, int> indices){
     return _t->ref(indices);
 }
 
 
-template<typename T>
-bool Tensor<T>::operator>(Tensor<T> &obj)
-{
-    return *_t > (*obj._t);
-}
+//template<typename T>
+//bool Tensor<T>::operator>(Tensor<T> &obj)
+//{
+//    return *_t > (*obj._t);
+//}
 
-template<typename T>
-bool Tensor<T>::operator<(Tensor<T> &obj)
-{
-    return *_t < (*obj._t);
-}
+//template<typename T>
+//bool Tensor<T>::operator<(Tensor<T> &obj)
+//{
+//    return *_t < (*obj._t);
+//}
 
-template<typename T>
-template<typename U>
-bool Tensor<T>::operator<(U val)
-{
-    return *_t < val;
-}
+//template<typename T>
+//template<typename U>
+//bool Tensor<T>::operator<(U val)
+//{
+//    return *_t < val;
+//}
 
-template<typename T>
-template<typename U>
-bool Tensor<T>::operator>(U val)
-{
-    return *_t > val;
-}
+//template<typename T>
+//template<typename U>
+//bool Tensor<T>::operator>(U val)
+//{
+//    return *_t > val;
+//}
 //template<typename T>
 //Tensor<T>& Tensor<T>::operator []  (Tensor<T> obj){
 //    return Tensor<T>(_t[obj->_t]);

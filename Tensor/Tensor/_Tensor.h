@@ -1,6 +1,6 @@
 //!
 //! @file   _Tensor.h
-//! @brief  The class can versatile calculation 
+//! @brief  This tensor class can versatile calculation 
 //!         for multidimensional array.
 //! @author Yu Sato
 
@@ -31,27 +31,31 @@ public:
 // Constructors ・‥…─*・‥…─*・‥…─*・‥…─*・‥…─*
 	//! @brief Empty constructor.
     _Tensor(): 
-        v(* new std::vector<T*>()),
-        iniCnt(0)
+        iniCnt(0) 
        {N=0;}
 
-	//! @brief Empty constructor.
+	//! @brief Constructor that handle only one value,
+    //!        which is used when tensor of tensor have no value.
     _Tensor(T val): 
-        v(* new std::vector<T*>()),
-        iniCnt(0)
-       {N=0; v.push_back(new T(val));}
+        iniCnt(0) 
+       {N=0; 
+        v->push_back(std::shared_ptr<T>(new T(val)));}
 
-	//! @brief Empty constructor.
+	//! @brief      Copy constructor.
+    //! @param[in] obj  A Tensor<T>.
     _Tensor(const _Tensor<T> &obj): 
-        v(* new std::vector<T*>()),
         iniCnt(0)
        {
-        v = obj.getV();
-        for(int i=0; i<v.size(); i++)
-            v[i] = new T(*v[i]);
+        //auto a = (obj.getV());
 
-        N = v.size();
-        //v = *new std::vector<T>(obj.getV());
+        // Initialize values of _Tensor<T>.
+        auto objV = obj.getV();
+        v = std::shared_ptr<std::vector<std::shared_ptr<T>>>(new std::vector<std::shared_ptr<T>>(objV->size(), 0));
+        for(int i=0; i<v->size(); i++)
+            (*v)[i] = std::shared_ptr<T>(new T(*(*objV)[i]));
+
+        // Deep copy of any member variables.
+        N = v->size();
         shape = obj.shape;
         ud    = obj.ud;
         idx    = obj.idx;
@@ -62,39 +66,39 @@ public:
         }
 
 	//! @brief Constructor with input value, shape and sup. or subscript infomations.
-	//! @params[in] _v     input value(one dimensional array).
-	//! @params[in] _shape input shape value.
-	//! @params[in] _ud    input super(up) or subscript(down) value.
+	//! @param[in] _v     Input value(one dimensional array).
+	//! @param[in] _shape Input shape value.
+	//! @param[in] _ud    Input super(up) or subscript(down) value.
 	_Tensor(
-		std::vector<T*> &_v,
+		std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
    		std::vector<std::string> _idx,
    		std::map<std::string, int> _shape,
    		std::map<std::string, int> _ud = std::map<std::string, int>())
         ;
 
 	//! @brief Constructor with input value, shape and sup. or subscript infomations.
-	//! @params[in] _v     input value(one dimensional array).
-	//! @params[in] _shape input shape value.
-	//! @params[in] _ud    input super(up) or subscript(down) value.
+	//! @param[in] _v     Input value(one dimensional array).
+	//! @param[in] _shape Input shape value.
+	//! @param[in] _ud    Input super(up) or subscript(down) value.
 	_Tensor(
-		std::vector<T*> &_v,
+		std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
    		std::map<std::string, int> _shape,
    		std::map<std::string, int> _ud = std::map<std::string, int>())
         ;
 
 	//! @brief Constructor shape and sup. or subscript infomations.
-	//! @params[in] _shape input shape value.
-	//! @params[in] _ud    input super(up) or subscript(down) value.
+	//! @param[in] _shape Input shape value.
+	//! @param[in] _ud    Input super(up) or subscript(down) value.
 	_Tensor(
    		std::map<std::string, int> _shape,
    		std::map<std::string, int> _ud = std::map<std::string, int>())
         ;
 
 	//! @brief Constructor with input value and indices.
-	//! @params[in] _v      input value.
-	//! @params[in] indices index values(ex. "ijk").
+	//! @param[in] _v      Input value.
+	//! @param[in] indices Index values(ex. "ijk").
 	_Tensor(
-		std::vector<std::vector<T*> > &_v,
+		std::shared_ptr<std::vector<std::vector<std::shared_ptr<T>>>> _v,
    		std::string indices)
         ;
 
@@ -102,213 +106,275 @@ public:
 
     // Manipulate of tensor・‥…─*・‥…─*・‥…─*・‥…─*・‥…─*
 
-    _Tensor<T>& slice(std::map<std::string, int> minIdx, std::map<std::string, int> maxIdx);
+    //! @brief Slice of _Tensor<T>.
+    //! @param[in] minIdx Minimum index number.
+    //! @param[in] maxIdx Maximum index number.
+    std::shared_ptr<_Tensor<T>> slice(std::map<std::string, int> minIdx, 
+                                      std::map<std::string, int> maxIdx);
 
+    //! @brief Convert type of _Tensor<T>, such as 
+    //!        ConcreteTensor<T>, ReferenceTensor<T>, FunctionTensor<T>.
+    //! @param[in] U Change type.
+    //! @param[in] W Change _Tensor<T> type.
     template<typename U, typename W>
-    _Tensor<U>& convertTo();
+    std::shared_ptr<_Tensor<U>> convertTo();
 
-    _Tensor<T>& substitute(_Tensor<T> &obj, std::map<std::string, int> _indices);
+    //! @brief Substritute of _Tensor<T>(obsolute).
+    //! @param[in] obj      _Tensor<T> for substitution.
+    //! @param[in] _indices Substituton indices of _Tensor<T>.
+    std::shared_ptr<_Tensor<T>> substitute(std::shared_ptr<_Tensor<T>> obj, std::map<std::string, int> _indices);
 
-    //! @brief Merge nested tensor.
+    //! @brief   Merge nested tensor.
+    //! @details This member function will be only used for _Tensor<Tensor<T>>.
     template<typename U>
-	_Tensor<U>& merge();
+	std::shared_ptr<_Tensor<U>> merge();
 
-    //! @brief Put  back selected axis end of 'idx'
+    //! @brief      Put back selected axis end of 'idx'
     //! @params[in] indices Putting back indices.
-    _Tensor<T>& putBack(std::string indices);
+    std::shared_ptr<_Tensor<T>> putBack(std::string indices);
 
 
     //! @brief Deep copy of _Tensor<T>.
-    virtual _Tensor<T>& clone();
+    virtual std::shared_ptr<_Tensor<T>> clone();
 
-    //! @brief Gen of new _Tensor<T>.
-    virtual _Tensor<T>& gen(std::vector<T*> &_v, 
+    //! @brief     Generate of new _Tensor<T>.
+    //! @details   This function is used for getting a new subclass _Tensor<T>,
+    //!            such as ConcreteTensor<T>, ReferenceTensor<T>, FunctionTensor<T>.
+    //! @param[in] _v     values.
+    //! @param[in] _shape Shape of _Tensor<T>.
+    //! @param[in] _ud    Up-down assignemt as 1 or 0.
+    virtual std::shared_ptr<_Tensor<T>> gen(
+                    std::shared_ptr<std::vector<std::shared_ptr<T>>> _v, 
                     std::map<std::string, int> _shape, 
                     std::map<std::string, int> _ud=std::map<std::string, int>);
 
-    virtual _Tensor<T>& gen(std::map<std::string, int> _shape, 
+    //! @brief     Generate of new _Tensor<T>.
+    //! @details   This function is used for getting a new subclass _Tensor<T>,
+    //!            such as ConcreteTensor<T>, ReferenceTensor<T>, FunctionTensor<T>.
+    //! @param[in] _shape Shape of _Tensor<T>.
+    //! @param[in] _ud    Up-down assignemt as 1 or 0.
+    virtual std::shared_ptr<_Tensor<T>> gen(std::map<std::string, int> _shape, 
                     std::map<std::string, int> _ud=std::map<std::string, int>);
 
-	virtual _Tensor<T>&	gen(std::vector<T*> &_v,
+    //! @brief     Generate of new _Tensor<T>.
+    //! @details   This function is used for getting a new subclass _Tensor<T>,
+    //!            such as ConcreteTensor<T>, ReferenceTensor<T>, FunctionTensor<T>.
+    //! @param[in] _v     values.
+    //! @param[in] idx    Index of assignement.
+    //! @param[in] _shape Shape of _Tensor<T>.
+    //! @param[in] _ud    Up-down assignemt as 1 or 0.
+	virtual std::shared_ptr<_Tensor<T>>	gen(
+                    std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
    		            std::vector<std::string> _idx,
    		            std::map<std::string, int> _shape,
                     std::map<std::string, int> _ud=std::map<std::string, int>);
 
 
-    //! @brief Concatenate two tensors.
-    //! @details Concatenate two tensors, 'this' and 'obj'.
-    //!          Then, need to select concatenate axis,
-    //!          'thisIdx' and 'objIdx' from 'this' and 'obj'. 
-    //!          Concatenated axis is named as 'concaIdx'.
-    _Tensor<T>& concat(_Tensor<T>& obj, 
+    //! @brief     Concatenate two tensors.
+    //! @details   Concatenate two tensors, 'this' and 'obj'.
+    //!            Then, need to select concatenate axis,
+    //!            'thisIdx' and 'objIdx' from 'this' and 'obj'. 
+    //!            Concatenated axis is named as 'concaIdx'.
+    //! @param[in] thisIdx  This   indEx for concatenation. 
+    //! @param[in] objIdx   Object index for concatenation. 
+    //! @param[in] concaIdx Index after concatenation(same on thisIdx or obj Idx are OK).
+    //! @param[in] udVal    Up-down assigment after concatenation.
+    std::shared_ptr<_Tensor<T>> concat(
+                       std::shared_ptr<_Tensor<T>> obj, 
                        std::string thisIdx, 
                        std::string objIdx, 
                        std::string concaIdx, 
                        int udVal);
 
-    //! @brief      change indices at super or substript to indices at sub or superscript.
-    //! @params[in] map a std::map<std::string, int> contains 
-    //!                 the pairs of eixist label and changing label.
-	_Tensor<T>& cud(std::map<std::string, int> map);
+    //! @brief         Change indices at super or substript to indices at sub or superscript.
+    //! @param[in] map a std::map<std::string, int> contains 
+    //!                the pairs of eixist label and changing label.
+	std::shared_ptr<_Tensor<T>> cud(
+                                    std::map<std::string, int> map);
 
-    //! @brief      change indices label of _Tensor<T>.
-    //! @params[in] map a std::map<std::string, std::string> contains 
-    //!                 the pairs of eixist label and changing label.
-	_Tensor<T>& cidx(std::map<std::string, std::string> map);
+    //! @brief         Change indices label of _Tensor<T>.
+    //! @param[in] map a std::map<std::string, std::string> contains 
+    //!                the pairs of eixist label and changing label.
+	std::shared_ptr<_Tensor<T>> cidx(
+        std::map<std::string, std::string> map);
 
-    //! @brief set object.
-	void setV(std::vector<T*> &obj);
+    //! @brief  Reshape of _Tensor<T>.
+	std::shared_ptr<_Tensor<T>> reshape(
+                        std::map<std::string, int> _shape, 
+                        std::map<std::string, int> _ud );
 
-    //! @brief get std::vector<T> contained data.
-	std::vector<T*>& getV() const;
+    //! @brief Set object.
+	void setV(std::shared_ptr<std::vector<std::shared_ptr<T>>> obj);
+
+    //! @brief Get std::vector<T> contained data.
+	std::shared_ptr<std::vector<std::shared_ptr<T>>> getV() const;
 
     // Get infomation of Tensor・‥…─*・‥…─*・‥…─*・‥…─*・‥…─*
 
-    //! @brief generate indices of elementdata from 
-    //!        the index of when grance of data as one dimensional array. 
+    //! @brief Generate indices of elementdata from 
+    //!        the index of when grance of data as 
+    //!        one dimensional array. 
 	std::map<std::string, int> genIndices(int i);
 
 	//! @brief Get total size of _Tensor.
-	//! @retvals total size of _Tensor.
+	//! @retval total size of _Tensor.
 	int size();
 
-    //! @brief      get reference of element of data.
-    //! @params[in] indices indices of element of data.
-	T*& ref(std::map<std::string, int> indices);
+    //! @brief     Get reference of element of data.
+    //! @param[in] indices indices of element of data.
+	std::shared_ptr<T>& ref(std::map<std::string, int> indices);
 
     //! @brief View infomation of tensor, shape, ud and data.
 	void view(std::ostream& os=std::cout);
 
-    //! @brief  Whether or not has reference Tensor.
-    //! @retval bool if 'this' has reference tensor 
-    //!         then return true, else return false.
-    bool isRefTensor();
 
-    virtual _Tensor<T>& getRefTensor();
+    virtual std::shared_ptr<_Tensor<T>> getRefTensor();
 
     //! @brief      broadcast tensor using this and obj.
     //! @details    Using two tensor, 
     //!             shape informations included this and obj,
     //!             get a broadcasted tensor which contains zeros.
-    //! @params[in] obj    a Tensor<T>.
-    //! @params[in] trimUd select whether trim 'ud' in case of odd ud but same idx.
+    //! @param[in] obj    a Tensor<T>.
+    //! @param[in] trimUd select whether trim 'ud' in case of odd ud but same idx.
     //!                    This flag used for inner product.
-	virtual _Tensor<T>& broadcast(_Tensor<T>& obj,
-								 bool trimUd=false);
+	virtual std::shared_ptr<_Tensor<T>> broadcast(std::shared_ptr<_Tensor<T>> obj,
+                                                  bool trimUd=false);
+
+    //! @brief  Whether or not a _Tensor<T> has reference Tensor.
+    //! @retval bool if 'this' has reference tensor 
+    //!         then return true, else return false.
+    bool isRefTensor();
+
+    //! @brief  Whether or not a _Tensor<T> is FunctionTensor<T>.
+    //! @retval bool if 'this' has reference tensor 
+    //!         then return true, else return false.
+    virtual bool isFunctionTensor();
 
     // Math・‥…─*・‥…─*・‥…─*・‥…─*・‥…─*
 
     //! @brief      Calculate invert matrix for seleting two axes.
     //! @params[in] indices Two indices of indices. Need to enter two characters.
-    _Tensor<T>& inv(std::string indices);
+    std::shared_ptr<_Tensor<T>> inv(std::string indices);
 
-    _Tensor<T>& sum(std::string indices);
+    std::shared_ptr<_Tensor<T>> sum(std::string indices);
 
-    _Tensor<T>& mean(std::string indices);
+    std::shared_ptr<_Tensor<T>> mean(std::string indices);
 
-    _Tensor<T>& sign();
+    std::shared_ptr<_Tensor<T>> max(std::string indices);
 
-    _Tensor<T>& norm(std::string indices);
+    std::shared_ptr<_Tensor<T>> min(std::string indices);
+
+    std::shared_ptr<_Tensor<T>> sign();
+
+    std::shared_ptr<_Tensor<T>> norm(std::string indices);
     
 
-    //! @brief Calculate gradient of 'obj'
-    virtual _Tensor<T>& grad ( _Tensor<T>& obj, std::map<std::string, int> indices, double delta);
+    //! @brief Calculate gradient of 'obj'.
+    virtual std::shared_ptr<_Tensor<T>> grad (
+                                              std::shared_ptr<_Tensor<T>> obj, 
+                                              std::map<std::string, int> indices, 
+                                              double delta);
 
     //! @brief Substitute a function to a element of tensor.
     virtual void substituteFunc(void* _f, std::map<std::string, int> indices);
 
-    virtual bool isFunctionTensor();
-
 //・Operators ・‥…─*・‥…─*・‥…─*・‥…─*・‥…─*
     //! @brief same Operators.
     template<typename U>
-    _Tensor<U>& operator *(U val);
+    std::shared_ptr<_Tensor<U>> operator *(U val);
 
     // On _Tensor<T>.
-	virtual _Tensor<T>& operator + (_Tensor<T> &obj);
-	virtual _Tensor<T>& operator - (_Tensor<T> &obj);
-	virtual _Tensor<T>& operator * (_Tensor<T> &obj);
-	virtual _Tensor<T>& operator / (_Tensor<T> &obj);
-	virtual _Tensor<T>& operator ^ (_Tensor<T> &obj);
-
+	virtual std::shared_ptr<_Tensor<T>> operator + (std::shared_ptr<_Tensor<T>> obj);
+	virtual std::shared_ptr<_Tensor<T>> operator - (std::shared_ptr<_Tensor<T>> obj);
+	virtual std::shared_ptr<_Tensor<T>> operator * (std::shared_ptr<_Tensor<T>> obj);
+	virtual std::shared_ptr<_Tensor<T>> operator / (std::shared_ptr<_Tensor<T>> obj);
+//	virtual std::shared_ptr<_Tensor<T>> operator ^ (std::shared_ptr<_Tensor<T>> obj);
+    
     // On T.
-	virtual _Tensor<T>& operator + (T val);
-	virtual _Tensor<T>& operator - (T val);
-	virtual _Tensor<T>& operator * (T val);
-	virtual _Tensor<T>& operator / (T val);
-	virtual _Tensor<T>& operator ^ (T val);
+	virtual std::shared_ptr<_Tensor<T>> operator + (T val);
+	virtual std::shared_ptr<_Tensor<T>> operator - (T val);
+	virtual std::shared_ptr<_Tensor<T>> operator * (T val);
+	virtual std::shared_ptr<_Tensor<T>> operator / (T val);
+//	virtual std::shared_ptr<_Tensor<T>> operator ^ (T val);
 
     // For initialize.
-    virtual _Tensor<T>& operator << (T val);
-    virtual _Tensor<T>& operator ,  (T val);
+    virtual void operator << (T val);
+    virtual void operator ,  (T val);
 
-    //
-    virtual _Tensor<T>& operator +=  (T val);
-    virtual _Tensor<T>& operator -=  (T val);
-    virtual _Tensor<T>& operator *=  (T val);
-    virtual _Tensor<T>& operator /=  (T val);
-    virtual _Tensor<T>& operator ^=  (T val);
-    virtual _Tensor<T>& operator +=  (_Tensor<T> &obj);
-    virtual _Tensor<T>& operator -=  (_Tensor<T> &obj);
-    virtual _Tensor<T>& operator *=  (_Tensor<T> &obj);
-    virtual _Tensor<T>& operator /=  (_Tensor<T> &obj);
-    virtual _Tensor<T>& operator ^=  (_Tensor<T> &obj);
+    // 
+    virtual void operator +=  (T val);
+    virtual void operator -=  (T val);
+    virtual void operator *=  (T val);
+    virtual void operator /=  (T val);
+    virtual void operator ^=  (T val);
+    virtual void operator +=  (std::shared_ptr<_Tensor<T>> obj);
+    virtual void operator -=  (std::shared_ptr<_Tensor<T>> obj);
+    virtual void operator *=  (std::shared_ptr<_Tensor<T>> obj);
+    virtual void operator /=  (std::shared_ptr<_Tensor<T>> obj);
+//    virtual void operator ^=  (std::shared_ptr<_Tensor<T>> obj);
 
     template<typename U>
-    bool operator <  (U val);
+    bool operator <  (std::shared_ptr<U> val);
     template<typename U>
-    bool operator >  (U val);
+    bool operator >  (std::shared_ptr<U> val);
 
-    virtual bool operator <  (_Tensor<T> &obj);
-    virtual bool operator >  (_Tensor<T> &obj);
+    std::shared_ptr<_Tensor<bool>> operator == (T val);
+    std::shared_ptr<_Tensor<bool>> operator >  (T val);
+    std::shared_ptr<_Tensor<bool>> operator <  (T val);
+    std::shared_ptr<_Tensor<bool>> operator >= (T val);
+    std::shared_ptr<_Tensor<bool>> operator <= (T val);
+    std::shared_ptr<_Tensor<bool>> operator == (std::shared_ptr<_Tensor<T>> obj);
+    std::shared_ptr<_Tensor<bool>> operator >  (std::shared_ptr<_Tensor<T>> obj);
+    std::shared_ptr<_Tensor<bool>> operator <  (std::shared_ptr<_Tensor<T>> obj);
+    std::shared_ptr<_Tensor<bool>> operator >= (std::shared_ptr<_Tensor<T>> obj);
+    std::shared_ptr<_Tensor<bool>> operator <= (std::shared_ptr<_Tensor<T>> obj);
 
     //! @brief      Substitution a value.
     //! @params[in] val Input value.
-	virtual _Tensor<T>& operator = (T val);
+	virtual void operator = (T val);
 
 
     //! @brief      Substitution a value.
-    //! @params[in] val Input value.
-	virtual _Tensor<T>& operator = (_Tensor<T> &obj){
+    //! @param[in] val Input value.
+	virtual void operator = (std::shared_ptr<_Tensor<T>> obj){
 
-	    _Tensor<T>& noTrimed = broadcast(obj);
+	    auto noTrimed = broadcast(obj);
 
-        //if(v.size())
-		//    for (int i = 0; i < noTrimed.size(); i++)
-		//		*ref(noTrimed.genIndices(i)) = *obj.ref(noTrimed.genIndices(i));
-        //else
-        //    v = obj.getV();
-        if(N == obj.size())
+        if(N == obj->size())
             for(int i=0; i<N; i++)
-                *v[i] = *obj.v[i];
+                *(*v)[i] = *(*obj->v)[i];
         else
-            v = obj.v;
+            v = obj->v;
 
-        idx      = obj.idx;
-        shape    = obj.shape;
-        ud       = obj.ud;
-        step     = obj.step;
-        viewIdx  = obj.viewIdx;
-        viewStep = obj.viewStep;
-        N = obj.N;
-        ndim = obj.ndim;
-        trimedSize = obj.trimedSize;
-        return *this;
+        idx      = obj->idx;
+        shape    = obj->shape;
+        ud       = obj->ud;
+        step     = obj->step;
+        viewIdx  = obj->viewIdx;
+        viewStep = obj->viewStep;
+        N = obj->N;
+        ndim = obj->ndim;
+        trimedSize = obj->trimedSize;
+        //return std::shared_ptr<_Tensor<T>>(this);
         //return obj;
         //return *new _Tensor<T>(obj);
     }
 
+    template<typename U>
+	std::shared_ptr<_Tensor<T>> suffix (std::shared_ptr<_Tensor<U>> obj, std::string sfx);
+
+
 
     //! @brief     Get trimed Tensor for _indices.
     //! @param[in] _indices trimming indices.
     //! @retval    trimed tensor.
-    virtual _Tensor<T>& operator [] (std::map<std::string, int> &_indices);
+    virtual std::shared_ptr<_Tensor<T>> operator [] (std::map<std::string, int> &_indices);
 
     //! @brief     Get trimed Tensor for _indices.
     //! @param[in] _indices trimming indices.
     //! @retval    trimed tensor.
     template<typename U>
-    _Tensor<T>& operator [] (_Tensor<U> &obj);
+    std::shared_ptr<_Tensor<T>> operator [] (std::shared_ptr<_Tensor<U>> obj);
 
 //・Public member variables ・‥…─*・‥…─*・‥…─*・‥…─*・‥…─*
 	
@@ -323,7 +389,7 @@ public:
 
     int trimedSize;                       //!< trimed size used by _Tensor::inv().
 
-    T* iniVal;                             //!< initial value for reference tensor.
+    std::shared_ptr<T> iniVal;                             //!< initial value for reference tensor.
 
     int iniCnt;
 
@@ -358,7 +424,7 @@ protected:
 
 //・protected member variables ・‥…─*・‥…─*・‥…─*・‥…─*・‥…─*
 
-	std::vector<T*>& v;                      //!< a vector contains data.
+	std::shared_ptr<std::vector<std::shared_ptr<T>>> v;                      //!< a vector contains data.
 
     std::shared_ptr<_Tensor<T>>  refTensor;
 
@@ -367,4 +433,3 @@ protected:
 };
 
 #include "_Tensor_detail.h"
-#include "_Tensor_pointer.h"

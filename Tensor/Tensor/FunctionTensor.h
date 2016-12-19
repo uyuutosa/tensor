@@ -5,7 +5,7 @@
 #include "ConcreteTensor.h"
 
 
-//#pragma optimize("", off)
+////#pragma optimize("", off)
 
 template<typename T>
 class FunctionTensor:
@@ -17,29 +17,29 @@ public:
 		std::map<std::string, int> _ud=std::map<std::string, int>());
 
 	//! @brief Constructor with input value, shape and sup. or subscript infomations.
-	//! @params[in] _v     input value(one dimensional array).
-	//! @params[in] _shape input shape value.
-	//! @params[in] _ud    input super(up) or subscript(down) value.
+	//! @param[in] _v     input value(one dimensional array).
+	//! @param[in] _shape input shape value.
+	//! @param[in] _ud    input super(up) or subscript(down) value.
 	FunctionTensor(
-		std::vector<T*> &_v,
+		std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
    		std::vector<std::string> _idx,
    		std::map<std::string, int> _shape,
    		std::map<std::string, int> _ud = std::map<std::string, int>())
         ;
 
 	//! @brief Constructor with input value, shape and sup. or subscript infomations.
-	//! @params[in] _v     input value(one dimensional array).
-	//! @params[in] _shape input shape value.
-	//! @params[in] _ud    input super(up) or subscript(down) value.
+	//! @param[in] _v     input value(one dimensional array).
+	//! @param[in] _shape input shape value.
+	//! @param[in] _ud    input super(up) or subscript(down) value.
 	FunctionTensor(
-		std::vector<T*> &_v,
+		std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
    		std::map<std::string, int> _shape,
    		std::map<std::string, int> _ud = std::map<std::string, int>())
         ;
 
 	//! @brief Constructor shape and sup. or subscript infomations.
-	//! @params[in] _shape input shape value.
-	//! @params[in] _ud    input super(up) or subscript(down) value.
+	//! @param[in] _shape input shape value.
+	//! @param[in] _ud    input super(up) or subscript(down) value.
 	FunctionTensor(
    		std::map<std::string, int> _shape,
    		std::map<std::string, int> _ud = std::map<std::string, int>())
@@ -47,24 +47,27 @@ public:
 
 
     template<typename U>
-    _Tensor<U>& operator *(U val);
-    _Tensor<T>& operator *(T val);
-	_Tensor<T>& operator *(_Tensor<T> &obj);
+    std::shared_ptr<_Tensor<U>> operator *(U val);
+    std::shared_ptr<_Tensor<T>> operator *(T val);
+	std::shared_ptr<_Tensor<T>> operator *(std::shared_ptr<_Tensor<T>> obj);
 
-//    _Tensor<T>& grad(_Tensor<T>& obj, std::map<std::string, int> indices, double delta);
+    std::shared_ptr<_Tensor<T>> grad(std::shared_ptr<_Tensor<T>> obj, std::map<std::string, int> indices, double delta);
 
     //! @brief Deep copy of _Tensor<T>.
-    _Tensor<T>& clone();
+    std::shared_ptr<_Tensor<T>> clone();
 
     //! @brief Gen of new _Tensor<T>.
-    virtual _Tensor<T>& gen(std::vector<T*> &_v, 
+    virtual std::shared_ptr<_Tensor<T>> gen(
+                    std::shared_ptr<std::vector<std::shared_ptr<T>>> _v, 
                     std::map<std::string, int> _shape, 
                     std::map<std::string, int> _ud=std::map<std::string, int>);
 
-    virtual _Tensor<T>& gen(std::map<std::string, int> _shape, 
+    virtual std::shared_ptr<_Tensor<T>> gen(
+                    std::map<std::string, int> _shape, 
                     std::map<std::string, int> _ud=std::map<std::string, int>);
 
-	virtual _Tensor<T>&	gen(std::vector<T*> &_v,
+	virtual std::shared_ptr<_Tensor<T>>	gen(
+                    std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
    		            std::vector<std::string> _idx,
    		            std::map<std::string, int> _shape,
                     std::map<std::string, int> _ud=std::map<std::string, int>);
@@ -76,9 +79,9 @@ public:
 
 private:
 
-    _Tensor<FunctionElement<T>> funcTensor;
+    std::shared_ptr<_Tensor<FunctionElement<T>>> funcTensor;
 
-    FunctionElement<T>* genFunctionElementOnAnyRank(
+    std::shared_ptr<FunctionElement<T>> genFunctionElementOnAnyRank(
         std::map<std::string, int> indices, 
         void* _f);
 

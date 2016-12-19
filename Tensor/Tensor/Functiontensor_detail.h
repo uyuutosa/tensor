@@ -1,6 +1,6 @@
 #pragma once
 #include "FunctionTensor.h"
-#pragma optimize ("", off)
+////#pragma optimize ("", off)
 
 template<typename T>
 FunctionTensor<T>::FunctionTensor(
@@ -13,7 +13,7 @@ FunctionTensor<T>::FunctionTensor(
 
 template<typename T>
 FunctionTensor<T>::FunctionTensor(
-	std::vector<T*> &_v,
+	std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
 	std::vector<std::string> _idx,
 	std::map<std::string, int> _shape,
 	std::map<std::string, int> _ud) :
@@ -23,7 +23,7 @@ FunctionTensor<T>::FunctionTensor(
 
 template<typename T>
 FunctionTensor<T>::FunctionTensor(
-	std::vector<T*> &_v,
+	std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
 	std::map<std::string, int> _shape,
 	std::map<std::string, int> _ud) :
     _Tensor<T>(_v, _shape, _ud)
@@ -40,8 +40,8 @@ FunctionTensor<T>::FunctionTensor(
 
 template<typename T>
 void FunctionTensor<T>::substituteFunc(void* _f, std::map<std::string, int> indices){
-    auto flst = funcTensor.getV();
-    funcTensor.ref(indices) = genFunctionElementOnAnyRank(indices, _f);
+    auto flst = funcTensor->getV();
+    funcTensor->ref(indices) = genFunctionElementOnAnyRank(indices, _f);
 }
 
 template<typename T>
@@ -50,42 +50,42 @@ bool FunctionTensor<T>::isFunctionTensor(){
 }
 
 template<typename T>
-FunctionElement<T>* FunctionTensor<T>::genFunctionElementOnAnyRank(
+std::shared_ptr<FunctionElement<T>> FunctionTensor<T>::genFunctionElementOnAnyRank(
     std::map<std::string, int> indices, 
     void* _f){
     
-    auto ret = new FunctionElement<T>();
+    auto ret = std::shared_ptr<FunctionElement<T>>(new FunctionElement<T>());
     switch (indices.size())
     {
     case 1:
-        ret = new FunctionElementRank1<T>(indices, (T& (*)(int, T&))_f);
+        ret = std::shared_ptr<FunctionElement<T>>(new FunctionElementRank1<T>(indices, (T (*)(int, T))_f));
         break;
     case 2:
-        ret = new FunctionElementRank2<T>(indices, (T& (*)(int, int, T&))_f);
+        ret = std::shared_ptr<FunctionElement<T>>(new FunctionElementRank2<T>(indices, (T (*)(int, int, T))_f));
         break;
     case 3:
-        ret = new FunctionElementRank3<T>(indices, (T& (*)(int, int, int, T&))_f);
+        ret = std::shared_ptr<FunctionElement<T>>(new FunctionElementRank3<T>(indices, (T (*)(int, int, int, T))_f));
         break;
     case 4:
-        ret = new FunctionElementRank4<T>(indices, (T& (*)(int, int, int, int, T&))_f);
+        ret = std::shared_ptr<FunctionElement<T>>(new FunctionElementRank4<T>(indices, (T (*)(int, int, int, int, T))_f));
         break;
     case 5:
-        ret = new FunctionElementRank5<T>(indices, (T& (*)(int, int, int, int, int, T&))_f);
+        ret = std::shared_ptr<FunctionElement<T>>(new FunctionElementRank5<T>(indices, (T (*)(int, int, int, int, int, T))_f));
         break;
     case 6:
-        ret = new FunctionElementRank6<T>(indices, (T& (*)(int, int, int, int, int, int, T&))_f);
+        ret = std::shared_ptr<FunctionElement<T>>(new FunctionElementRank6<T>(indices, (T (*)(int, int, int, int, int, int, T))_f));
         break;
     case 7:
-        ret = new FunctionElementRank7<T>(indices, (T& (*)(int, int, int, int, int, int, int, T&))_f);
+        ret = std::shared_ptr<FunctionElement<T>>(new FunctionElementRank7<T>(indices, (T (*)(int, int, int, int, int, int, int, T))_f));
         break;
     case 8:
-        ret = new FunctionElementRank8<T>(indices, (T& (*)(int, int, int, int, int, int, int, int, T&))_f);
+        ret = std::shared_ptr<FunctionElement<T>>(new FunctionElementRank8<T>(indices, (T (*)(int, int, int, int, int, int, int, int, T))_f));
         break;
     case 9:
-        ret = new FunctionElementRank9<T>(indices, (T& (*)(int, int, int, int, int, int, int, int, int, T&))_f);
+        ret = std::shared_ptr<FunctionElement<T>>(new FunctionElementRank9<T>(indices, (T (*)(int, int, int, int, int, int, int, int, int, T))_f));
         break;
     case 10:
-        ret = new FunctionElementRank10<T>(indices, (T& (*)(int, int, int, int, int, int, int, int, int, int, T&))_f);
+        ret = std::shared_ptr<FunctionElement<T>>(new FunctionElementRank10<T>(indices, (T (*)(int, int, int, int, int, int, int, int, int, int, T))_f));
         break;
     }
     return ret;
@@ -100,83 +100,79 @@ void FunctionTensor<T>::genFunctionTensor(
     for(auto pair: _shape)
         total *= pair.second;
 
-    std::vector<FunctionElement<T>* > &flst =
-        * new std::vector<FunctionElement<T>* > (total);
-    funcTensor = * new _Tensor<FunctionElement<T>>(flst, _shape);
+    auto flst =
+        std::shared_ptr<std::vector<std::shared_ptr<FunctionElement<T>>>>(new std::vector<std::shared_ptr<FunctionElement<T>>>(total));
 
-    for(int i=0; i<flst.size(); i++)        
-        flst[i] = genFunctionElementOnAnyRank(funcTensor.genIndices(i), _f);
+    funcTensor = std::shared_ptr<_Tensor<FunctionElement<T>>>(new _Tensor<FunctionElement<T>>(flst, _shape));
 
-    funcTensor.setV(flst);
+    for(int i=0; i<flst->size(); i++)        
+        (*flst)[i] = genFunctionElementOnAnyRank(funcTensor->genIndices(i), _f);
+
+    funcTensor->setV(flst);
 }
 
 template<typename T>
-_Tensor<T>& FunctionTensor<T>::operator *(T val){
-    std::vector<T*> retV(size());
-    auto funcV = funcTensor.getV();
+std::shared_ptr<_Tensor<T>> FunctionTensor<T>::operator *(T val){
+    auto retV = std::shared_ptr<std::vector<std::shared_ptr<T>>>(new std::vector<std::shared_ptr<T>>(size()));
+    auto funcV = funcTensor->getV();
 
 	for (int i = 0; i < size(); i++)
-		(*retV[i]) = *(funcV[i]) * val;
+		*(*retV)[i] = *(*funcV)[i] * val;
 
-	return _Tensor<T>(*new ConcreteTensor<T>(retV, shape));
+	return std::shared_ptr<_Tensor<T>>(new ConcreteTensor<T>(retV, shape, ud));
 }
 
 template<typename T>
 template<typename U>
-_Tensor<U>& FunctionTensor<T>::operator*(U val)
+std::shared_ptr<_Tensor<U>> FunctionTensor<T>::operator*(U val)
 {
-    std::vector<U*> retV(size());
-    std::vector<FunctionElement<T>*>& funcV = funcTensor.getV();
+    auto retV  = std::shared_ptr<std::vector<U*>>(new  std::vector<U*>(size()));
+    auto funcV = funcTensor->getV();
 
 	for (int i=0; i<size(); i++)
-		(*retV[i]) = *funcV[i] * val;
+		*(*retV)[i] = *(*funcV)[i] * val;
 
-	return *new ConcreteTensor<U>(retV, shape, ud);
+	return std::shared_ptr<_Tensor<T>>(new ConcreteTensor<T>(retV, shape, ud));
 }
 
 template<typename T>
-_Tensor<T>& FunctionTensor<T>::operator *(_Tensor<T>& obj) {
+std::shared_ptr<_Tensor<T>> FunctionTensor<T>::operator *(std::shared_ptr<_Tensor<T>> obj) {
 
-	_Tensor<T>& ret = *new _Tensor<T>();
-	_Tensor<T>& noTrimed = broadcast(obj);
+	auto ret = std::shared_ptr<_Tensor<T>>();
+	auto noTrimed = broadcast(obj);
     this;
-	if (obj.isRefTensor()) {
-		ret = *new ReferenceTensor<T>(*obj.iniVal, broadcast(obj,true).shape);
-		std::vector<T*>& retV = ret.getV();
-		for (int i = 0; i < noTrimed.size(); i++)
-			ret.ref(noTrimed.genIndices(i)) = new T(*funcTensor.ref(noTrimed.genIndices(i)) * (*ret.getRefTensor().ref(noTrimed.genIndices(i))));
+	if (obj->isRefTensor()) {
+		ret = std::shared_ptr<_Tensor<T>>(new ReferenceTensor<T>(*obj->iniVal, broadcast(obj,true)->shape));
+		auto retV = ret->getV();
+		for (int i = 0; i < noTrimed->size(); i++)
+			*ret->ref(noTrimed->genIndices(i)) = *funcTensor->ref(noTrimed->genIndices(i)) * (*ret->getRefTensor()->ref(noTrimed->genIndices(i)));
 	} else {
 		ret = broadcast(obj, true);
-		std::vector<T*>& retV = ret.getV();
-		for (int i = 0; i < noTrimed.size(); i++){
-			ret.ref(noTrimed.genIndices(i))  = new T(*funcTensor.ref(noTrimed.genIndices(i)) * *obj.ref(noTrimed.genIndices(i)));
+		auto retV = ret->getV();
+		for (int i = 0; i < noTrimed->size(); i++){
+			auto kkk  = *funcTensor->ref(noTrimed->genIndices(i)) * *obj->ref(noTrimed->genIndices(i));
+			*ret->ref(noTrimed->genIndices(i))  = *funcTensor->ref(noTrimed->genIndices(i)) * *obj->ref(noTrimed->genIndices(i));
         }
 	}
-	return *new ConcreteTensor<T>(ret.getV(), ret.shape, ret.ud);
+	return std::shared_ptr<_Tensor<T>>(new ConcreteTensor<T>(ret->getV(), ret->shape, ret->ud));
 }
 
-//template<typename T>
-//_Tensor<T>& FunctionTensor<T>::grad(_Tensor<T>& obj, std::map<std::string, int> indices, double delta){
-//    _Tensor<T>& obj2 = _Tensor<T>(obj.shape, obj.ud);
+template<typename T>
+std::shared_ptr<_Tensor<T>> FunctionTensor<T>::grad(std::shared_ptr<_Tensor<T>> obj, std::map<std::string, int> indices, double delta){
+    auto obj2 = gen(obj->shape, obj->ud);
 
-//    for (int i=0; i < N; i++){
-//        obj2.getV()[i] = obj.getV()[i].clone();
-//        obj2.getV()[i] = obj2.getV()[i].substitute(obj2.getV()[i][indices] + delta, indices);
-//       // obj.getV()[i].view();
-//       // obj2.getV()[i].view();
-//    }
-//    
-//    
+    for (int i=0; i < N; i++){
+        *(*obj2->getV())[i] = (*(obj->getV()))[i]->clone();
+        *(*obj2->getV())[i] = (*(obj2->getV()))[i]->substitute((*(*(obj2->getV()))[i])[indices] + delta, indices);
+    }
 
-//    _Tensor<T>& ret1 = (*this * obj2);
-//    _Tensor<T>& ret2 = (*this * obj); 
-//    //ret1.view();
-//    //ret2.view();
+    auto ret1 = (*this * obj2);
+    auto ret2 = (*this * obj); 
 
-//    for (int i=0; i < N; i++)
-//        ret1.getV()[i] = (ret1.getV()[i] - ret2.getV()[i]) / delta;
-//    return ret1;
-//}
+    for (int i=0; i < N; i++)
+        *(*ret1->getV())[i] = (*(*ret1->getV())[i] - *(*ret2->getV())[i]) / delta;
+    return ret1;
+}
 
 //template<typename T>
 //std::shared_ptr<Tensor<T> > FunctionTensor<T>::operator+(std::shared_ptr<Tensor<T> > obj)
@@ -185,30 +181,30 @@ _Tensor<T>& FunctionTensor<T>::operator *(_Tensor<T>& obj) {
 //}
 
 template<typename T>
-_Tensor<T>& FunctionTensor<T>::clone(){
-	return *new auto(*this);
+std::shared_ptr<_Tensor<T>> FunctionTensor<T>::clone(){
+	return std::shared_ptr<_Tensor<T>>(new auto(*this));
 }
 
 template<typename T>
-_Tensor<T>&	FunctionTensor<T>::gen(
-                    std::vector<T*> &_v,
+std::shared_ptr<_Tensor<T>>	FunctionTensor<T>::gen(
+                    std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
    		            std::vector<std::string> _idx,
    		            std::map<std::string, int> _shape,
                     std::map<std::string, int> _ud){
-	return *new FunctionTensor<T>(_v, _idx, _shape, _ud);
+	return std::shared_ptr<_Tensor<T>>(new FunctionTensor<T>(_v, _idx, _shape, _ud));
 }
 
 template<typename T>
-_Tensor<T>& FunctionTensor<T>::gen(
-                std::vector<T*> &_v, 
+std::shared_ptr<_Tensor<T>> FunctionTensor<T>::gen(
+                std::shared_ptr<std::vector<std::shared_ptr<T>>> _v, 
                 std::map<std::string, int> _shape, 
                 std::map<std::string, int> _ud){
-	return *new FunctionTensor<T>(_v, _shape, _ud);
+	return std::shared_ptr<_Tensor<T>>(new FunctionTensor<T>(_v, _shape, _ud));
 }
 
 template<typename T>
-_Tensor<T>& FunctionTensor<T>::gen(
+std::shared_ptr<_Tensor<T>> FunctionTensor<T>::gen(
                     std::map<std::string, int> _shape, 
                     std::map<std::string, int> _ud){
-	return *new FunctionTensor<T>(_shape, _ud);
+	return std::shared_ptr<_Tensor<T>>(new FunctionTensor<T>(_shape, _ud));
 }

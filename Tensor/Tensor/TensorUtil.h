@@ -46,6 +46,11 @@ namespace tu {
 	template<typename T>
 	Tensor<T> cos_t(Tensor<T> &obj);
 
+	//! @brief Calculate exponential of 'obj'.
+	//! @param[in] shape shape of Tensor.
+	template<typename T>
+	Tensor<int> argWhere(Tensor<T> &obj);
+
     template<typename T>
     Tensor<T> Mat2Tensor();
 

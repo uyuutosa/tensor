@@ -21,7 +21,7 @@ public:
 	//! @params[in] _shape input shape value.
 	//! @params[in] _ud    input super(up) or subscript(down) value.
 	ReferenceTensor(
-		std::vector<T*> &_v,
+		std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
    		std::vector<std::string> _idx,
    		std::map<std::string, int> _shape,
    		std::map<std::string, int> _ud = std::map<std::string, int>())
@@ -32,7 +32,7 @@ public:
 	//! @params[in] _shape input shape value.
 	//! @params[in] _ud    input super(up) or subscript(down) value.
 	ReferenceTensor(
-		std::vector<T*> &_v,
+		std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
    		std::map<std::string, int> _shape,
    		std::map<std::string, int> _ud = std::map<std::string, int>())
         ;
@@ -48,14 +48,14 @@ public:
 
     void genReferenceTensor();
 
-    _Tensor<T>& operator +(T val);
-    _Tensor<T>& operator -(T val);
-    _Tensor<T>& operator *(T val);
-    _Tensor<T>& operator /(T val);
-	_Tensor<T>& operator + (_Tensor<T>& obj);
-	_Tensor<T>& operator - (_Tensor<T>& obj);
-	_Tensor<T>& operator * (_Tensor<T>& obj);
-	_Tensor<T>& operator / (_Tensor<T>& obj);
+    std::shared_ptr<_Tensor<T>> operator + (T val);
+    std::shared_ptr<_Tensor<T>> operator - (T val);
+    std::shared_ptr<_Tensor<T>> operator * (T val);
+    std::shared_ptr<_Tensor<T>> operator / (T val);
+	std::shared_ptr<_Tensor<T>> operator + (std::shared_ptr<_Tensor<T>> obj);
+	std::shared_ptr<_Tensor<T>> operator - (std::shared_ptr<_Tensor<T>> obj);
+	std::shared_ptr<_Tensor<T>> operator * (std::shared_ptr<_Tensor<T>> obj);
+	std::shared_ptr<_Tensor<T>> operator / (std::shared_ptr<_Tensor<T>> obj);
 
     //_Tensor<T>& operator +=  (_Tensor<T>& obj);
     //_Tensor<T>& operator +=  (T val);
@@ -63,27 +63,30 @@ public:
     //_Tensor<T>& operator *=  (T val);
     //_Tensor<T>& operator /=  (T val);
     //_Tensor<T>& operator ^=  (T val);
-    _Tensor<T>& operator +=  (_Tensor<T> &obj);
-    _Tensor<T>& operator -=  (_Tensor<T> &obj);
-    _Tensor<T>& operator *=  (_Tensor<T> &obj);
-    _Tensor<T>& operator /=  (_Tensor<T> &obj);
+    void operator +=  (std::shared_ptr<_Tensor<T>> obj);
+    void operator -=  (std::shared_ptr<_Tensor<T>> obj);
+    void operator *=  (std::shared_ptr<_Tensor<T>> obj);
+    void operator /=  (std::shared_ptr<_Tensor<T>> obj);
 //    _Tensor<T>& operator ^=  (_Tensor<T> &obj);
 
     //virtual _Tensor<T*>& getRefTensor();
     bool isRefTensor();
 
     //! @brief Deep copy of _Tensor<T>.
-    _Tensor<T>& clone();
+    std::shared_ptr<_Tensor<T>> clone();
 
     //! @brief Gen of new _Tensor<T>.
-    virtual _Tensor<T>& gen(std::vector<T*> &_v, 
+    virtual std::shared_ptr<_Tensor<T>> gen(
+                    std::shared_ptr<std::vector<std::shared_ptr<T>>> _v, 
                     std::map<std::string, int> _shape, 
                     std::map<std::string, int> _ud=std::map<std::string, int>);
 
-    virtual _Tensor<T>& gen(std::map<std::string, int> _shape, 
+    virtual std::shared_ptr<_Tensor<T>> gen(
+                    std::map<std::string, int> _shape, 
                     std::map<std::string, int> _ud=std::map<std::string, int>);
 
-	virtual _Tensor<T>&	gen(std::vector<T*> &_v,
+	virtual std::shared_ptr<_Tensor<T>>	gen(
+                    std::shared_ptr<std::vector<std::shared_ptr<T>>> _v,
    		            std::vector<std::string> _idx,
    		            std::map<std::string, int> _shape,
                     std::map<std::string, int> _ud=std::map<std::string, int>);
