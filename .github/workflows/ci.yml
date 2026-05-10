@@ -90,16 +90,18 @@ jobs:
 
       - name: Bootstrap vcpkg
         shell: bash
+        # NOTE: do NOT shallow-clone. vcpkg's manifest mode needs the full
+        # git history to look up port-version trees referenced by the
+        # builtin-baseline; a --depth=1 clone produces "failed to unpack
+        # tree object" errors during dependency resolution.
         run: |
+          git clone https://github.com/microsoft/vcpkg "$RUNNER_TEMP/vcpkg"
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            git clone --depth=1 https://github.com/microsoft/vcpkg "$RUNNER_TEMP/vcpkg"
             "$RUNNER_TEMP/vcpkg/bootstrap-vcpkg.bat" -disableMetrics
-            echo "VCPKG_ROOT=$RUNNER_TEMP/vcpkg" >> "$GITHUB_ENV"
           else
-            git clone --depth=1 https://github.com/microsoft/vcpkg "$RUNNER_TEMP/vcpkg"
             "$RUNNER_TEMP/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
-            echo "VCPKG_ROOT=$RUNNER_TEMP/vcpkg" >> "$GITHUB_ENV"
           fi
+          echo "VCPKG_ROOT=$RUNNER_TEMP/vcpkg" >> "$GITHUB_ENV"
           mkdir -p "${{ env.VCPKG_DEFAULT_BINARY_CACHE }}"
 
       - name: Cache vcpkg binary cache
