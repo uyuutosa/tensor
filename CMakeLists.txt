@@ -8,9 +8,8 @@ project(tensor
 )
 
 # ─── Project options ──────────────────────────────────────────────────────────
-option(TENSOR_BUILD_TESTS    "Build the test suite"                ON)
-option(TENSOR_WARNINGS_AS_ERRORS "Treat warnings as errors"        OFF)
-option(TENSOR_USE_STD_MDSPAN "Use std::mdspan instead of polyfill" OFF)
+option(TENSOR_BUILD_TESTS        "Build the test suite"        ON)
+option(TENSOR_WARNINGS_AS_ERRORS "Treat warnings as errors"    OFF)
 
 # ─── Header-only interface library ────────────────────────────────────────────
 add_library(tensor INTERFACE)
@@ -23,17 +22,15 @@ target_include_directories(tensor INTERFACE
 
 target_compile_features(tensor INTERFACE cxx_std_20)
 
-# ─── mdspan: std::mdspan if requested, otherwise the Kokkos polyfill ──────────
-if(TENSOR_USE_STD_MDSPAN)
-    target_compile_definitions(tensor INTERFACE TENSOR_USE_STD_MDSPAN=1)
-else()
-    find_package(mdspan CONFIG REQUIRED)
-    target_link_libraries(tensor INTERFACE std::mdspan)
-endif()
-
 # fmt is used until std::format is universally available across our compiler matrix.
 find_package(fmt CONFIG REQUIRED)
 target_link_libraries(tensor INTERFACE fmt::fmt)
+
+# mdspan integration is temporarily disabled; the vcpkg-shipped Kokkos
+# polyfill puts symbols in `Kokkos::` (not `std::` / `std::experimental::`),
+# and the right namespace adapter is a Phase 1.5 follow-up. The header
+# tensor/core/mdspan_interop.hpp is preserved for that follow-up but is
+# excluded from the umbrella include and the test build.
 
 # ─── Tests ────────────────────────────────────────────────────────────────────
 if(TENSOR_BUILD_TESTS AND PROJECT_IS_TOP_LEVEL)
