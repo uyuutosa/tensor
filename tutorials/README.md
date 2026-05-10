@@ -26,6 +26,7 @@ This pulls xeus-cling, vcpkg, the C++20 toolchain, and Jupyter Book. Once the en
 | 05  | Build your own autograd from scratch               | **shipped** (this directory) | 2 (P2.M5) |
 | 06  | WebGPU acceleration                                | planned     | 3 |
 | 07  | A small MLP on a toy dataset                       | **shipped** (this directory) | 2 (P2.M6) |
+| 08  | Swappable backends — Hexagonal payoff (reference vs Eigen) | **shipped** (this directory) | 2.5 (P2.5.M5) |
 
 The first four notebooks together reproduce the 2016 README's narrative end-to-end on the new C++20 API. Notebooks 05–07 land in Phase 2 / Phase 3 respectively (see [`../docs/impl-plans/`](../docs/impl-plans/)).
 
