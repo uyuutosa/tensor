@@ -10,6 +10,7 @@
 #pragma once
 
 #include "tensor/core/axis.hpp"
+#include "tensor/core/backend/reference.hpp"
 #include "tensor/core/broadcast.hpp"
 #include "tensor/core/concepts.hpp"
 #include "tensor/core/contract.hpp"
