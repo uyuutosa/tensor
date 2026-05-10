@@ -94,7 +94,11 @@ TEST_CASE("Round-trip property: parse(render(e)) == e") {
 }
 
 TEST_CASE("Trailing characters throw") {
-    CHECK_THROWS_AS(parse("a_i garbage trailing"), std::runtime_error);
+    // Use a non-atom-start, non-operator character so the parser cannot
+    // absorb it via juxtaposition. `?` is not alphabetic and is not a
+    // recognised operator; require_eof() at the end of parse_top() flags
+    // it as unconsumed input.
+    CHECK_THROWS_AS(parse("a_i ?"), std::runtime_error);
 }
 
 TEST_CASE("Bad subscript throws") {

@@ -8,17 +8,7 @@
   "supports": "(linux | osx | windows) & (x64 | arm64)",
   "builtin-baseline": "99a97de2cb371449d4fb9dc970f2ac562d689ec2",
   "dependencies": [
-    {
-      "name": "mdspan",
-      "version>=": "0.6.0"
-    },
-    {
-      "name": "fmt",
-      "version>=": "11.0.0"
-    },
-    {
-      "name": "doctest",
-      "version>=": "2.4.11"
-    }
+    "fmt",
+    "doctest"
   ]
 }

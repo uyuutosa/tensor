@@ -15,18 +15,28 @@
 #include <utility>
 #include <vector>
 
-// Toolchain selector: TENSOR_USE_STD_MDSPAN is set by CMake when the user
-// requests std::mdspan from <mdspan>. Otherwise we use the Kokkos reference
-// implementation (vendored via vcpkg) which exposes the same API under
-// std:: as well.
-#if defined(TENSOR_USE_STD_MDSPAN)
-#    include <mdspan>
+// Toolchain selector. Three cases:
+//   1. TENSOR_USE_STD_MDSPAN — user explicitly requested C++23 std::mdspan.
+//   2. __cpp_lib_mdspan defined and ≥ 202207 — std::mdspan available natively
+//      via the platform's libc++ / libstdc++ (C++23 toolchains).
+//   3. Otherwise — fall back to the Kokkos reference implementation, which
+//      vcpkg ships in `std::experimental::` (the namespace mandated by P0009).
+#include <mdspan>
+
+namespace tensor::core::detail {
+#if defined(TENSOR_USE_STD_MDSPAN) || \
+    (defined(__cpp_lib_mdspan) && __cpp_lib_mdspan >= 202207L)
+template <class T, class Extents>
+using mdspan_t = std::mdspan<T, Extents>;
+template <class IndexType, std::size_t Rank>
+using dextents_t = std::dextents<IndexType, Rank>;
 #else
-// Kokkos reference impl from <mdspan> ships in `std::` namespace too when
-// configured with appropriate macros; this is what the `mdspan` vcpkg port
-// provides. The header path under vcpkg is the same `<mdspan>`.
-#    include <mdspan>
+template <class T, class Extents>
+using mdspan_t = std::experimental::mdspan<T, Extents>;
+template <class IndexType, std::size_t Rank>
+using dextents_t = std::experimental::dextents<IndexType, Rank>;
 #endif
+}  // namespace tensor::core::detail
 
 #include "tensor/core/shape.hpp"
 #include "tensor/core/tensor.hpp"
@@ -34,32 +44,33 @@
 namespace tensor::core {
 
 namespace detail {
-// Compile-time helper: build a std::dextents<size_t, N>-shaped extent
-// holder from a Shape<N> by copying extents.
+// Compile-time helper: build a dextents<size_t, N>-shaped extent holder
+// from a Shape<N> by copying extents.
 template <std::size_t... I>
 constexpr auto make_dextents(Shape<sizeof...(I)> const& s, std::index_sequence<I...>) {
-    return std::dextents<std::size_t, sizeof...(I)>(s[I].extent...);
+    return dextents_t<std::size_t, sizeof...(I)>(s[I].extent...);
 }
 }  // namespace detail
 
-// mdview(t) — non-owning std::mdspan over t's buffer, row-major layout.
+// mdview(t) — non-owning mdspan over t's buffer, row-major layout.
 template <class T, std::size_t N>
 [[nodiscard]] auto mdview(Tensor<T, N>& t) {
     auto ext = detail::make_dextents(t.shape(), std::make_index_sequence<N>{});
-    return std::mdspan<T, std::dextents<std::size_t, N>>(t.data(), ext);
+    return detail::mdspan_t<T, detail::dextents_t<std::size_t, N>>(t.data(), ext);
 }
 
 template <class T, std::size_t N>
 [[nodiscard]] auto mdview(Tensor<T, N> const& t) {
     auto ext = detail::make_dextents(t.shape(), std::make_index_sequence<N>{});
-    return std::mdspan<T const, std::dextents<std::size_t, N>>(t.data(), ext);
+    return detail::mdspan_t<T const, detail::dextents_t<std::size_t, N>>(t.data(), ext);
 }
 
 // from_mdspan — copy an mdspan into a fresh owning Tensor with the supplied
-// axis labels. The labels must match the mdspan rank N.
-template <class T, std::size_t N, class Layout, class Accessor>
+// axis labels. The labels must match the mdspan rank N. Default layout and
+// accessor only at this milestone; M3 generalises.
+template <class T, std::size_t N>
 [[nodiscard]] Tensor<std::remove_const_t<T>, N> from_mdspan(
-    std::mdspan<T, std::dextents<std::size_t, N>, Layout, Accessor> view,
+    detail::mdspan_t<T, detail::dextents_t<std::size_t, N>> view,
     Shape<N> shape) {
     using U = std::remove_const_t<T>;
     std::vector<U> buf(view.size());
