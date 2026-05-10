@@ -9,6 +9,7 @@ add_executable(tensor_tests
     test_dynamic_tensor.cpp
     test_broadcast.cpp
     test_ops.cpp
+    test_tex_parser.cpp
 )
 
 target_link_libraries(tensor_tests
