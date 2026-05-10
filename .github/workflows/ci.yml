@@ -57,6 +57,14 @@ jobs:
           - os: windows-2022
             compiler: msvc
             preset: release-werror
+          # Eigen backend smoke (one job to keep matrix small) — verifies
+          # the Eigen adapter produces results agreeing with reference.
+          - os: ubuntu-22.04
+            compiler: gcc-11
+            preset: release-werror
+            cc: gcc-11
+            cxx: g++-11
+            backend: eigen
 
     steps:
       - uses: actions/checkout@v4
@@ -115,11 +123,22 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-        run: cmake --preset=${{ matrix.preset }}
+        run: |
+          BACKEND_ARG=""
+          if [ -n "${{ matrix.backend }}" ]; then
+            BACKEND_ARG="-DTENSOR_KERNEL_BACKEND=${{ matrix.backend }}"
+          fi
+          cmake --preset=${{ matrix.preset }} ${BACKEND_ARG}
 
       - name: Configure (Windows)
         if: runner.os == 'Windows'
-        run: cmake --preset=${{ matrix.preset }}
+        shell: bash
+        run: |
+          BACKEND_ARG=""
+          if [ -n "${{ matrix.backend }}" ]; then
+            BACKEND_ARG="-DTENSOR_KERNEL_BACKEND=${{ matrix.backend }}"
+          fi
+          cmake --preset=${{ matrix.preset }} ${BACKEND_ARG}
 
       - name: Build
         run: cmake --build --preset=${{ matrix.preset }}

@@ -10,6 +10,12 @@ project(tensor
 # ─── Project options ──────────────────────────────────────────────────────────
 option(TENSOR_BUILD_TESTS        "Build the test suite"        ON)
 option(TENSOR_WARNINGS_AS_ERRORS "Treat warnings as errors"    OFF)
+# KernelBackend adapter selection (ADR-0011). `reference` is the always-
+# available default. `eigen` enables the Eigen3 adapter (SIMD element-wise
+# + BLAS-flavoured GEMM).
+set(TENSOR_KERNEL_BACKEND "reference" CACHE STRING
+    "Active KernelBackend adapter (reference | eigen)")
+set_property(CACHE TENSOR_KERNEL_BACKEND PROPERTY STRINGS reference eigen)
 
 # ─── Header-only interface library ────────────────────────────────────────────
 add_library(tensor INTERFACE)
@@ -25,6 +31,15 @@ target_compile_features(tensor INTERFACE cxx_std_20)
 # fmt is used until std::format is universally available across our compiler matrix.
 find_package(fmt CONFIG REQUIRED)
 target_link_libraries(tensor INTERFACE fmt::fmt)
+
+# Eigen3 is required when the active backend is `eigen` (ADR-0011 / P2.5.M3).
+# The reference backend has no third-party deps, so non-eigen builds skip
+# the find_package call entirely.
+if(TENSOR_KERNEL_BACKEND STREQUAL "eigen")
+    find_package(Eigen3 CONFIG REQUIRED)
+    target_link_libraries(tensor INTERFACE Eigen3::Eigen)
+    target_compile_definitions(tensor INTERFACE TENSOR_HAS_EIGEN=1)
+endif()
 
 # mdspan integration is temporarily disabled; the vcpkg-shipped Kokkos
 # polyfill puts symbols in `Kokkos::` (not `std::` / `std::experimental::`),
