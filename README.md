@@ -4,6 +4,25 @@
 まだ工事中です!笑。
 ![UnderConstruction](construction.png "Under construction")
 
+## Documentation
+
+This repository now ships with the [pentaglyph-docs](https://github.com/uyuutosa/pentaglyph-docs)
+scaffold (arc42 + C4 + MADR + Diátaxis + TiSDD bound by one workflow).
+
+- Documentation root: [`docs/`](./docs/)
+- Entry point for humans: [`docs/INDEX.md`](./docs/INDEX.md)
+- Entry point for AI agents: [`docs/AI_INSTRUCTIONS.md`](./docs/AI_INSTRUCTIONS.md)
+- "What to write where": [`docs/WORKFLOW.md`](./docs/WORKFLOW.md)
+- Upstream kit (vendored as a git subtree): [`libs/pentaglyph-docs/`](./libs/pentaglyph-docs/)
+
+To pull future upstream updates:
+
+```bash
+git subtree pull --prefix=libs/pentaglyph-docs \
+  https://github.com/uyuutosa/pentaglyph-docs.git main --squash
+```
+
+
 数式とプログラムの一対一対応による冗長なコーディング作業からの解放を目指して、
 いろんな規則を内包するインテリジェントな配列型を作っています。
 また面白いor効率的な演算規則の考案も行っています。
