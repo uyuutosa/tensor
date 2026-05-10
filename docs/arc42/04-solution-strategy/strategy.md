@@ -25,22 +25,22 @@ In rough dependency order:
 2. **[ADR-0002](../09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md) — Rewrite on a C++20 baseline with `std::mdspan` interop via the Kokkos reference impl.**
    C++20 unlocks concepts, NTTPs, `consteval`, and `mdspan` interop without requiring bleeding-edge toolchains. The 2016 codebase is retired.
 
-3. **[ADR-0003](../09-decisions/0003-replace-eclipse-cdt-with-cmake-and-vcpkg.md) — Replace Eclipse CDT with CMake (≥ 3.25) and vcpkg.**
-   Genre-default toolchain. Removes the contributor-onboarding wall that Eclipse CDT imposes. CI moves to GitHub Actions.
+3. **[ADR-0009](../09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md) — Adopt DDD ubiquitous language + Hexagonal (Ports & Adapters) "lite".**
+   Each container is classified `Domain` / `DrivingAdapter` / `DrivenAdapter`; ports are C++20 concepts in `concepts.hpp`; the dependency rule (Domain depends on no adapter) is enforced by CI. The architecture itself becomes a teaching artifact.
 
 4. **[ADR-0004](../09-decisions/0004-adopt-hybrid-named-axis-api.md) — Adopt a hybrid named-axis API: runtime axis identity with an NTTP compile-time fast path via the `_ax` user-defined literal.**
    The headline feature. Compile-time mismatched-axis errors are pedagogically powerful; runtime axis identity covers dynamic shapes and notebooks. Both paths share one kernel; the user opts in.
 
 5. **[ADR-0005](../09-decisions/0005-adopt-tex-lyx-as-authoring-surface.md) — Adopt TeX / LyX as a first-class authoring surface (`consteval` LaTeX-subset parser via the `_tex` UDL, with a LyX export module as a second phase).**
-   Realises the project's slogan: *the formula is the program*. The same expression graph is reachable from C++ tensor expressions, from a `_tex` literal, and (Phase 3+) from a LyX document.
+   Realises the project's slogan: *the formula is the program*. `tensor::tex` becomes the canonical DrivingAdapter implementing the `ExpressionSource` port.
 
 6. **[ADR-0006](../09-decisions/0006-adopt-webgpu-as-gpu-backend.md) — Adopt WebGPU (gpu.cpp + Dawn / wgpu-native) as the GPU backend.**
-   Zero proprietary install for the learner; runs on every desktop GPU and (eventually) in the browser. CUDA-direct is rejected. Kokkos remains reachable as a future complementary backend.
+   Zero proprietary install for the learner; runs on every desktop GPU and (eventually) in the browser. `tensor::gpu` is the DrivenAdapter implementing the `KernelBackend` port. CUDA-direct is rejected.
 
 7. **[ADR-0007](../09-decisions/0007-adopt-autograd-as-first-class-subsystem.md) — Adopt tape-based reverse-mode autograd as a first-class subsystem.**
-   Pivots the library from a pure tensor-algebra DSL to a tinygrad-class teaching ML framework grounded in named-axis semantics. Forward-mode and source-to-source remain reachable as future complementary backends.
+   Pivots the library from a pure tensor-algebra DSL to a tinygrad-class teaching ML framework grounded in named-axis semantics. `tensor::autograd` extends the Domain hexagon.
 
-(A common eighth decision — [ADR-0008](../09-decisions/0008-distribute-as-header-only-with-jupyter-tutorials.md), header-only library + xeus-cling Jupyter tutorials + Jupyter Book site — is implementation-flavored and lives one click away rather than in this top-7 index.)
+(Two implementation-flavored decisions — [ADR-0003](../09-decisions/0003-replace-eclipse-cdt-with-cmake-and-vcpkg.md) (CMake + vcpkg) and [ADR-0008](../09-decisions/0008-distribute-as-header-only-with-jupyter-tutorials.md) (header-only + Jupyter Book) — live one click away rather than in this top-7 index.)
 
 ## How these decisions hang together
 
