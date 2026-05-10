@@ -1,0 +1,17 @@
+name: tensor-tutorials
+
+channels:
+  - conda-forge
+  - nodefaults
+
+dependencies:
+  - python=3.11
+  - jupyterlab>=4.0
+  - jupyter-book>=1.0
+  - xeus-cling>=0.15
+  - cmake>=3.25
+  - ninja
+  - cling>=0.9
+  # The library itself is header-only; the C++20 toolchain pulls in mdspan
+  # and other vcpkg deps via libstdc++ + the conda-shipped Cling. Learners
+  # only need this env file + the repo clone.
