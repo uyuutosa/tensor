@@ -27,27 +27,8 @@ namespace tensor::autograd {
 
 namespace detail {
 
-// unbroadcast(dL_dout, source_map, source_shape) — reduce dL/dout to the
-// shape of one input by summing over result-axes that are absent on
-// that input side (source_map[r] == broadcast_npos).
-template <class T>
-[[nodiscard]] tensor::core::DynamicTensor<T> unbroadcast(
-    tensor::core::DynamicTensor<T> const& dL_dout,
-    std::vector<std::size_t> const& source_map,
-    tensor::core::DynamicShape const& source_shape) {
-    using namespace tensor::core;
-    DynamicTensor<T> result(source_shape);  // zero-init
-    if (dL_dout.size() == 0) {
-        return result;
-    }
-    std::vector<std::size_t> result_idx(dL_dout.shape().rank(), 0);
-    do {
-        auto source_idx = project_index(result_idx, source_map, source_shape.rank());
-        result.at_index(source_idx) =
-            result.at_index(source_idx) + dL_dout.at_index(result_idx);
-    } while (increment_index(result_idx, dL_dout.shape()));
-    return result;
-}
+// (unbroadcast moved to tensor::core::unbroadcast in P2.5.M2 so the
+// KernelBackend port can call it; see tensor/core/broadcast.hpp.)
 
 // Forward element-wise apply with broadcast. Walks the result-shape
 // multi-index and pulls values from a and b via the BroadcastPlan.
@@ -96,10 +77,10 @@ template <class T>
         auto b_source = plan.b_source;
         Tape::current().record([a_acc, b_acc, out_acc, a_shape, b_shape, a_source, b_source]() {
             if (a_acc) {
-                a_acc->contribute(detail::unbroadcast(out_acc->grad, a_source, a_shape));
+                a_acc->contribute(tensor::core::unbroadcast(out_acc->grad, a_source, a_shape));
             }
             if (b_acc) {
-                b_acc->contribute(detail::unbroadcast(out_acc->grad, b_source, b_shape));
+                b_acc->contribute(tensor::core::unbroadcast(out_acc->grad, b_source, b_shape));
             }
         });
     }
@@ -125,11 +106,11 @@ template <class T>
         auto b_source = plan.b_source;
         Tape::current().record([a_acc, b_acc, out_acc, a_shape, b_shape, a_source, b_source]() {
             if (a_acc) {
-                a_acc->contribute(detail::unbroadcast(out_acc->grad, a_source, a_shape));
+                a_acc->contribute(tensor::core::unbroadcast(out_acc->grad, a_source, a_shape));
             }
             if (b_acc) {
                 // dL/db = -unbroadcast(dL/dout)
-                auto db = detail::unbroadcast(out_acc->grad, b_source, b_shape);
+                auto db = tensor::core::unbroadcast(out_acc->grad, b_source, b_shape);
                 for (std::size_t i = 0; i < db.size(); ++i) {
                     db[i] = -db[i];
                 }
@@ -176,10 +157,10 @@ template <class T>
                     ++flat;
                 } while (increment_index(idx, out_acc->grad.shape()));
                 if (a_acc) {
-                    a_acc->contribute(detail::unbroadcast(da_full, a_source, a_shape));
+                    a_acc->contribute(tensor::core::unbroadcast(da_full, a_source, a_shape));
                 }
                 if (b_acc) {
-                    b_acc->contribute(detail::unbroadcast(db_full, b_source, b_shape));
+                    b_acc->contribute(tensor::core::unbroadcast(db_full, b_source, b_shape));
                 }
             });
     }

@@ -97,14 +97,17 @@ inline void merge_shared(std::vector<std::size_t>& side_idx,
 
 }  // namespace detail
 
+// Execute a contraction given a pre-computed ContractPlan. Useful for
+// backends that want to reuse the plan across multiple invocations and
+// for the KernelBackend port (ADR-0011) which receives the plan from the
+// Domain rather than computing it itself.
 template <class T>
-[[nodiscard]] DynamicTensor<T> contract(DynamicTensor<T> const& a,
-                                        DynamicTensor<T> const& b) {
-    auto plan = contract_plan(a.shape(), b.shape());
+[[nodiscard]] DynamicTensor<T> contract_with_plan(DynamicTensor<T> const& a,
+                                                  DynamicTensor<T> const& b,
+                                                  ContractPlan const& plan) {
     DynamicTensor<T> out(plan.result);
     if (out.size() == 0) return out;
 
-    // For each result index, sum over all shared indices.
     std::vector<std::size_t> result_idx(plan.result.rank(), 0);
     std::size_t flat = 0;
     do {
@@ -126,6 +129,15 @@ template <class T>
         out[flat++] = sum;
     } while (increment_index(result_idx, plan.result));
     return out;
+}
+
+// Convenience overload: compute the plan internally then dispatch to
+// contract_with_plan. Existing callers (autograd::dot, test_contract,
+// tutorial 00) use this form.
+template <class T>
+[[nodiscard]] DynamicTensor<T> contract(DynamicTensor<T> const& a,
+                                        DynamicTensor<T> const& b) {
+    return contract_with_plan(a, b, contract_plan(a.shape(), b.shape()));
 }
 
 }  // namespace tensor::core

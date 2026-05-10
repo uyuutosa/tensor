@@ -112,3 +112,35 @@ struct BroadcastPlan {
 }
 
 }  // namespace tensor::core
+
+// Pull in DynamicTensor for the unbroadcast helper below.
+#include "tensor/core/dynamic_tensor.hpp"
+
+namespace tensor::core {
+
+// unbroadcast(dL_dout, source_map, source_shape) — reduce dL/dout to the
+// shape of one input by summing over result-axes that are absent on that
+// input side (source_map[r] == broadcast_npos).
+//
+// Lives in `tensor::core` so the KernelBackend port (ADR-0011) and
+// autograd::broadcast_ops can both call it. Used to be in
+// tensor::autograd::detail before P2.5.M2.
+template <class T>
+[[nodiscard]] inline DynamicTensor<T> unbroadcast(
+    DynamicTensor<T> const& dL_dout,
+    std::vector<std::size_t> const& source_map,
+    DynamicShape const& source_shape) {
+    DynamicTensor<T> result(source_shape);  // zero-init
+    if (dL_dout.size() == 0) {
+        return result;
+    }
+    std::vector<std::size_t> result_idx(dL_dout.shape().rank(), 0);
+    do {
+        auto source_idx = project_index(result_idx, source_map, source_shape.rank());
+        result.at_index(source_idx) =
+            result.at_index(source_idx) + dL_dout.at_index(result_idx);
+    } while (increment_index(result_idx, dL_dout.shape()));
+    return result;
+}
+
+}  // namespace tensor::core
