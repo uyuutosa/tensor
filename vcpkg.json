@@ -6,6 +6,7 @@
   "homepage": "https://github.com/uyuutosa/tensor",
   "license": "MIT",
   "supports": "(linux | osx | windows) & (x64 | arm64)",
+  "builtin-baseline": "99a97de2cb371449d4fb9dc970f2ac562d689ec2",
   "dependencies": [
     {
       "name": "mdspan",
