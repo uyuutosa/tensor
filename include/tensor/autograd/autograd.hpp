@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "tensor/autograd/activations.hpp"
 #include "tensor/autograd/concepts.hpp"
 #include "tensor/autograd/grad_check.hpp"
 #include "tensor/autograd/tape.hpp"
