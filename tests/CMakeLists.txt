@@ -15,6 +15,7 @@ add_executable(tensor_tests
     test_function_reference_tensors.cpp
     test_autograd.cpp
     test_autograd_activations.cpp
+    test_autograd_broadcast.cpp
 )
 
 target_link_libraries(tensor_tests
