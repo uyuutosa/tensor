@@ -43,7 +43,7 @@ The 2016 codebase will be retired. The rewrite targets C++20 + `mdspan` interop 
 | Self-taught C++ learners exploring tensor algebra | Want a small, hackable, idiomatic library + readable notebooks. Primary audience.          |
 | University / bootcamp instructors    | Want assignable teaching material for "build your own ML framework" or "modern C++" courses. |
 | Researchers in tensor-DSL design     | Want a real working artifact to reference for named-axis API ergonomics in C++.            |
-| Practitioners considering production tensor libs | Should be redirected to Eigen / xtensor / libtorch / Kokkos / `std::linalg`. Not the audience. |
+| Production users (`as-is`)           | Adopt the library for niche workloads (named-axis algebra, `_tex`-driven kernels) once a fast `KernelBackend` adapter (Eigen / WebGPU / Kokkos) ships. **No ABI / coverage / support commitments** — see [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md). |
 | The maintainer (uyuutosa)            | Wants to revive a pet project, develop ideas, and produce a public artifact.               |
 
 ## 3. Goals (G-1 … G-7)
@@ -101,5 +101,5 @@ For interim phase-by-phase deliverables, see the dated impl-plans under [`../../
 - §3 Context and Scope: [`../03-context-and-scope/system-context.md`](../03-context-and-scope/system-context.md).
 - §4 Solution Strategy: [`../04-solution-strategy/strategy.md`](../04-solution-strategy/strategy.md).
 - §5 Building Blocks: [`../05-building-blocks/overview.md`](../05-building-blocks/overview.md).
-- §9 Decisions: [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) … [ADR-0009](../09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md).
+- §9 Decisions: [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) … [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md).
 - §10 Quality (TBD): clarity / correctness / portability, with measurable definitions.

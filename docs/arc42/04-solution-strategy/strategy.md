@@ -19,8 +19,8 @@ last-reviewed: 2026-05-10
 
 In rough dependency order:
 
-1. **[ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) — Pivot to educational / DSL-research positioning, anchored on named-axis tensor algebra.**
-   The library exists where Eigen / xtensor / libtorch / Kokkos / `std::linalg` do not — in the underserved educational niche around named-axis algebra. Every other decision below inherits this north star.
+1. **[ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) (refined by [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md)) — Educational-first, production-capable via backend adapters.**
+   The Domain is small, readable, and unencumbered by ABI commitments; speed for production-shaped workloads comes from swappable `KernelBackend` adapters (reference, Eigen, WebGPU, …). Production adoption is *permitted* but adopted *as-is*. Every other decision below inherits this north star.
 
 2. **[ADR-0002](../09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md) — Rewrite on a C++20 baseline with `std::mdspan` interop via the Kokkos reference impl.**
    C++20 unlocks concepts, NTTPs, `consteval`, and `mdspan` interop without requiring bleeding-edge toolchains. The 2016 codebase is retired.
