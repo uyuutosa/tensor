@@ -24,7 +24,7 @@ class Tensor {
 public:
     using value_type = T;
     using shape_type = Shape<N>;
-    static constexpr std::size_t rank = N;
+    [[nodiscard]] static constexpr std::size_t rank() noexcept { return N; }
 
     // ─── Construction ─────────────────────────────────────────────────────
     Tensor() = default;

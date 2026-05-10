@@ -28,28 +28,29 @@ concept AxisLike = requires(A const& a) {
 };
 
 // ─── ShapeLike ────────────────────────────────────────────────────────────────
-// A Shape is an ordered sequence of N AxisLike entries, plus a compile-time
-// rank. Rank-0 (scalar) is permitted but uninteresting at this stage.
+// A Shape is an ordered sequence of AxisLike entries.
 //
 // The concept is parameterised over the *decayed* type so that references
-// and cv-qualified shapes also satisfy it; this avoids `Shape<N> const&`
-// failing the concept just because reference types do not name static
-// members directly.
+// and cv-qualified shapes also satisfy it. The rank is exposed via a
+// runtime method `.rank()` — both static-rank `Shape<N>` and runtime-rank
+// `DynamicShape` provide one, so the concept does not need to peek at
+// static members.
 template <class S>
 concept ShapeLike = requires(std::remove_cvref_t<S> const& s) {
-    requires std::convertible_to<decltype(std::remove_cvref_t<S>::rank), std::size_t>;
-    { s.size() } -> std::convertible_to<std::size_t>;
+    { s.rank() } -> std::convertible_to<std::size_t>;
     { s[std::size_t{0}] };  // axis access
 };
 
 // ─── TensorLike ───────────────────────────────────────────────────────────────
 // A TensorLike type owns or views a buffer of T-typed elements with a
-// ShapeLike shape, exposes element access, and returns its rank statically.
+// ShapeLike shape and exposes element access. Rank is reachable through
+// `t.shape().rank()`; not required to be a static member, so the concept
+// is satisfied by both static-rank `Tensor<T, N>` and runtime-rank
+// `DynamicTensor<T>`.
 template <class T>
 concept TensorLike = requires(T const& t) {
     typename T::value_type;
     typename T::shape_type;
-    requires std::convertible_to<decltype(T::rank), std::size_t>;
     requires ShapeLike<decltype(t.shape())>;
     { t.size() } -> std::convertible_to<std::size_t>;
 };
