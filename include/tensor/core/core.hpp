@@ -18,6 +18,7 @@
 #include "tensor/core/dynamic_tensor.hpp"
 #include "tensor/core/format.hpp"
 #include "tensor/core/function_tensor.hpp"
+#include "tensor/core/label_tag.hpp"
 // "tensor/core/mdspan_interop.hpp" — temporarily not in the umbrella; the
 // vcpkg-shipped Kokkos polyfill puts symbols in `Kokkos::` not `std::` /
 // `std::experimental::`, and the right namespace adapter has been deferred
