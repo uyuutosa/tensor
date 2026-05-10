@@ -2,6 +2,10 @@ find_package(doctest CONFIG REQUIRED)
 
 add_executable(tensor_tests
     test_version.cpp
+    test_axis_shape.cpp
+    test_tensor.cpp
+    test_format.cpp
+    test_mdspan_interop.cpp
 )
 
 target_link_libraries(tensor_tests
