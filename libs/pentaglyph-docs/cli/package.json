@@ -1,0 +1,65 @@
+{
+  "name": "@uyuutosa/pentaglyph",
+  "version": "0.1.0",
+  "description": "CLI scaffolder for pentaglyph-docs — arc42 + C4 + MADR + Diátaxis with one workflow",
+  "license": "MIT",
+  "author": "Yu Sato",
+  "type": "module",
+  "module": "src/index.ts",
+  "bin": {
+    "pentaglyph": "./bin/pentaglyph.mjs"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "template/",
+    "tsconfig.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node --format esm",
+    "dev": "bun run src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "sync-template": "bun run scripts/sync-template.mjs",
+    "prepack": "bun run scripts/sync-template.mjs",
+    "smoke": "rm -rf /tmp/pentaglyph-smoke && bun run src/index.ts init /tmp/pentaglyph-smoke --profile=full --ai=claude --name='Smoke Test' && find /tmp/pentaglyph-smoke -type f | wc -l"
+  },
+  "engines": {
+    "node": ">=20",
+    "bun": ">=1.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "keywords": [
+    "documentation",
+    "arc42",
+    "c4-model",
+    "madr",
+    "adr",
+    "diataxis",
+    "scaffolder",
+    "ai-readable",
+    "templates"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/uyuutosa/pentaglyph-docs.git",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/uyuutosa/pentaglyph-docs#readme",
+  "bugs": {
+    "url": "https://github.com/uyuutosa/pentaglyph-docs/issues"
+  }
+}
