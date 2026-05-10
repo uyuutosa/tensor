@@ -19,7 +19,6 @@ namespace tensor::core {
 template <std::size_t N>
 class Shape {
 public:
-    static constexpr std::size_t rank = N;
     using axis_type = Axis;
 
     // Default — all axes have empty label and zero extent. Useful as a
@@ -48,7 +47,9 @@ public:
     }
     [[nodiscard]] constexpr Axis& operator[](std::size_t i) noexcept { return axes_[i]; }
 
-    // ShapeLike requires .size() — return rank as a runtime value.
+    // Rank exposed as a method (parity with DynamicShape) so a single
+    // ShapeLike concept covers both static- and runtime-rank shapes.
+    [[nodiscard]] static constexpr std::size_t rank() noexcept { return N; }
     [[nodiscard]] static constexpr std::size_t size() noexcept { return N; }
 
     // Total element count = product of extents.

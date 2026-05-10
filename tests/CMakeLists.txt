@@ -6,6 +6,9 @@ add_executable(tensor_tests
     test_tensor.cpp
     test_format.cpp
     test_mdspan_interop.cpp
+    test_dynamic_tensor.cpp
+    test_broadcast.cpp
+    test_ops.cpp
 )
 
 target_link_libraries(tensor_tests
