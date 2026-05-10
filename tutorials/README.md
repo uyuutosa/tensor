@@ -23,7 +23,7 @@ This pulls xeus-cling, vcpkg, the C++20 toolchain, and Jupyter Book. Once the en
 | 02  | Function and reference tensors as teaching exhibits | scaffolded  | 1 |
 | 03  | Convolutions reformulated as tensor inner products | scaffolded  | 1 |
 | 04  | TeX bridge — *the formula is the program*          | scaffolded  | 1 |
-| 05  | Build your own autograd from scratch               | planned     | 2 |
+| 05  | Build your own autograd from scratch               | **shipped** (this directory) | 2 (P2.M5) |
 | 06  | WebGPU acceleration                                | planned     | 3 |
 | 07  | A small MLP on a toy dataset                       | planned     | 2 |
 
