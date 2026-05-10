@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "tensor",
+  "version-string": "0.0.1-alpha",
+  "description": "Header-only C++20/23 educational library for named-axis tensor algebra.",
+  "homepage": "https://github.com/uyuutosa/tensor",
+  "license": "MIT",
+  "supports": "(linux | osx | windows) & (x64 | arm64)",
+  "dependencies": [
+    {
+      "name": "mdspan",
+      "version>=": "0.6.0"
+    },
+    {
+      "name": "fmt",
+      "version>=": "11.0.0"
+    },
+    {
+      "name": "doctest",
+      "version>=": "2.4.11"
+    }
+  ]
+}
