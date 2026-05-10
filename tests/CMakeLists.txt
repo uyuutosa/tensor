@@ -10,6 +10,7 @@ add_executable(tensor_tests
     test_broadcast.cpp
     test_ops.cpp
     test_tex_parser.cpp
+    test_function_reference_tensors.cpp
 )
 
 target_link_libraries(tensor_tests
