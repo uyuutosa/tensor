@@ -86,17 +86,20 @@ Captured here so future reviewers do not litigate them as gaps.
 The first release is `0.1.0`. Success at `0.1.0` means:
 
 - [ ] All ADR-0001 follow-ups are closed.
-- [ ] CMake build green on the {GCC 11, Clang 13, MSVC 19.30} × {Debug, Release} matrix in CI.
-- [ ] `tutorials/00_intro.ipynb` reproduces the 2016 blog post's convolutions-as-inner-products in the rewritten library.
-- [ ] `tutorials/05_autograd-from-scratch.ipynb` trains a 3-layer MLP on a toy dataset.
-- [ ] `tutorials/06_webgpu-acceleration.ipynb` runs a named-axis matmul on the WebGPU backend and matches CPU results.
-- [ ] Jupyter Book site is reachable at the repo's GitHub Pages URL.
-- [ ] README's first paragraph leads with the educational pitch and disclaims production use.
+- [x] CMake build green on the {GCC 11, Clang 13, MSVC 19.30} × {Debug, Release} matrix in CI. *(achieved 2026-05-11 via PR #9.)*
+- [x] `tutorials/00_intro.ipynb` reproduces the 2016 blog post's convolutions-as-inner-products in the rewritten library. *(shipped 2026-05-10 via PR #8; xeus-cling end-to-end CI execution is the Phase 1.5 follow-up.)*
+- [ ] `tutorials/05_autograd-from-scratch.ipynb` trains a 3-layer MLP on a toy dataset. *(Phase 2 — see [`../../impl-plans/2026-05-11_phase-2-autograd.md`](../../impl-plans/2026-05-11_phase-2-autograd.md), P2.M5 + P2.M6.)*
+- [ ] `tutorials/06_webgpu-acceleration.ipynb` runs a named-axis matmul on the WebGPU backend and matches CPU results. *(Phase 3.)*
+- [ ] Jupyter Book site is reachable at the repo's GitHub Pages URL. *(Phase 4.)*
+- [x] README's first paragraph leads with the educational pitch and disclaims production use. *(shipped 2026-05-10 via PR #2; reinforced in the 2026-05-11 docs sync.)*
+
+For interim phase-by-phase deliverables, see the dated impl-plans under [`../../impl-plans/`](../../impl-plans/).
 
 ## 7. Cross-references
 
 - §2 Architecture Constraints (TBD): C++20 baseline, header-only, MIT licence, solo-maintainer bandwidth.
-- §3 Context and Scope (TBD): C4 L1 system context — the library, the learner, the host toolchain, the GPU runtime, the Jupyter ecosystem.
-- §4 Solution Strategy (TBD): how G-1…G-7 map onto the named-axis core, the autograd subsystem, the WebGPU backend, and the TeX bridge.
-- §9 Decisions: [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) … [ADR-0008](../09-decisions/0008-distribute-as-header-only-with-jupyter-tutorials.md).
+- §3 Context and Scope: [`../03-context-and-scope/system-context.md`](../03-context-and-scope/system-context.md).
+- §4 Solution Strategy: [`../04-solution-strategy/strategy.md`](../04-solution-strategy/strategy.md).
+- §5 Building Blocks: [`../05-building-blocks/overview.md`](../05-building-blocks/overview.md).
+- §9 Decisions: [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) … [ADR-0009](../09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md).
 - §10 Quality (TBD): clarity / correctness / portability, with measurable definitions.
