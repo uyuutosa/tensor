@@ -1,0 +1,98 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "TENSOR_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "default",
+      "displayName": "Default (Debug, GCC/Clang/MSVC)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "release-werror",
+      "displayName": "Release + warnings-as-errors (CI)",
+      "inherits": "release",
+      "cacheVariables": {
+        "TENSOR_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "debug-werror",
+      "displayName": "Debug + warnings-as-errors (CI)",
+      "inherits": "default",
+      "cacheVariables": {
+        "TENSOR_WARNINGS_AS_ERRORS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "release-werror",
+      "configurePreset": "release-werror"
+    },
+    {
+      "name": "debug-werror",
+      "configurePreset": "debug-werror"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "inherits": "default"
+    },
+    {
+      "name": "release-werror",
+      "configurePreset": "release-werror",
+      "inherits": "default"
+    },
+    {
+      "name": "debug-werror",
+      "configurePreset": "debug-werror",
+      "inherits": "default"
+    }
+  ]
+}

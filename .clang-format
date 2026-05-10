@@ -1,0 +1,35 @@
+# clang-format configuration for the tensor library.
+# Anchored on LLVM with a couple of project-specific deltas.
+---
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++20
+ColumnLimit: 100
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+AccessModifierOffset: -4
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeBraces: Attach
+DerivePointerAlignment: false
+PointerAlignment: Left
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:    '^<[^/.]+>'      # C++ standard library
+    Priority: 1
+  - Regex:    '^<doctest/'     # test framework
+    Priority: 2
+  - Regex:    '^<(fmt|mdspan)/'  # third-party
+    Priority: 3
+  - Regex:    '^<tensor/'      # project
+    Priority: 4
+  - Regex:    '^".*"'          # local
+    Priority: 5
+SpaceAfterCStyleCast: false
+SpaceBeforeParens: ControlStatements
