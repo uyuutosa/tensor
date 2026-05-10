@@ -21,6 +21,7 @@ add_executable(tensor_tests
     test_reference_backend.cpp
     test_eigen_backend.cpp
     test_label_tag.cpp
+    test_typed_tensor.cpp
 )
 
 target_link_libraries(tensor_tests

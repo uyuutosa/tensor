@@ -28,4 +28,5 @@
 #include "tensor/core/reference_tensor.hpp"
 #include "tensor/core/shape.hpp"
 #include "tensor/core/tensor.hpp"
+#include "tensor/core/typed_tensor.hpp"
 #include "tensor/core/version.hpp"
