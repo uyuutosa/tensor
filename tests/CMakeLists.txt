@@ -20,6 +20,7 @@ add_executable(tensor_tests
     test_autograd_dot.cpp
     test_reference_backend.cpp
     test_eigen_backend.cpp
+    test_label_tag.cpp
 )
 
 target_link_libraries(tensor_tests
