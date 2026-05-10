@@ -10,9 +10,13 @@
 #pragma once
 
 #include "tensor/core/axis.hpp"
+#include "tensor/core/broadcast.hpp"
 #include "tensor/core/concepts.hpp"
+#include "tensor/core/dynamic_shape.hpp"
+#include "tensor/core/dynamic_tensor.hpp"
 #include "tensor/core/format.hpp"
 #include "tensor/core/mdspan_interop.hpp"
+#include "tensor/core/ops.hpp"
 #include "tensor/core/shape.hpp"
 #include "tensor/core/tensor.hpp"
 #include "tensor/core/version.hpp"
