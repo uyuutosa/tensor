@@ -19,13 +19,14 @@ workspace "tensor" "Header-only C++20/23 educational library for named-axis tens
         # ─── The system under design ─────────────────────────────────────────
         tensor = softwareSystem "tensor" "Header-only C++20/23 named-axis tensor algebra library + bundled tutorials." {
 
-            core = container "tensor::core" "Named-axis tensor types, expression templates, mdspan interop." "C++20 headers" "Library"
-            autograd = container "tensor::autograd" "Tape-based reverse-mode automatic differentiation typed against named-axis tensors." "C++20 headers" "Library"
-            gpu = container "tensor::gpu" "WebGPU codegen + runtime adapter; emits WGSL kernels from named-axis expressions." "C++20 headers + WGSL" "Library"
-            tex = container "tensor::tex" "consteval LaTeX-subset parser (Einstein notation) + LaTeX output renderer." "C++20 headers" "Library"
-            tutorials = container "tutorials/" "Jupyter notebooks demonstrating the library, executed in CI per release." "Jupyter (xeus-cling C++20)" "Tutorial"
+            # Hexagonal classification per ADR-0009: Domain / DrivingAdapter / DrivenAdapter.
+            core = container "tensor::core" "Named-axis tensor types, expression templates, mdspan interop. Owns concepts.hpp declaring ports." "C++20 headers" "Domain"
+            autograd = container "tensor::autograd" "Tape-based reverse-mode automatic differentiation typed against named-axis tensors. Extends the Domain hexagon." "C++20 headers" "Domain"
+            tex = container "tensor::tex" "consteval LaTeX-subset parser (Einstein notation) + LaTeX output renderer. Implements ExpressionSource / ExpressionSink ports." "C++20 headers" "DrivingAdapter"
+            gpu = container "tensor::gpu" "WebGPU codegen + runtime adapter; emits WGSL kernels from named-axis expressions. Implements KernelBackend port." "C++20 headers + WGSL" "DrivenAdapter"
+            lyx = container "lyx-export (Phase 3+)" "LyX module that exports tensor-bearing documents to the consteval _tex DSL." "LyX module" "DrivingAdapter"
+            tutorials = container "tutorials/" "Jupyter notebooks demonstrating the library, executed in CI per release. Outside the hexagon — demos, not adapters." "Jupyter (xeus-cling C++20)" "Tutorial"
             book = container "Jupyter Book site" "Static site generated from tutorials/, deployed to GitHub Pages." "Jupyter Book / HTML" "Site"
-            lyx = container "lyx-export (Phase 3+)" "LyX module that exports tensor-bearing documents to the consteval _tex DSL." "LyX module" "Tool"
         }
 
         # ─── L1 (System Context) relations ───────────────────────────────────
@@ -86,8 +87,20 @@ workspace "tensor" "Header-only C++20/23 educational library for named-axis tens
                 background "#999999"
                 color "#ffffff"
             }
-            element "Library" {
+            # Hexagonal layer styles (ADR-0009) — three colour bands so the L2
+            # diagram doubles as a hexagon: Domain in the centre, drivers on
+            # one side, driven adapters on the other.
+            element "Domain" {
                 background "#1168bd"
+                color "#ffffff"
+                shape Hexagon
+            }
+            element "DrivingAdapter" {
+                background "#2e7d32"
+                color "#ffffff"
+            }
+            element "DrivenAdapter" {
+                background "#c62828"
                 color "#ffffff"
             }
             element "Tutorial" {
@@ -97,10 +110,6 @@ workspace "tensor" "Header-only C++20/23 educational library for named-axis tens
             element "Site" {
                 background "#7e57c2"
                 color "#ffffff"
-            }
-            element "Tool" {
-                background "#cccccc"
-                color "#000000"
             }
         }
 
