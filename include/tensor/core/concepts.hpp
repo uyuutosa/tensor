@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <string_view>
 #include <type_traits>
+#include <vector>
 
 namespace tensor::core {
 
@@ -55,14 +56,73 @@ concept TensorLike = requires(T const& t) {
     { t.size() } -> std::convertible_to<std::size_t>;
 };
 
-// ─── KernelBackend (anticipatory) ─────────────────────────────────────────────
-// A KernelBackend can execute a tensor expression and produce a result tensor.
-// The CPU reference backend lives inside tensor::core; tensor::gpu (M3+)
-// will be a separate adapter implementing this concept. Refined in later
-// milestones once the expression-graph type is settled.
+// ─── KernelBackend ────────────────────────────────────────────────────────────
+//
+// The port that production-grade adapters (Eigen, BLAS, Kokkos, WebGPU, …)
+// implement to plug into the Domain. See ADR-0010 (positioning) and ADR-0011
+// (port API design). The active adapter is selected at CMake configure time
+// via TENSOR_KERNEL_BACKEND={reference, eigen, ...}.
+//
+// Per ADR-0011:
+//   - Each method returns a freshly-allocated DynamicTensor<T>.
+//   - BroadcastPlan / ContractPlan are computed in the Domain
+//     (tensor::core::broadcast_shapes / contract_plan) and passed in.
+//   - unbroadcast is part of the port (reduce-over-collapsed-axes belongs
+//     in the backend so Eigen / Kokkos can specialise it).
+//   - Per-op backward closures are NOT part of the port — they live in
+//     tensor::autograd and compose port methods.
+//
+// `tensor::core::backend::DefaultBackend<Derived>` (introduced in
+// P2.5.M2) provides reference-quality implementations of every method so
+// adapter authors can selectively override only the operations they want to
+// fast-path.
+
+// Forward declarations for the types the KernelBackend concept refers to.
+// concepts.hpp is included from tensor.hpp (for TensorLike static_assert),
+// so it cannot pull in dynamic_tensor.hpp without a circular include.
+// The forward declarations are sufficient because the concept uses these
+// types only in unevaluated contexts inside the `requires` clauses.
+template <class T> class DynamicTensor;
+class DynamicShape;
+struct BroadcastPlan;
+struct ContractPlan;
+
 template <class B>
-concept KernelBackend = requires {
-    typename B::backend_tag;  // marker type identifying the backend
+concept KernelBackend = requires(B b) {
+    typename B::backend_tag;
+} && requires(B b,
+              DynamicTensor<double> const& a,
+              DynamicTensor<double> const& a2,
+              BroadcastPlan const& bplan,
+              ContractPlan const& cplan,
+              std::vector<std::size_t> const& source_map,
+              DynamicShape const& source_shape) {
+    // Element-wise binary, same shape.
+    { b.add(a, a2) } -> std::same_as<DynamicTensor<double>>;
+    { b.sub(a, a2) } -> std::same_as<DynamicTensor<double>>;
+    { b.mul(a, a2) } -> std::same_as<DynamicTensor<double>>;
+    { b.div(a, a2) } -> std::same_as<DynamicTensor<double>>;
+
+    // Element-wise unary.
+    { b.exp(a) }  -> std::same_as<DynamicTensor<double>>;
+    { b.log(a) }  -> std::same_as<DynamicTensor<double>>;
+    { b.relu(a) } -> std::same_as<DynamicTensor<double>>;
+    { b.neg(a) }  -> std::same_as<DynamicTensor<double>>;
+
+    // Broadcast element-wise.
+    { b.broadcast_add(a, a2, bplan) } -> std::same_as<DynamicTensor<double>>;
+    { b.broadcast_sub(a, a2, bplan) } -> std::same_as<DynamicTensor<double>>;
+    { b.broadcast_mul(a, a2, bplan) } -> std::same_as<DynamicTensor<double>>;
+
+    // Contraction (Einstein-style).
+    { b.contract(a, a2, cplan) } -> std::same_as<DynamicTensor<double>>;
+
+    // Reduction.
+    { b.reduce_sum(a) } -> std::same_as<double>;
+
+    // Unbroadcast (used by autograd to reduce dL/dout to an input's shape).
+    { b.unbroadcast(a, source_map, source_shape) }
+        -> std::same_as<DynamicTensor<double>>;
 };
 
 // ─── BufferExporter (anticipatory) ────────────────────────────────────────────
