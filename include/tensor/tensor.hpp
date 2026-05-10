@@ -6,4 +6,4 @@
 
 #pragma once
 
-#include "tensor/core/version.hpp"
+#include "tensor/core/core.hpp"
