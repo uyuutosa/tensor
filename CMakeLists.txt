@@ -15,8 +15,8 @@ option(TENSOR_WARNINGS_AS_ERRORS "Treat warnings as errors"    OFF)
 # available default. `eigen` enables the Eigen3 adapter (SIMD element-wise
 # + BLAS-flavoured GEMM).
 set(TENSOR_KERNEL_BACKEND "reference" CACHE STRING
-    "Active KernelBackend adapter (reference | eigen)")
-set_property(CACHE TENSOR_KERNEL_BACKEND PROPERTY STRINGS reference eigen)
+    "Active KernelBackend adapter (reference | eigen | webgpu)")
+set_property(CACHE TENSOR_KERNEL_BACKEND PROPERTY STRINGS reference eigen webgpu)
 
 # ─── Header-only interface library ────────────────────────────────────────────
 add_library(tensor INTERFACE)
@@ -46,6 +46,16 @@ if(TENSOR_KERNEL_BACKEND STREQUAL "eigen")
     find_package(Eigen3 CONFIG REQUIRED)
     target_link_libraries(tensor INTERFACE Eigen3::Eigen)
     target_compile_definitions(tensor INTERFACE TENSOR_HAS_EIGEN=1)
+endif()
+
+# WebGPU adapter (ADR-0012, Phase 3). Currently a stub that delegates
+# every method to reference::Backend; gpu.cpp / Dawn integration is
+# pending P3.M3+. Selecting -DTENSOR_KERNEL_BACKEND=webgpu defines
+# TENSOR_HAS_WEBGPU so the stub header compiles and the third backend
+# slot is exercisable; no real GPU dependency is required yet.
+if(TENSOR_KERNEL_BACKEND STREQUAL "webgpu")
+    target_compile_definitions(tensor INTERFACE TENSOR_HAS_WEBGPU=1)
+    message(STATUS "tensor: WebGPU backend selected (stub — delegates to reference until P3.M3 lands WGSL kernels)")
 endif()
 
 # mdspan integration is temporarily disabled; the vcpkg-shipped Kokkos
