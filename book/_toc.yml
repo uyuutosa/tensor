@@ -1,0 +1,21 @@
+format: jb-book
+root: intro
+parts:
+  - caption: Getting started
+    chapters:
+      - file: ../tutorials/00_intro.ipynb
+        title: "Intro — named-axis tensors"
+  - caption: Autograd
+    chapters:
+      - file: ../tutorials/05_autograd-from-scratch.ipynb
+        title: "Build your own autograd"
+      - file: ../tutorials/07_mlp-on-toy.ipynb
+        title: "A small model trained on toy data"
+  - caption: Architecture
+    chapters:
+      - file: ../tutorials/08_swappable-backends.ipynb
+        title: "Swappable backends — Hexagonal payoff"
+  - caption: Reference
+    chapters:
+      - file: architecture
+      - file: roadmap
