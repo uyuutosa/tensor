@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "tensor",
   "version-string": "0.0.1-alpha",
-  "description": "Header-only C++20/23 educational library for named-axis tensor algebra.",
+  "description": "Header-only C++20/23 library — the canonical reference for differentiable named-axis tensor computation in modern C++ (ADR-0013).",
   "homepage": "https://github.com/uyuutosa/tensor",
   "license": "MIT",
   "supports": "(linux | osx | windows) & (x64 | arm64)",
@@ -12,5 +12,11 @@
     "doctest",
     "eigen3",
     "mdspan"
-  ]
+  ],
+  "features": {
+    "webgpu": {
+      "description": "Enables the WebGPU KernelBackend adapter. Pulls in Dawn via vcpkg (ADR-0014). Requires opting into a baseline that includes dawn@20260410.140140+ — the project's default builtin-baseline does not. Activate via `vcpkg install --x-feature=webgpu` after overriding the baseline, e.g. `--x-manifest-root=. --x-builtin-ports-root-dir=<vcpkg>/ports`. The actual gpu.cpp + Dawn dispatch wiring lands in P3.M3.2 / P3.M4.2 (see docs/detailed-design/webgpu-element-wise-kernels.md and docs/detailed-design/webgpu-gemm-kernel.md); until then this feature exists as a forward-declaration of the intent captured in ADR-0014 so downstream tooling can discover the dependency shape.",
+      "dependencies": ["dawn"]
+    }
+  }
 }
