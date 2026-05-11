@@ -99,7 +99,11 @@ def emit_cpp(formulas: List[Formula], namespace: str) -> str:
         delim = _safe_raw_delimiter(f.body)
         out.append(f'auto formula_{idx} = R"{delim}({f.body}){delim}"_tex;')
         out.append("")
-    return "\n".join(out)
+    # Strip trailing blanks, then end with exactly one newline (Unix
+    # end-of-file convention). The golden-file diff CI in
+    # .github/workflows/lyx-export.yml relies on this.
+    text = "\n".join(out).rstrip() + "\n"
+    return text
 
 
 def _safe_raw_delimiter(body: str) -> str:
@@ -139,7 +143,10 @@ def main(argv: List[str] | None = None) -> int:
     if args.output:
         args.output.write_text(snippet)
     else:
-        print(snippet)
+        # `print` would append its own newline; `emit_cpp` already
+        # terminates the snippet with exactly one newline so the
+        # golden-file diff against `example.cpp.expected` is clean.
+        print(snippet, end="")
     return 0
 
 
