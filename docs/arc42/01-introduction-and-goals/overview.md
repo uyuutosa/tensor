@@ -101,5 +101,5 @@ For interim phase-by-phase deliverables, see the dated impl-plans under [`../../
 - §3 Context and Scope: [`../03-context-and-scope/system-context.md`](../03-context-and-scope/system-context.md).
 - §4 Solution Strategy: [`../04-solution-strategy/strategy.md`](../04-solution-strategy/strategy.md).
 - §5 Building Blocks: [`../05-building-blocks/overview.md`](../05-building-blocks/overview.md).
-- §9 Decisions: [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) … [ADR-0011](../09-decisions/0011-kernel-backend-port-api.md).
+- §9 Decisions: [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) … [ADR-0012](../09-decisions/0012-webgpu-adapter-implementation-design.md).
 - §10 Quality (TBD): clarity / correctness / portability, with measurable definitions.

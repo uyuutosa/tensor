@@ -11,7 +11,7 @@
 - **Swappable kernel backends** via the `KernelBackend` port (ADR-0009 + ADR-0010): reference CPU shipped; Eigen adapter in Phase 2.5; WebGPU adapter in Phase 3 ([ADR-0006](./docs/arc42/09-decisions/0006-adopt-webgpu-as-gpu-backend.md)). Domain code is backend-agnostic.
 - **Bundled xeus-cling Jupyter tutorials** — `00_intro`, `05_autograd-from-scratch`, `07_mlp-on-toy` shipped; backend-swap and WebGPU notebooks planned.
 
-See [`docs/arc42/01-introduction-and-goals/overview.md`](./docs/arc42/01-introduction-and-goals/overview.md) for goals and [`docs/arc42/09-decisions/`](./docs/arc42/09-decisions/) for the eleven foundational ADRs.
+See [`docs/arc42/01-introduction-and-goals/overview.md`](./docs/arc42/01-introduction-and-goals/overview.md) for goals and [`docs/arc42/09-decisions/`](./docs/arc42/09-decisions/) for the twelve foundational ADRs.
 
 The previous 2016 implementation has been retired to [`archive/legacy-2016/`](./archive/legacy-2016/) for reference; the rewrite under [`include/tensor/`](./include/tensor/) is *not* a port — see [ADR-0001](./docs/arc42/09-decisions/0001-pivot-to-educational-named-axis-dsl.md) and [ADR-0002](./docs/arc42/09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md).
 
@@ -34,10 +34,10 @@ That builds the header-only library, fetches dependencies (`mdspan`, `fmt`, `doc
 | Phase                                 | Milestones                                                            | State          |
 | ------------------------------------- | --------------------------------------------------------------------- | -------------- |
 | **Phase 1 — `0.0.1-alpha`**           | M1 build · M2 core · M3 runtime broadcast · M4 `_tex` MVP · M5 fn/ref · M6 intro notebook · CI green | ✅ shipped     |
-| **Phase 1.5 — mop-up**                | M3 compile-time path (`LabelTag` + `TypedTensor`) ✅ · M4 `_tex` evaluator ✅ · `zero_grad` + `sgd_update` ✅ · mdspan polyfill restore · xeus-cling notebook CI · LyX export | partially ✅, rest backlog |
+| **Phase 1.5 — mop-up**                | M3 compile-time path (`LabelTag` + `TypedTensor`) ✅ · M4 `_tex` evaluator ✅ · `zero_grad` + `sgd_update` ✅ · mdspan polyfill restore ✅ · LyX export module + LyX plugin ✅ · perf bench framework + reference baseline ✅ · xeus-cling notebook CI backlog | mostly ✅ |
 | **Phase 2 — autograd (ADR-0007)**     | MVP + activations + broadcast-aware backward + contraction + autograd-from-scratch & MLP-on-toy notebooks | ✅ shipped     |
 | **Phase 2.5 — `KernelBackend` port + Eigen adapter** ([ADR-0010](./docs/arc42/09-decisions/0010-refine-positioning-to-educational-first-production-capable.md)) | ADR-0011 port API ✅ · reference adapter ✅ · Eigen adapter ✅ · tutorial 08 ✅ · perf comparison report | ✅ shipped (perf report still backlog) |
-| **Phase 3 — WebGPU (ADR-0006)**       | `tensor::gpu` DrivenAdapter · WGSL codegen · browser demo (impl-plan dated 2026-05-11) | planned        |
+| **Phase 3 — WebGPU (ADR-0006)**       | ADR-0012 design ✅ · `tensor::gpu` DrivenAdapter · WGSL codegen · browser demo (impl-plan + design dated 2026-05-11) | P3.M1 ✅, P3.M2 onward planned |
 | **Phase 4 — `0.1.0` public release**  | Full tutorial corpus · Jupyter Book site (scaffold ✅) · LyX export · release tag | in progress    |
 
 Live plan: see [`docs/impl-plans/`](./docs/impl-plans/) (one dated file per phase).
