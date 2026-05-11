@@ -50,6 +50,10 @@ The bundled Jupyter Book is published from [`book/`](./book/) to GitHub Pages on
 
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the contributor workflow (Git Flow, Conventional Commits, Hexagonal discipline checklist) and [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) for project norms.
 
+## What changed when
+
+See [`CHANGELOG.md`](./CHANGELOG.md) for a phase-by-phase rundown of what landed in each logical alpha.
+
 ## Architecture docs
 
 This repository ships with the [pentaglyph-docs](https://github.com/uyuutosa/pentaglyph-docs)
