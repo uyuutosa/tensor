@@ -99,23 +99,34 @@ public:
         return unary_op<T>(a, wgsl::kNegF32, &reference::Backend::neg<T>);
     }
 
+    // ── Broadcast element-wise (P3.M5 — real Dawn dispatch for f32) ────
+    //
+    // Generalised element-wise with Einstein-style broadcasting; the
+    // shipped WGSL source (`kBroadcastAddF32` etc.) consumes the
+    // BroadcastPlan via a uniform buffer (BroadcastParams). Max rank
+    // supported by the kernel: kBroadcastMaxRank (8); the project's
+    // tests / tutorials use rank ≤ 3 in practice.
+
     template <class T>
     [[nodiscard]] DynamicTensor<T> broadcast_add(DynamicTensor<T> const& a,
                                                  DynamicTensor<T> const& b,
                                                  BroadcastPlan const& plan) const {
-        return ref_.broadcast_add(a, b, plan);
+        return broadcast_op<T>(a, b, plan, wgsl::kBroadcastAddF32, "+",
+                               &reference::Backend::broadcast_add<T>);
     }
     template <class T>
     [[nodiscard]] DynamicTensor<T> broadcast_sub(DynamicTensor<T> const& a,
                                                  DynamicTensor<T> const& b,
                                                  BroadcastPlan const& plan) const {
-        return ref_.broadcast_sub(a, b, plan);
+        return broadcast_op<T>(a, b, plan, wgsl::kBroadcastSubF32, "-",
+                               &reference::Backend::broadcast_sub<T>);
     }
     template <class T>
     [[nodiscard]] DynamicTensor<T> broadcast_mul(DynamicTensor<T> const& a,
                                                  DynamicTensor<T> const& b,
                                                  BroadcastPlan const& plan) const {
-        return ref_.broadcast_mul(a, b, plan);
+        return broadcast_op<T>(a, b, plan, wgsl::kBroadcastMulF32, "*",
+                               &reference::Backend::broadcast_mul<T>);
     }
 
     template <class T>
@@ -217,6 +228,78 @@ private:
 
             DynamicTensor<T> out{a.shape()};
             detail::copy_buffer_to_host(ctx, gOut, out.data(), bytes);
+            return out;
+        }
+    }
+
+    // Shared dispatch logic for broadcast element-wise ops on T = float.
+    // Non-float dtypes and shapes exceeding kBroadcastMaxRank delegate.
+    template <class T, class RefFn>
+    [[nodiscard]] DynamicTensor<T> broadcast_op(DynamicTensor<T> const& a,
+                                                DynamicTensor<T> const& b,
+                                                BroadcastPlan const& plan,
+                                                std::string_view wgsl_template,
+                                                std::string_view op_token,
+                                                RefFn ref_method) const {
+        if constexpr (!std::is_same_v<T, float>) {
+            return (ref_.*ref_method)(a, b, plan);
+        } else {
+            if (plan.result.rank() > wgsl::kBroadcastMaxRank ||
+                a.shape().rank() > wgsl::kBroadcastMaxRank ||
+                b.shape().rank() > wgsl::kBroadcastMaxRank) {
+                return (ref_.*ref_method)(a, b, plan);
+            }
+
+            // Pack the BroadcastPlan into the kernel's uniform layout.
+            detail::BroadcastParams params{};
+            params.result_rank = static_cast<std::uint32_t>(plan.result.rank());
+            params.a_rank = static_cast<std::uint32_t>(a.shape().rank());
+            params.b_rank = static_cast<std::uint32_t>(b.shape().rank());
+            for (std::size_t r = 0; r < plan.result.rank(); ++r) {
+                params.result_extents[r] =
+                    static_cast<std::uint32_t>(plan.result[r].extent);
+                const std::size_t as = plan.a_source[r];
+                const std::size_t bs = plan.b_source[r];
+                params.a_source[r] = (as == broadcast_npos)
+                                         ? 0xFFFFFFFFu
+                                         : static_cast<std::uint32_t>(as);
+                params.b_source[r] = (bs == broadcast_npos)
+                                         ? 0xFFFFFFFFu
+                                         : static_cast<std::uint32_t>(bs);
+            }
+            for (std::size_t i = 0; i < a.shape().rank(); ++i) {
+                params.a_extents[i] =
+                    static_cast<std::uint32_t>(a.shape()[i].extent);
+            }
+            for (std::size_t i = 0; i < b.shape().rank(); ++i) {
+                params.b_extents[i] =
+                    static_cast<std::uint32_t>(b.shape()[i].extent);
+            }
+
+            const std::size_t a_total = a.size();
+            const std::size_t b_total = b.size();
+            // NOTE: DynamicShape::size() returns the rank (number of
+            // axes), not the element count. Use total() for the
+            // element-count product.
+            const std::size_t result_total = plan.result.total();
+            const std::size_t out_bytes = result_total * sizeof(float);
+
+            auto& ctx = detail::WebGPUContext::current();
+            auto gA = detail::make_input_buffer(ctx.device(), a_total * sizeof(float));
+            auto gB = detail::make_input_buffer(ctx.device(), b_total * sizeof(float));
+            auto gOut = detail::make_output_buffer(ctx.device(), out_bytes);
+            ctx.queue().WriteBuffer(gA, 0, a.data(), a_total * sizeof(float));
+            ctx.queue().WriteBuffer(gB, 0, b.data(), b_total * sizeof(float));
+
+            detail::dispatch_broadcast(ctx, wgsl_template, op_token,
+                                       gA, a_total * sizeof(float),
+                                       gB, b_total * sizeof(float),
+                                       gOut, out_bytes,
+                                       params, result_total,
+                                       wgsl::kDefaultWorkgroupSize);
+
+            DynamicTensor<T> out{plan.result};
+            detail::copy_buffer_to_host(ctx, gOut, out.data(), out_bytes);
             return out;
         }
     }

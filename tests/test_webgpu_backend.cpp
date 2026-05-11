@@ -131,6 +131,48 @@ TEST_CASE("webgpu vs reference: element-wise binary ops on f32 (real GPU dispatc
     check_op(w.div(a, b), r.div(a, b), "div");
 }
 
+TEST_CASE("webgpu vs reference: broadcast_add on f32 outer product (1D + 1D → 2D)") {
+    WebGPUBackend w;
+    RefBackend r;
+    DynamicTensor<float> a(DynamicShape{Axis{"i", 4}}, {1.0f, 2.0f, 3.0f, 4.0f});
+    DynamicTensor<float> b(DynamicShape{Axis{"j", 3}}, {10.0f, 20.0f, 30.0f});
+    auto plan = tensor::core::broadcast_shapes(a.shape(), b.shape());
+    auto wo = w.broadcast_add(a, b, plan);
+    auto ro = r.broadcast_add(a, b, plan);
+    REQUIRE(wo.size() == ro.size());
+    REQUIRE(wo.size() == 12);
+    for (std::size_t i = 0; i < wo.size(); ++i) {
+        CAPTURE(i);
+        CHECK(wo[i] == doctest::Approx(ro[i]).epsilon(kFloatTol));
+    }
+}
+
+TEST_CASE("webgpu vs reference: broadcast {add,sub,mul} on f32 with overlapping label (rank-2 + rank-1)") {
+    WebGPUBackend w;
+    RefBackend r;
+    // A has axes (i=3, j=4); B has axis (j=4) — broadcast B along i.
+    DynamicTensor<float> A(DynamicShape{Axis{"i", 3}, Axis{"j", 4}},
+                           {1.0f, 2.0f, 3.0f, 4.0f,
+                            5.0f, 6.0f, 7.0f, 8.0f,
+                            9.0f, 10.0f, 11.0f, 12.0f});
+    DynamicTensor<float> B(DynamicShape{Axis{"j", 4}}, {0.1f, 0.2f, 0.3f, 0.4f});
+    auto plan = tensor::core::broadcast_shapes(A.shape(), B.shape());
+
+    auto check_op = [&](DynamicTensor<float> const& w_out,
+                        DynamicTensor<float> const& r_out, const char* op) {
+        REQUIRE(w_out.size() == r_out.size());
+        REQUIRE(w_out.size() == 12);
+        for (std::size_t i = 0; i < w_out.size(); ++i) {
+            CAPTURE(op);
+            CAPTURE(i);
+            CHECK(w_out[i] == doctest::Approx(r_out[i]).epsilon(kFloatTol));
+        }
+    };
+    check_op(w.broadcast_add(A, B, plan), r.broadcast_add(A, B, plan), "broadcast_add");
+    check_op(w.broadcast_sub(A, B, plan), r.broadcast_sub(A, B, plan), "broadcast_sub");
+    check_op(w.broadcast_mul(A, B, plan), r.broadcast_mul(A, B, plan), "broadcast_mul");
+}
+
 TEST_CASE("webgpu vs reference: matvec contract on f32 (real GPU dispatch via kGemmF32)") {
     WebGPUBackend w;
     RefBackend r;
