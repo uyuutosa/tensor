@@ -121,11 +121,12 @@ public:
     [[nodiscard]] DynamicTensor<T> contract(DynamicTensor<T> const& a,
                                             DynamicTensor<T> const& b,
                                             ContractPlan const& plan) const {
-        // TODO (P3.M4): emit a tiled GEMM kernel for matvec / matmul
-        // when ranks line up; delegate the rest. P3.M4 will produce a
-        // separate detailed-design doc analogous to
-        // docs/detailed-design/webgpu-element-wise-kernels.md. Until
-        // then, all paths delegate.
+        // P3.M4.1 shipped the tiled GEMM WGSL source at
+        // `tensor::core::backend::webgpu::wgsl::kGemmF32`. P3.M4.2
+        // replaces this delegation with the gpu.cpp dispatch sequence
+        // specified in docs/detailed-design/webgpu-gemm-kernel.md §3 —
+        // gates on the call being a single-shared-axis matvec or matmul
+        // and delegates anything else to reference per ADR-0012.
         return ref_.contract(a, b, plan);
     }
 

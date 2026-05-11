@@ -115,3 +115,48 @@ TEST_CASE("webgpu::wgsl: each unary kernel encodes its own activation") {
 TEST_CASE("webgpu::wgsl: default workgroup size matches gpu.cpp canonical 256") {
     CHECK(wgsl::kDefaultWorkgroupSize == 256u);
 }
+
+// ─── GEMM kernel (P3.M4) ──────────────────────────────────────────────
+
+TEST_CASE("webgpu::wgsl: GEMM tile constants align with the kernel source") {
+    CHECK(wgsl::kGemmTileM == 16u);
+    CHECK(wgsl::kGemmTileN == 16u);
+    CHECK(wgsl::kGemmTileK == 16u);
+    // The kernel source hard-codes the same tile sizes; if either side
+    // changes, both must.
+    CHECK(contains(wgsl::kGemmF32, "TILE_M : u32 = 16u"));
+    CHECK(contains(wgsl::kGemmF32, "TILE_N : u32 = 16u"));
+    CHECK(contains(wgsl::kGemmF32, "TILE_K : u32 = 16u"));
+}
+
+TEST_CASE("webgpu::wgsl: GEMM kernel declares four bindings (a, b, out, params)") {
+    CHECK(contains(wgsl::kGemmF32, "@group(0) @binding(0)"));
+    CHECK(contains(wgsl::kGemmF32, "@group(0) @binding(1)"));
+    CHECK(contains(wgsl::kGemmF32, "@group(0) @binding(2)"));
+    CHECK(contains(wgsl::kGemmF32, "@group(0) @binding(3)"));
+    CHECK(contains(wgsl::kGemmF32, "struct Params"));
+    CHECK(contains(wgsl::kGemmF32, "var<uniform>"));
+}
+
+TEST_CASE("webgpu::wgsl: GEMM kernel is templated on precision and uses 2D workgroup") {
+    CHECK(contains(wgsl::kGemmF32, "{{precision}}"));
+    CHECK(contains(wgsl::kGemmF32, "@compute @workgroup_size(TILE_N, TILE_M, 1)"));
+}
+
+TEST_CASE("webgpu::wgsl: GEMM kernel uses workgroup shared memory + barriers") {
+    CHECK(contains(wgsl::kGemmF32, "var<workgroup> shA"));
+    CHECK(contains(wgsl::kGemmF32, "var<workgroup> shB"));
+    // Both barriers are needed: one after loading the tile, one after
+    // consuming it (so the next iteration's load doesn't race with the
+    // current iteration's accumulation).
+    auto first = wgsl::kGemmF32.find("workgroupBarrier()");
+    REQUIRE(first != std::string_view::npos);
+    auto second = wgsl::kGemmF32.find("workgroupBarrier()", first + 1);
+    CHECK(second != std::string_view::npos);
+}
+
+TEST_CASE("webgpu::wgsl: GEMM kernel performs the inner product and respects bounds") {
+    CHECK(contains(wgsl::kGemmF32, "acc = acc + shA[lrow][k] * shB[k][lcol]"));
+    CHECK(contains(wgsl::kGemmF32, "if (row < p.M && col < p.N)"));
+    CHECK(contains(wgsl::kGemmF32, "out[row * p.N + col] = acc"));
+}

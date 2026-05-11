@@ -133,6 +133,13 @@ To keep CI tractable while no self-hosted GPU runner exists, P3.M3 splits:
 - **P3.M3.3 — Unary WGSL kernel sources (shipped, this PR).** Same header, four more constants: `kExpF32` / `kLogF32` / `kReluF32` / `kNegF32`. Two-binding template (input + output) instead of three. ReLU expressed via `max(a, 0.0)` so it maps to a single GPU instruction. The WebGPU adapter's element-wise *source* surface is now feature-complete: 8 ops covered (4 binary + 4 unary).
 - **P3.M3.2 — Dispatch wiring (deferred).** Replaces each `webgpu::Backend::{add,sub,mul,div,exp,log,relu,neg}` stub delegation with the gpu.cpp dispatch sequence described in the detailed-design doc §3 (binary) + §3.1 (unary). Preconditions: vcpkg baseline bumped to include `dawn@20260410.140140`+; self-hosted GitHub Actions runner with a Dawn-compatible GPU exists; ADR-0012's compile-only-CI policy upgrades to "compile-only on generic CI + numerical-agreement on self-hosted runner".
 
+### P3.M4 sub-split
+
+Mirrors P3.M3 split:
+
+- **P3.M4.1 — Tiled GEMM WGSL source (shipped, this PR).** `webgpu_wgsl.hpp::kGemmF32` is a single readable tiled-GEMM kernel covering both matvec (rank-2 × rank-1) and matmul (rank-2 × rank-2) with one shared axis. 16 × 16 workgroup tile; 16-deep K slab; workgroup-shared `shA` / `shB`; two `workgroupBarrier()` per outer iteration. `tests/test_webgpu_wgsl.cpp` text-validates. `docs/detailed-design/webgpu-gemm-kernel.md` is the design (with P3.M4.2 dispatch-sequence pseudo-code).
+- **P3.M4.2 — Dispatch wiring (deferred).** Replaces `webgpu::Backend::contract` delegation; gates on simple matvec / matmul case detection and delegates the rest. Same preconditions as P3.M3.2.
+
 ## Follow-ups beyond Phase 3
 
 - Plan Phase 4 (`0.1.0` public release): Jupyter Book site on GitHub Pages, full tutorial corpus, LyX export module, release tag. Per [ADR-0013](../arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md), Phase 4 also gains a canonical-reference framing pass (CITATION.cff; per-container "why this exists" comments; Jupyter Book "How to cite" section).
