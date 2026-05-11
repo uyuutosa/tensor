@@ -118,7 +118,7 @@ Planned siblings (not yet written): `tensor-autograd.md`, `tensor-tex.md`, `kern
 
 - §3 Context and Scope: [`../03-context-and-scope/system-context.md`](../03-context-and-scope/system-context.md)
 - §4 Solution Strategy: [`../04-solution-strategy/strategy.md`](../04-solution-strategy/strategy.md)
-- §6 Runtime: [`../06-runtime/`](../06-runtime/) (TBD)
+- §6 Runtime: [`../06-runtime/overview.md`](../06-runtime/overview.md) — four scenarios (broadcast / `_tex` / autograd / backend swap)
 - §9 Decisions: [`../09-decisions/`](../09-decisions/)
 - C4 source: [`../../diagrams/c4/workspace.dsl`](../../diagrams/c4/workspace.dsl)
 - Detailed designs (HOW): [`../../detailed-design/`](../../detailed-design/)
