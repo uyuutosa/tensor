@@ -49,8 +49,12 @@ public:
     template <class T>
     [[nodiscard]] DynamicTensor<T> add(DynamicTensor<T> const& a,
                                        DynamicTensor<T> const& b) const {
-        // TODO (P3.M3): emit a WGSL kernel for element-wise add and
-        // dispatch through Dawn. Until then, delegate.
+        // P3.M3.1 shipped the WGSL source for add at
+        // `tensor::core::backend::webgpu::wgsl::kAddF32` (see
+        // include/tensor/core/backend/webgpu_wgsl.hpp). P3.M3.2 replaces
+        // this delegation with the gpu.cpp dispatch sequence specified in
+        // docs/detailed-design/webgpu-element-wise-kernels.md §3. Until
+        // then, continue to delegate to reference (ADR-0012).
         return ref_.add(a, b);
     }
     template <class T>
@@ -110,8 +114,10 @@ public:
                                             DynamicTensor<T> const& b,
                                             ContractPlan const& plan) const {
         // TODO (P3.M4): emit a tiled GEMM kernel for matvec / matmul
-        // when ranks line up; delegate the rest. Until then, all paths
-        // delegate.
+        // when ranks line up; delegate the rest. P3.M4 will produce a
+        // separate detailed-design doc analogous to
+        // docs/detailed-design/webgpu-element-wise-kernels.md. Until
+        // then, all paths delegate.
         return ref_.contract(a, b, plan);
     }
 
