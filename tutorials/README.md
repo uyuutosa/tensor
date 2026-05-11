@@ -1,6 +1,6 @@
 # tutorials/
 
-Hands-on Jupyter notebooks introducing `tensor`, executed against the [xeus-cling](https://github.com/jupyter-xeus/xeus-cling) C++20 kernel. Per [ADR-0008](../docs/arc42/09-decisions/0008-distribute-as-header-only-with-jupyter-tutorials.md), these notebooks are the **primary educational deliverable**: each release executes them end-to-end in CI, and a Jupyter Book site generated from this directory is published to GitHub Pages.
+Hands-on Jupyter notebooks introducing `tensor`, executed against the [xeus-cpp](https://github.com/compiler-research/xeus-cpp) `xcpp20` kernel per [ADR-0014](../docs/arc42/09-decisions/0014-external-substrate-strategy.md) (xeus-cling was the original choice but is effectively frozen at C++17 / Clang-13). Per [ADR-0008](../docs/arc42/09-decisions/0008-distribute-as-header-only-with-jupyter-tutorials.md), these notebooks are the **primary educational deliverable**: each release executes them end-to-end in CI, and a Jupyter Book site generated from this directory is published to GitHub Pages.
 
 ## Environment
 
@@ -12,7 +12,7 @@ conda activate tensor-tutorials
 jupyter lab
 ```
 
-This pulls xeus-cling, vcpkg, the C++20 toolchain, and Jupyter Book. Once the env is active, `jupyter lab` opens with the C++20 kernel selectable per notebook.
+This pulls xeus-cpp 0.10.0+, vcpkg, the C++20 toolchain, and Jupyter Book. Once the env is active, `jupyter lab` opens with the `xcpp20` kernel selectable per notebook.
 
 ## Planned progression
 
@@ -34,7 +34,7 @@ The first four notebooks together reproduce the 2016 README's narrative end-to-e
 
 - **Notebooks track the live API.** When the API of a tutorial-cited symbol changes, the notebook is updated in the same PR.
 - **CI validates every notebook's JSON on every push** (see [`.github/workflows/notebook-ci.yml`](../.github/workflows/notebook-ci.yml)); a corrupted file is rejected.
-- **CI executes every notebook weekly** via xeus-cling on a Monday-03:00-UTC cron. The job is best-effort and `continue-on-error: true`, since xeus-cling occasionally lags the latest C++20 standard features. A failure files an implicit signal that the notebooks need updating against the current API surface — file an issue if you notice the badge red.
+- **CI executes every notebook weekly** via xeus-cpp on a Monday-03:00-UTC cron. The job is best-effort and `continue-on-error: true`. A failure files an implicit signal that the notebooks need updating against the current API surface — file an issue if you notice the badge red. A parallel `legacy-xeus-cling` job runs only `00_intro.ipynb` against xeus-cling to keep the C++17-subset smoke green for users on older conda-forge channels.
 - **No long-form prose lifts** from the architecture documentation. Notebooks are *learning experiences*; reference material lives under `docs/`.
 
 ## Source for `00_intro`
