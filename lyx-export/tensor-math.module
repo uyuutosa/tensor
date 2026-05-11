@@ -1,0 +1,24 @@
+#\DeclareLyXModule{Tensor Math}
+#DescriptionBegin
+#Declares a "TensorMath" custom inset so a learner can mark math
+#regions in their LyX document as tensor algebra. The Tensor C++
+#converter (see LYX_PLUGIN.md) picks these insets up in preference
+#to plain Formula insets when emitting `_tex` UDL snippets.
+#DescriptionEnd
+#Category: theorems
+
+Format 79
+
+InsetLayout Flex:TensorMath
+    LyXType            custom
+    LabelString        "Tensor Math"
+    LatexType          environment
+    LatexName          tensormath
+    BgColor            #f0f8ff
+    LabelFont
+        Series         Bold
+    EndFont
+    Decoration         classic
+    MultiPar           false
+    ResetsFont         true
+End
