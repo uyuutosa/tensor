@@ -9,6 +9,7 @@ project(tensor
 
 # ─── Project options ──────────────────────────────────────────────────────────
 option(TENSOR_BUILD_TESTS        "Build the test suite"        ON)
+option(TENSOR_BUILD_BENCH        "Build the bench suite"       OFF)
 option(TENSOR_WARNINGS_AS_ERRORS "Treat warnings as errors"    OFF)
 # KernelBackend adapter selection (ADR-0011). `reference` is the always-
 # available default. `eigen` enables the Eigen3 adapter (SIMD element-wise
@@ -57,6 +58,10 @@ endif()
 if(TENSOR_BUILD_TESTS AND PROJECT_IS_TOP_LEVEL)
     enable_testing()
     add_subdirectory(tests)
+endif()
+
+if(TENSOR_BUILD_BENCH AND PROJECT_IS_TOP_LEVEL)
+    add_subdirectory(bench)
 endif()
 
 # ─── Install rules ────────────────────────────────────────────────────────────
