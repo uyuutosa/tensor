@@ -251,8 +251,23 @@ paket-files/
 .idea/
 *.sln.iml
 
-# CMake build directories
+# CMake build directories — any subdirectory of build/ that is a CMake
+# tree. The gpu-smoke/ subdirectory under build/ holds committed smoke
+# sources + its own .gitignore for compiled binaries; keep it tracked.
 build/reference-test/
 build/webgpu-test/
 build/default/
 build/eigen-test/
+build/bench-eigen/
+build/bench-webgpu/
+# Generic catch-all for new ad-hoc build dirs (build/foo-test/, build/
+# release-out/, etc.). gpu-smoke/ is whitelisted explicitly via the
+# !build/gpu-smoke/ pattern below.
+build/*/CMakeFiles/
+build/*/CMakeCache.txt
+build/*/build.ninja
+build/*/*.cmake
+build/*/.ninja_*
+build/*/bench/
+build/*/tests/
+!build/gpu-smoke/

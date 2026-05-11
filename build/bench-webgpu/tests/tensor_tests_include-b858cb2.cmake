@@ -1,5 +1,0 @@
-if(EXISTS "/home/yu/proj/tensor/build/bench-webgpu/tests/tensor_tests_tests-b858cb2.cmake")
-  include("/home/yu/proj/tensor/build/bench-webgpu/tests/tensor_tests_tests-b858cb2.cmake")
-else()
-  add_test(tensor_tests_NOT_BUILT-b858cb2 tensor_tests_NOT_BUILT-b858cb2)
-endif()
