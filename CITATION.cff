@@ -3,7 +3,7 @@ message: >-
   If you use this software in academic work or reference it in derivative
   implementations, please cite it as below. Both the software entry and the
   ADR sequence (the project's bibliography per ADR-0013) are citable.
-title: "tensor — canonical reference for differentiable named-axis tensor computation in modern C++"
+title: "tensor — differentiable named-axis tensor algebra in modern C++, documented to canonical-reference quality"
 abstract: >-
   tensor is a header-only C++20/23 library that explores named-axis tensor
   algebra: tensors carry axis labels (a_i, b_j) and operations broadcast over
@@ -11,9 +11,11 @@ abstract: >-
   mode autograd over named-axis tensors, a LaTeX-subset _tex user-defined
   literal that lets a textbook formula be evaluated as a program, swappable
   KernelBackend adapters (reference / Eigen / WebGPU), and a LyX export
-  module. The project is positioned (ADR-0013) as the canonical reference for
-  differentiable named-tensor computation in modern C++ — educational-first,
-  production-capable via backend adapters (ADR-0010).
+  module. Per ADR-0015 (superseding ADR-0013), the project aspires to
+  canonical-reference-quality documentation and design — operationalised via
+  three disciplines (bibliography, ubiquitous language, reproducibility) —
+  while making no self-declaration of canonical-reference status; that status
+  is determined by external adoption, not by the author.
 type: software
 authors:
   - given-names: uyuutosa
@@ -35,10 +37,10 @@ keywords:
   - LaTeX
   - LyX
   - educational
-  - canonical reference
+  - canonical-reference discipline
 preferred-citation:
   type: software
-  title: "tensor — canonical reference for differentiable named-axis tensor computation in modern C++"
+  title: "tensor — differentiable named-axis tensor algebra in modern C++, documented to canonical-reference quality"
   authors:
     - given-names: uyuutosa
       affiliation: independent
@@ -62,5 +64,8 @@ references:
     title: "ADR-0011 — KernelBackend port API"
     url: "https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0011-kernel-backend-port-api.md"
   - type: generic
-    title: "ADR-0013 — Reframe as canonical reference for named-tensor computation"
+    title: "ADR-0013 — Reframe as canonical reference for named-tensor computation (superseded by ADR-0015)"
     url: "https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md"
+  - type: generic
+    title: "ADR-0015 — Aspire to canonical-reference quality, not self-anoint"
+    url: "https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md"

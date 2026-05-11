@@ -57,7 +57,7 @@ Each scenario is in the Source / Stimulus / Environment / Response / Response Me
 | Stimulus          | Reads the umbrella header [`include/tensor/tensor.hpp`](../../../include/tensor/tensor.hpp) and walks down into one container of their choice. |
 | Environment       | Repository at a tagged release; reader has the ADR sequence open alongside.                        |
 | Response          | The reader can connect every public type and free function in the chosen container to either a math notation (paper / textbook) or an ADR. |
-| Response measure  | Per [G-8 citability discipline](../01-introduction-and-goals/overview.md): every public name traces to a source. Half-yearly bibliography audit ([ADR-0013 §Compliance](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)) verifies. |
+| Response measure  | Per [G-8 citability discipline](../01-introduction-and-goals/overview.md): every public name traces to a source. Half-yearly bibliography audit ([ADR-0015 §Compliance](../09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md), superseding ADR-0013) verifies. |
 
 ### QC-2 — Diagnostic legibility
 
@@ -69,7 +69,7 @@ Each scenario is in the Source / Stimulus / Environment / Response / Response Me
 | Response          | The compiler diagnostic names the constraint that failed and the operand types involved.          |
 | Response measure  | `tests/test_typed_tensor.cpp` includes failure-case probes; the README's `which-named-tensor-type` how-to documents expected diagnostics.    |
 
-### QC-3 — Documentation citability ([ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md))
+### QC-3 — Documentation citability ([ADR-0015](../09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md), superseding ADR-0013)
 
 | Field             | Value                                                                                              |
 | ----------------- | -------------------------------------------------------------------------------------------------- |
@@ -147,7 +147,7 @@ Each scenario is in the Source / Stimulus / Environment / Response / Response Me
 | Stimulus          | `cmake --preset=default -DTENSOR_BUILD_BENCH=ON && ./build/.../tensor_bench`.                       |
 | Environment       | Default release build, reference backend, single-core laptop.                                       |
 | Response          | The three documented baseline cases — add 1M, matvec 1024², matmul 512³ — produce numbers within 2× of the documented baseline ([`docs/reports/2026-05-11_backend-performance-comparison.md`](../../reports/2026-05-11_backend-performance-comparison.md)). |
-| Response measure  | The 2× tolerance is generous because the canonical-reference framing prioritises clarity over absolute speed; the bench is for *signal*, not for benchmark-shopping. |
+| Response measure  | The 2× tolerance is generous because the canonical-reference-quality framing prioritises clarity over absolute speed; the bench is for *signal*, not for benchmark-shopping. |
 
 ### QF-2 — Eigen / WebGPU speedup envelope
 

@@ -37,7 +37,7 @@ last-reviewed: 2026-05-11
 | OC-2  | **No external paid dependencies.** All build / test / publish tooling is free or already provided (vcpkg, GitHub Actions, conda-forge xeus-cpp, Jupyter Book). | repo root — no `package.json` runtime deps, no SaaS subscriptions |
 | OC-3  | **Git Flow with merge commits.** Squash-merge is forbidden because it erases `git-subtree-dir:` metadata required by the `libs/pentaglyph-docs/` subtree. | [`.claude/rules/version-control.md` §Hard rules #8](../../../.claude/rules/version-control.md) |
 | OC-4  | **English-by-default for docs.** Conversation between maintainer and contributors may be in Japanese; ADRs, arc42, detailed-design, CHANGELOG are English. | pentaglyph-docs scaffold convention; reinforced in `docs/STRATEGY.md` of the kit |
-| OC-5  | **Canonical-reference posture is a maintenance multiplier.** Every new public name must trace to a source (paper / ADR / textbook). | [ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md), `CONTRIBUTING.md` depth-over-breadth heuristic |
+| OC-5  | **Canonical-reference-quality discipline is a maintenance multiplier.** Every new public name must trace to a source (paper / ADR / textbook); ubiquitous-language and reproducibility lines are PR-time review obligations. | [ADR-0015](../09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md) (superseding [ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)), `CONTRIBUTING.md` depth-over-breadth heuristic |
 
 ## 3. Regulatory constraints
 

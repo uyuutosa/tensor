@@ -13,7 +13,7 @@ last-reviewed: 2026-05-11
 | Type         | Module Detailed Design (Template 3 / arc42 §5 zoom-in)         |
 | Owner        | uyuutosa                                                       |
 | Source code  | [`include/tensor/autograd/`](../../include/tensor/autograd/)    |
-| Related ADRs | [ADR-0007](../arc42/09-decisions/0007-adopt-autograd-as-first-class-subsystem.md), [ADR-0009](../arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md), [ADR-0011](../arc42/09-decisions/0011-kernel-backend-port-api.md), [ADR-0013](../arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md) |
+| Related ADRs | [ADR-0007](../arc42/09-decisions/0007-adopt-autograd-as-first-class-subsystem.md), [ADR-0009](../arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md), [ADR-0011](../arc42/09-decisions/0011-kernel-backend-port-api.md), [ADR-0015](../arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md) (superseding [ADR-0013](../arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)) |
 | Sibling      | [`tensor-core.md`](./tensor-core.md) (Domain centerpiece this module extends) |
 | Last Updated | 2026-05-11                                                     |
 

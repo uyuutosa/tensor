@@ -13,7 +13,7 @@ last-reviewed: 2026-05-11
 | Type         | Module Detailed Design (Template 3 / arc42 §5 zoom-in)         |
 | Owner        | uyuutosa                                                       |
 | Source code  | [`include/tensor/core/`](../../include/tensor/core/)            |
-| Related ADRs | [ADR-0002](../arc42/09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md), [ADR-0004](../arc42/09-decisions/0004-adopt-hybrid-named-axis-api.md), [ADR-0009](../arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md), [ADR-0011](../arc42/09-decisions/0011-kernel-backend-port-api.md), [ADR-0013](../arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md) |
+| Related ADRs | [ADR-0002](../arc42/09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md), [ADR-0004](../arc42/09-decisions/0004-adopt-hybrid-named-axis-api.md), [ADR-0009](../arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md), [ADR-0011](../arc42/09-decisions/0011-kernel-backend-port-api.md), [ADR-0015](../arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md) (superseding [ADR-0013](../arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)) |
 | Last Updated | 2026-05-11                                                     |
 
 ## Revision history
@@ -26,7 +26,7 @@ last-reviewed: 2026-05-11
 
 ## TL;DR
 
-`tensor::core` is the **Domain centerpiece** of the project's Hexagonal-lite architecture. It owns the named-axis tensor algebra: `Axis`, `Shape` / `DynamicShape`, `Tensor<T,N>` / `DynamicTensor<T>` / `TypedTensor<T, Labels...>`, broadcast (Einstein-style, label-aware), contraction (single-shared-axis matvec / matmul), `mdspan` interop, and the `KernelBackend` port that all execution adapters satisfy. The headers under `include/tensor/core/` are the only part of the codebase that may not depend on any adapter — they are the source of the project's *vocabulary* (per the [§12 glossary](../arc42/12-glossary/overview.md)) and the most cite-able artifact under the canonical-reference framing (ADR-0013).
+`tensor::core` is the **Domain centerpiece** of the project's Hexagonal-lite architecture. It owns the named-axis tensor algebra: `Axis`, `Shape` / `DynamicShape`, `Tensor<T,N>` / `DynamicTensor<T>` / `TypedTensor<T, Labels...>`, broadcast (Einstein-style, label-aware), contraction (single-shared-axis matvec / matmul), `mdspan` interop, and the `KernelBackend` port that all execution adapters satisfy. The headers under `include/tensor/core/` are the only part of the codebase that may not depend on any adapter — they are the source of the project's *vocabulary* (per the [§12 glossary](../arc42/12-glossary/overview.md)) and the most cite-able artifact under the canonical-reference-quality aspiration (ADR-0015, superseding ADR-0013).
 
 ---
 

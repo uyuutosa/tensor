@@ -1,7 +1,7 @@
 # tensor
 
-> **Header-only C++20/23 library — the canonical reference for differentiable named-axis tensor computation in modern C++.**
-> Educational-first, production-capable via backend adapters ([ADR-0013](./docs/arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md), refining [ADR-0010](./docs/arc42/09-decisions/0010-refine-positioning-to-educational-first-production-capable.md)). Production users adopt **as-is**: no ABI stability guarantee, no commitment to operator-coverage parity with [Eigen](https://eigen.tuxfamily.org/) / [xtensor](https://github.com/xtensor-stack/xtensor) / [libtorch](https://pytorch.org/) / [Kokkos](https://kokkos.org/), no formal support. The Domain is intentionally small and readable; speed comes from swappable `KernelBackend` adapters.
+> **Header-only C++20/23 library for differentiable named-axis tensor algebra — educational-first, production-capable via backend adapters. Documented and designed to canonical-reference quality.**
+> Three disciplines per [ADR-0015](./docs/arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md) (superseding [ADR-0013](./docs/arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)): **bibliography** (every public name traces to a paper or ADR), **ubiquitous language** (one name per concept across code / ADR / glossary), **reproducibility** (clean clone → build + bench + notebook in under 30 minutes). Production users adopt **as-is**: no ABI stability guarantee, no commitment to operator-coverage parity with [Eigen](https://eigen.tuxfamily.org/) / [xtensor](https://github.com/xtensor-stack/xtensor) / [libtorch](https://pytorch.org/) / [Kokkos](https://kokkos.org/), no formal support. The Domain is intentionally small and readable; speed comes from swappable `KernelBackend` adapters.
 
 `tensor` revives a 2016 personal C++ template library around an unusual idea: tensors that carry **axis labels** (`a_i`, `b_j`) and operate on each other through Einstein-style broadcasting (`a_i + b_j → c_{ij}`). The 2026 rewrite ships:
 
@@ -11,7 +11,7 @@
 - **Swappable kernel backends** via the `KernelBackend` port (ADR-0009 + ADR-0010): three concrete adapter slots — reference CPU ✅, Eigen ✅ (Phase 2.5), WebGPU **stub** ✅ (Phase 3 P3.M2 — concept-satisfying skeleton delegating to reference; WGSL kernels land in P3.M3+ per [ADR-0006](./docs/arc42/09-decisions/0006-adopt-webgpu-as-gpu-backend.md) / [ADR-0012](./docs/arc42/09-decisions/0012-webgpu-adapter-implementation-design.md)). Domain code is backend-agnostic; swapping is one CMake variable.
 - **Bundled xeus-cling Jupyter tutorials** — `00_intro`, `05_autograd-from-scratch`, `07_mlp-on-toy` shipped; backend-swap and WebGPU notebooks planned.
 
-See [`docs/arc42/01-introduction-and-goals/overview.md`](./docs/arc42/01-introduction-and-goals/overview.md) for goals and [`docs/arc42/09-decisions/`](./docs/arc42/09-decisions/) for the fourteen foundational ADRs (ADR-0013 sharpens positioning to canonical-reference; ADR-0014 captures the external-substrate strategy derived from the [2026-05-11 research](./docs/reports/2026-05-11_external-substrate-research.md)).
+See [`docs/arc42/01-introduction-and-goals/overview.md`](./docs/arc42/01-introduction-and-goals/overview.md) for goals and [`docs/arc42/09-decisions/`](./docs/arc42/09-decisions/) for the fifteen foundational ADRs (ADR-0014 captures the external-substrate strategy from the [2026-05-11 research](./docs/reports/2026-05-11_external-substrate-research.md); ADR-0015 reframes ADR-0013's positioning from "is canonical reference" to "aspires to canonical-reference quality" — the discipline stays, the claim becomes honest).
 
 The previous 2016 implementation has been retired to [`archive/legacy-2016/`](./archive/legacy-2016/) for reference; the rewrite under [`include/tensor/`](./include/tensor/) is *not* a port — see [ADR-0001](./docs/arc42/09-decisions/0001-pivot-to-educational-named-axis-dsl.md) and [ADR-0002](./docs/arc42/09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md).
 
@@ -74,7 +74,7 @@ git subtree pull --prefix=libs/pentaglyph-docs \
 
 ## Citing
 
-This project is positioned as the canonical reference for differentiable named-axis tensor computation in modern C++ ([ADR-0013](./docs/arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)). If you build on it, please cite via [`CITATION.cff`](./CITATION.cff). The ADR sequence under [`docs/arc42/09-decisions/`](./docs/arc42/09-decisions/) is the project's bibliography — individual decisions can be cited as well-defined design choices with rationale.
+This project aspires to canonical-reference-quality documentation and design for differentiable named-axis tensor computation in modern C++ ([ADR-0015](./docs/arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md)). If you build on it, please cite via [`CITATION.cff`](./CITATION.cff). The ADR sequence under [`docs/arc42/09-decisions/`](./docs/arc42/09-decisions/) is the project's bibliography — individual decisions can be cited as well-defined design choices with rationale. *Whether the work earns canonical-reference status is determined by external adoption, not by self-declaration; the three disciplines aim to make the work ready when (and if) such adoption happens.*
 
 ## License
 

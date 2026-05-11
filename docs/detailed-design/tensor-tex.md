@@ -13,7 +13,7 @@ last-reviewed: 2026-05-11
 | Type         | Module Detailed Design (Template 3 / arc42 §5 zoom-in)         |
 | Owner        | uyuutosa                                                       |
 | Source code  | [`include/tensor/tex/`](../../include/tensor/tex/), [`lyx-export/`](../../lyx-export/) |
-| Related ADRs | [ADR-0005](../arc42/09-decisions/0005-adopt-tex-lyx-as-authoring-surface.md), [ADR-0009](../arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md), [ADR-0013](../arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md) |
+| Related ADRs | [ADR-0005](../arc42/09-decisions/0005-adopt-tex-lyx-as-authoring-surface.md), [ADR-0009](../arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md), [ADR-0015](../arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md) (superseding [ADR-0013](../arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)) |
 | Sibling      | [`tensor-core.md`](./tensor-core.md), [`tensor-autograd.md`](./tensor-autograd.md) |
 | Last Updated | 2026-05-11                                                     |
 

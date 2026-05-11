@@ -1,6 +1,6 @@
 # `tensor` — named-axis tensor algebra in modern C++
 
-> The canonical reference for differentiable named-tensor computation in modern C++ — educational-first, production-capable via backend adapters.
+> Differentiable named-axis tensor algebra in modern C++ — educational-first, production-capable via backend adapters. Documented and designed to canonical-reference quality ([ADR-0015](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md)).
 
 `tensor` is a header-only C++20/23 library that explores **named-axis tensor algebra** — tensors carry axis labels (`a_i`, `b_j`), and operations broadcast over them in Einstein style (`a_i + b_j → c_{ij}`). The project's slogan is *the formula is the program*: the same expression you'd write in a paper can be parsed, evaluated, and gradient-checked in a notebook.
 
@@ -28,7 +28,7 @@ Each chapter is a Jupyter notebook. The C++ code blocks target the [xeus-cpp](ht
 
 ## How to cite this work
 
-This project is positioned ([ADR-0013](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)) as the canonical reference for differentiable named-axis tensor computation in modern C++. If you build on this work in a paper, a textbook, a derived implementation, or a downstream library, please cite it via the [`CITATION.cff`](https://github.com/uyuutosa/tensor/blob/develop/CITATION.cff) file at the repository root. The ADR sequence under [`docs/arc42/09-decisions/`](https://github.com/uyuutosa/tensor/tree/develop/docs/arc42/09-decisions) is itself the project's bibliography — individual decisions can be cited as well-defined design choices with rationale.
+This project aspires to canonical-reference-quality documentation and design ([ADR-0015](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md), superseding [ADR-0013](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)). Whether the work earns canonical-reference status is determined by external adoption, not by self-declaration; the three disciplines (bibliography / ubiquitous language / reproducibility) aim to make the work ready when (and if) such adoption happens. If you build on this work in a paper, a textbook, a derived implementation, or a downstream library, please cite it via the [`CITATION.cff`](https://github.com/uyuutosa/tensor/blob/develop/CITATION.cff) file at the repository root. The ADR sequence under [`docs/arc42/09-decisions/`](https://github.com/uyuutosa/tensor/tree/develop/docs/arc42/09-decisions) is itself the project's bibliography — individual decisions can be cited as well-defined design choices with rationale.
 
 ## Project status
 
