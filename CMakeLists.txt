@@ -48,14 +48,28 @@ if(TENSOR_KERNEL_BACKEND STREQUAL "eigen")
     target_compile_definitions(tensor INTERFACE TENSOR_HAS_EIGEN=1)
 endif()
 
-# WebGPU adapter (ADR-0012, Phase 3). Currently a stub that delegates
-# every method to reference::Backend; gpu.cpp / Dawn integration is
-# pending P3.M3+. Selecting -DTENSOR_KERNEL_BACKEND=webgpu defines
-# TENSOR_HAS_WEBGPU so the stub header compiles and the third backend
-# slot is exercisable; no real GPU dependency is required yet.
+# WebGPU adapter (ADR-0012, Phase 3 P3.M3.2). Per ADR-0016 (superseding
+# ADR-0014 §Decision Outcome point 2) the project talks to Dawn directly
+# via Dawn's own RAII C++ wrapper `<webgpu/webgpu_cpp.h>`; the legacy
+# gpu.cpp vendoring is no longer load-bearing.
+#
+# Selecting -DTENSOR_KERNEL_BACKEND=webgpu pulls in Dawn via
+# find_package(Dawn CONFIG REQUIRED) — the consumer is responsible for
+# making the Dawn vcpkg port discoverable (typically via
+# -DCMAKE_PREFIX_PATH=<vcpkg-install>/x64-linux). The project's default
+# vcpkg.json builtin-baseline does NOT include `dawn`; consumers
+# override the baseline locally per ADR-0014 / discussion-points Axis E.
+#
+# The four element-wise binary methods (add / sub / mul / div) and the
+# four unary methods (exp / log / relu / neg) on
+# tensor::core::backend::webgpu::Backend dispatch through Dawn on this
+# code path. contract / broadcast_* / reduce_sum / unbroadcast continue
+# to delegate to reference::Backend until P3.M4.2 / P3.M5 wire them.
 if(TENSOR_KERNEL_BACKEND STREQUAL "webgpu")
+    find_package(Dawn CONFIG REQUIRED)
+    target_link_libraries(tensor INTERFACE dawn::webgpu_dawn)
     target_compile_definitions(tensor INTERFACE TENSOR_HAS_WEBGPU=1)
-    message(STATUS "tensor: WebGPU backend selected (stub — delegates to reference until P3.M3 lands WGSL kernels)")
+    message(STATUS "tensor: WebGPU backend selected — linked against dawn::webgpu_dawn (ADR-0016).")
 endif()
 
 # mdspan integration is temporarily disabled; the vcpkg-shipped Kokkos

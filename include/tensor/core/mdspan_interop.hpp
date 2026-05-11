@@ -16,40 +16,53 @@
 #include <utility>
 #include <vector>
 
-// Setting MDSPAN_IMPL_STANDARD_NAMESPACE / MDSPAN_IMPL_PROPOSED_NAMESPACE
-// before including <mdspan> would force the polyfill's namespace; we keep
-// the polyfill's defaults (Kokkos::Experimental::) and reach the types via
-// the macros it leaves defined.
-#include <mdspan>
+// Prefer C++23 native <mdspan> when available (libstdc++ 13+ / libc++ 17+);
+// otherwise fall back to the kokkos polyfill (vcpkg port `mdspan`), which
+// installs at <experimental/mdspan> and reaches the types via
+// MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE (defaults
+// Kokkos::Experimental). The `__has_include` probe makes this robust to
+// either path; the user can override with -DTENSOR_USE_STD_MDSPAN if their
+// toolchain requires it.
+#if defined(__cpp_lib_mdspan) && __cpp_lib_mdspan >= 202207L && __has_include(<mdspan>)
+#  include <mdspan>
+#  define TENSOR_HAVE_STD_MDSPAN 1
+#elif __has_include(<experimental/mdspan>)
+#  include <experimental/mdspan>
+#elif __has_include(<mdspan>)
+#  include <mdspan>
+#else
+#  error "Neither <mdspan> nor <experimental/mdspan> found"
+#endif
 
 #include "tensor/core/shape.hpp"
 #include "tensor/core/tensor.hpp"
 
 namespace tensor::core::detail {
 
-#if defined(TENSOR_USE_STD_MDSPAN) || \
-    (defined(__cpp_lib_mdspan) && __cpp_lib_mdspan >= 202207L)
+#if defined(TENSOR_USE_STD_MDSPAN) || defined(TENSOR_HAVE_STD_MDSPAN)
+// Native C++23 std::mdspan.
 template <class T, class Extents>
 using mdspan_t = std::mdspan<T, Extents>;
 template <class IndexType, std::size_t Rank>
 using dextents_t = std::dextents<IndexType, Rank>;
 #else
-// Kokkos polyfill — types live at MDSPAN_IMPL_STANDARD_NAMESPACE::
-// MDSPAN_IMPL_PROPOSED_NAMESPACE::, both of which the polyfill defines
-// (defaults: Kokkos / Experimental). Using the macros makes the adapter
-// robust to vcpkg's port-level configuration choices.
-#  ifndef MDSPAN_IMPL_STANDARD_NAMESPACE
-#    define MDSPAN_IMPL_STANDARD_NAMESPACE Kokkos
-#  endif
-#  ifndef MDSPAN_IMPL_PROPOSED_NAMESPACE
-#    define MDSPAN_IMPL_PROPOSED_NAMESPACE Experimental
-#  endif
+// kokkos/mdspan polyfill — current vcpkg port (`mdspan@0.6.0`) exposes
+// the types at `std::experimental::`. Older vcpkg ports defaulted to
+// `Kokkos::Experimental::`; we accommodate both via the polyfill's own
+// macros when defined, otherwise fall back to `std::experimental::`.
+#  if defined(MDSPAN_IMPL_STANDARD_NAMESPACE) && defined(MDSPAN_IMPL_PROPOSED_NAMESPACE)
 template <class T, class Extents>
 using mdspan_t = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE
     ::mdspan<T, Extents>;
 template <class IndexType, std::size_t Rank>
 using dextents_t = MDSPAN_IMPL_STANDARD_NAMESPACE::MDSPAN_IMPL_PROPOSED_NAMESPACE
     ::dextents<IndexType, Rank>;
+#  else
+template <class T, class Extents>
+using mdspan_t = std::experimental::mdspan<T, Extents>;
+template <class IndexType, std::size_t Rank>
+using dextents_t = std::experimental::dextents<IndexType, Rank>;
+#  endif
 #endif
 
 }  // namespace tensor::core::detail
