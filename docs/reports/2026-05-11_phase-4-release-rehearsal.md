@@ -31,13 +31,13 @@ From [arc42 §1 §6](../arc42/01-introduction-and-goals/overview.md):
 
 | Criterion | State | Verdict |
 | --------- | ----- | ------- |
-| All ADR-0001 follow-ups closed | ADR-0001 follow-ups are inherited / refined by ADR-0010 + ADR-0013; cross-checked in the discussion-points report. The `tutorials/01-04` scaffolds noted as "scaffolded" in `tutorials/README.md` are the remaining items. | **Partially blocking** — see §2. |
+| All ADR-0001 follow-ups closed | ADR-0001 follow-ups are inherited / refined by ADR-0010 + ADR-0013 + ADR-0015; cross-checked in the discussion-points report. Soft-blocker (01-04 scaffolds) resolved 2026-05-12 — see §2. | ✅ |
 | CMake 10-job CI matrix green | Achieved 2026-05-11 (PRs #9, #21, #38, #41). | ✅ |
 | `tutorials/00_intro.ipynb` reproduces the 2016 blog post | Shipped PR #8. | ✅ |
 | `tutorials/05_autograd-from-scratch.ipynb` walks the autograd primitive-by-primitive | Shipped PR #15. | ✅ |
 | `tutorials/07_mlp-on-toy.ipynb` trains MLP on toy dataset | Shipped PR #17. | ✅ |
 | `tutorials/08_swappable-backends.ipynb` demonstrates Hexagonal-lite payoff | Shipped PR #22. | ✅ |
-| `tutorials/06_webgpu-acceleration.ipynb` runs WebGPU matmul, matches CPU | **Phase 3 — P3.M3 + P3.M4 WGSL sources shipped; dispatch wiring + tutorial deferred to P3.M3.2 / P3.M4.2.** | **Blocking — pre-condition: GPU runner.** |
+| `tutorials/06_webgpu-acceleration.ipynb` runs WebGPU matmul, matches CPU | **Phase 3 — design walkthrough shipped (#56); P3.M3.2 + P3.M4.2 + P3.M5 dispatch wiring shipped on local RTX 3090 (#60 / #61 / #62) — 12 of 15 KernelBackend methods now dispatch real Dawn compute.** | ✅ (live-execution cells in tutorial 06 can be added in a Phase-4 follow-up; the verification is complete in `test_webgpu_backend.cpp`). |
 | Jupyter Book site reachable on GitHub Pages | Scaffold + deploy workflow shipped PR #28. Site goes live when the maintainer enables Pages in repo settings (Source: GitHub Actions). | **Not blocking the tag; requires one-click maintainer action post-release.** |
 | README leads with canonical-reference / educational framing | Reframed PR #39 (canonical-reference), reinforced PR #40 + #45. | ✅ |
 | `CITATION.cff` at repo root | Shipped PR #40. | ✅ |
@@ -60,6 +60,8 @@ The audit identifies **one** strict blocker and **one** soft blocker.
 **Recommendation: Option 3 in the near term, with Option 2 as the explicit release decision.** A "design walkthrough" tutorial 06 makes the WGSL sources legible to a reader who is not running them, and is fully cite-able under the canonical-reference discipline. The re-scoping of §6 acknowledges that "runs on GPU and matches CPU" is a *post*-`0.1.0` criterion (it requires hardware that the project does not assume).
 
 ### Soft blocker — `tutorials/01-04` scaffolded chapters
+
+> **Resolved 2026-05-12** per the recommendation below (Option 1): the 01-04 scaffolds are formally dropped from the planned progression. The pedagogical arc is covered by notebooks 00 / 05 / 06 / 07 / 08 plus the `tensor::tex` Evaluator + LyX export module. See [`tutorials/README.md`](../../tutorials/README.md) for the post-drop corpus list.
 
 The `tutorials/README.md` planned progression table lists 01-04 as "scaffolded" — i.e. file slots exist in the planned numbering but no notebooks have been written. The four shipped notebooks (00, 05, 07, 08) cover the headline pedagogical arc. The 01-04 scaffolds were originally meant to be:
 
