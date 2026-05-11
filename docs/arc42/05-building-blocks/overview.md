@@ -106,7 +106,13 @@ Phase 1 ships only `tensor::core`, `tensor::tex` (MVP), and `tutorials/` (intro 
 
 ## L3 (component) zoom-ins
 
-Component-level views are added per container as detailed-design docs land. None exists in Phase 1 because no container is yet structurally complex enough to warrant L3.
+Component-level views land as detailed-design docs under [`../../detailed-design/`](../../detailed-design/). Current instances:
+
+- [`tensor-core.md`](../../detailed-design/tensor-core.md) — Domain centerpiece.
+- [`webgpu-element-wise-kernels.md`](../../detailed-design/webgpu-element-wise-kernels.md) — WebGPU element-wise binary + unary kernels (P3.M3).
+- [`webgpu-gemm-kernel.md`](../../detailed-design/webgpu-gemm-kernel.md) — WebGPU tiled GEMM (P3.M4).
+
+Planned siblings (not yet written): `tensor-autograd.md`, `tensor-tex.md`, `kernel-backend-port.md`.
 
 ## Cross-references
 
