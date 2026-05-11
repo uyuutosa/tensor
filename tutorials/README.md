@@ -14,21 +14,24 @@ jupyter lab
 
 This pulls xeus-cpp 0.10.0+, vcpkg, the C++20 toolchain, and Jupyter Book. Once the env is active, `jupyter lab` opens with the `xcpp20` kernel selectable per notebook.
 
-## Planned progression
+## Notebook corpus
 
 | #   | Title                                              | Status      | Phase introduced |
 | --- | -------------------------------------------------- | ----------- | ---------------- |
-| 00  | Intro — modernized 2016 blog post                  | **shipped** (this directory) | 1 (M6) |
-| 01  | Named-axis fundamentals                            | scaffolded  | 1 |
-| 02  | Function and reference tensors as teaching exhibits | scaffolded  | 1 |
-| 03  | Convolutions reformulated as tensor inner products | scaffolded  | 1 |
-| 04  | TeX bridge — *the formula is the program*          | scaffolded  | 1 |
-| 05  | Build your own autograd from scratch               | **shipped** (this directory) | 2 (P2.M5) |
-| 06  | WebGPU acceleration (design walkthrough)           | **shipped** (this directory; live-execution form pending GPU runner) | 3 (P3.M6) |
-| 07  | A small MLP on a toy dataset                       | **shipped** (this directory) | 2 (P2.M6) |
-| 08  | Swappable backends — Hexagonal payoff (reference vs Eigen) | **shipped** (this directory) | 2.5 (P2.5.M5) |
+| 00  | Intro — modernized 2016 blog post                  | **shipped** | 1 (M6) |
+| 05  | Build your own autograd from scratch               | **shipped** | 2 (P2.M5) |
+| 06  | WebGPU acceleration (design walkthrough)           | **shipped** | 3 (P3.M6) |
+| 07  | A small MLP on a toy dataset                       | **shipped** | 2 (P2.M6) |
+| 08  | Swappable backends — Hexagonal payoff (reference vs Eigen) | **shipped** | 2.5 (P2.5.M5) |
 
-The first four notebooks together reproduce the 2016 README's narrative end-to-end on the new C++20 API. Notebooks 05–07 land in Phase 2 / Phase 3 respectively (see [`../docs/impl-plans/`](../docs/impl-plans/)).
+The five shipped notebooks cover the pedagogical arc end-to-end:
+
+- **00 + 07** demonstrate the headline named-axis story and a real training loop converging to W ≈ 2, b ≈ 1.
+- **05** walks the tape-based autograd primitive-by-primitive.
+- **08** demonstrates the Hexagonal-lite architectural payoff (same Domain code on reference / Eigen).
+- **06** narrates the WGSL kernels + Dawn dispatch design (and now references real-GPU-verified shipped kernels via PRs #60 / #61 / #62).
+
+Earlier planning material referenced slots `01_named-axis-fundamentals`, `02_function-and-reference-tensors`, `03_convolutions`, and `04_tex-bridge` as "scaffolded". Those numbers are **explicitly out of scope** per the Phase 4 release rehearsal (PR #48 §2 + #63): notebook 00 already absorbs the 2016 Qiita post's named-axis fundamentals + function/reference tensors + convolutions material, and notebook 06's WGSL walkthrough plus the `tensor::tex` Evaluator (with the [`lyx-export/`](../lyx-export/) plugin) cover the `_tex` bridge end-to-end. Adding scaffolded notebooks under those numbers would duplicate material that is already legible elsewhere.
 
 ## Editing rules
 
