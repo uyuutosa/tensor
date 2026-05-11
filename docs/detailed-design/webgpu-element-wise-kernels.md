@@ -58,9 +58,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 }
 ```
 
-Placeholders use gpu.cpp's `{{workgroupSize}}` / `{{precision}}` convention (see [`third_party/gpu_cpp/gpu.hpp:291-389`](../../third_party/gpu_cpp/gpu.hpp) — `gpu::KernelCode` constructor performs the substitutions before WGSL compilation).
+Placeholders use the `{{workgroupSize}}` / `{{precision}}` convention originally from gpu.cpp's `KernelCode` class. As of ADR-0016 (2026-05-12) the project does not use gpu.cpp itself; the substitution is now done by [`tensor::core::backend::webgpu::detail::substitute_wgsl`](../../include/tensor/core/backend/webgpu_detail/dispatch.hpp) which performs the placeholder replacement at dispatch time before handing the source to `wgpu::Device::CreateShaderModule`.
 
-`{{workgroupSize}}` defaults to 256 (the canonical Dawn choice; matches `gpu::KernelCode(string, size_t)` default at `third_party/gpu_cpp/gpu.hpp:308`). `{{precision}}` is `f32` in Phase 3 MVP; `f16` is a Phase 4 follow-up (gpu.cpp's `enable f16;` prelude is already wired).
+`{{workgroupSize}}` defaults to 256 (the canonical Dawn choice — fits in a single subgroup on most modern GPUs and balances occupancy against shared-memory pressure). `{{precision}}` is `f32` in Phase 3 MVP; `f16` is a Phase 4 follow-up.
 
 ### 2.1 Unary kernel shape (P3.M3.3)
 
@@ -211,7 +211,7 @@ So for **element-wise binary kernels at this scale, GPU loses to CPU on round-tr
 
 - WGSL sources: [`include/tensor/core/backend/webgpu_wgsl.hpp`](../../include/tensor/core/backend/webgpu_wgsl.hpp)
 - Stub adapter (current `add/sub/mul/div` bodies): [`include/tensor/core/backend/webgpu.hpp`](../../include/tensor/core/backend/webgpu.hpp)
-- gpu.cpp vendored header: [`third_party/gpu_cpp/gpu.hpp`](../../third_party/gpu_cpp/gpu.hpp) — line references above
+- Dawn C++ API: `<webgpu/webgpu_cpp.h>` (shipped by the `dawn` vcpkg port) — used directly by the project per [ADR-0016](../arc42/09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md). The original draft of this document referenced gpu.cpp's `gpu.hpp` by line number; those references are preserved historically in the §3 dispatch-sequence pseudo-code as a guide to the API surface gpu.cpp was wrapping (the underlying `wgpu*` C ABI is what we now use directly through `webgpu_cpp.h`'s RAII types).
 - Phase 3 impl-plan: [`docs/impl-plans/2026-05-11_phase-3-webgpu.md`](../impl-plans/2026-05-11_phase-3-webgpu.md)
 - [ADR-0012 — WebGPU adapter implementation design](../arc42/09-decisions/0012-webgpu-adapter-implementation-design.md)
 - [ADR-0014 — External-substrate strategy](../arc42/09-decisions/0014-external-substrate-strategy.md)
