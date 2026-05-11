@@ -139,8 +139,12 @@ To keep CI tractable while no self-hosted GPU runner exists, P3.M3 splits:
 
 Mirrors P3.M3 split:
 
-- **P3.M4.1 — Tiled GEMM WGSL source (shipped, this PR).** `webgpu_wgsl.hpp::kGemmF32` is a single readable tiled-GEMM kernel covering both matvec (rank-2 × rank-1) and matmul (rank-2 × rank-2) with one shared axis. 16 × 16 workgroup tile; 16-deep K slab; workgroup-shared `shA` / `shB`; two `workgroupBarrier()` per outer iteration. `tests/test_webgpu_wgsl.cpp` text-validates. `docs/detailed-design/webgpu-gemm-kernel.md` is the design (with P3.M4.2 dispatch-sequence pseudo-code).
+- **P3.M4.1 — Tiled GEMM WGSL source (shipped, PR #46).** `webgpu_wgsl.hpp::kGemmF32` is a single readable tiled-GEMM kernel covering both matvec (rank-2 × rank-1) and matmul (rank-2 × rank-2) with one shared axis. 16 × 16 workgroup tile; 16-deep K slab; workgroup-shared `shA` / `shB`; two `workgroupBarrier()` per outer iteration. `tests/test_webgpu_wgsl.cpp` text-validates. `docs/detailed-design/webgpu-gemm-kernel.md` is the design (with P3.M4.2 dispatch-sequence pseudo-code).
 - **P3.M4.2 — Dispatch wiring (deferred).** Replaces `webgpu::Backend::contract` delegation; gates on simple matvec / matmul case detection and delegates the rest. Same preconditions as P3.M3.2.
+
+### P3.M6 — `tutorials/06_webgpu-acceleration.ipynb` (shipped, Option 3 form)
+
+The Phase 4 release rehearsal report (#48) §2 strict-blocker recommendation. Per [ADR-0013](../arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)'s canonical-reference framing, tutorial 06 ships as a **design walkthrough** notebook narrating the eight committed WGSL kernels and the dispatch wiring design without executing GPU code. Cells include code that prints the kernel sources / tile constants (executable on either xeus-cpp or xeus-cling); the dispatch sequences themselves are markdown pseudo-code with line-resolved references into `third_party/gpu_cpp/gpu.hpp`. When the GPU-runner precondition is met and P3.M3.2 / P3.M4.2 land, this notebook gains executable cells exercising the kernels live — at which point the §1 §6 success criterion "runs WebGPU matmul + matches CPU results" is no longer a forward-promise but an enforced CI outcome.
 
 ## Follow-ups beyond Phase 3
 
