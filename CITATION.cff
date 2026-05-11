@@ -1,0 +1,66 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software in academic work or reference it in derivative
+  implementations, please cite it as below. Both the software entry and the
+  ADR sequence (the project's bibliography per ADR-0013) are citable.
+title: "tensor — canonical reference for differentiable named-axis tensor computation in modern C++"
+abstract: >-
+  tensor is a header-only C++20/23 library that explores named-axis tensor
+  algebra: tensors carry axis labels (a_i, b_j) and operations broadcast over
+  them in Einstein style (a_i + b_j → c_{ij}). It ships a tape-based reverse-
+  mode autograd over named-axis tensors, a LaTeX-subset _tex user-defined
+  literal that lets a textbook formula be evaluated as a program, swappable
+  KernelBackend adapters (reference / Eigen / WebGPU), and a LyX export
+  module. The project is positioned (ADR-0013) as the canonical reference for
+  differentiable named-tensor computation in modern C++ — educational-first,
+  production-capable via backend adapters (ADR-0010).
+type: software
+authors:
+  - given-names: uyuutosa
+    affiliation: independent
+repository-code: "https://github.com/uyuutosa/tensor"
+url: "https://github.com/uyuutosa/tensor"
+license: MIT
+keywords:
+  - C++
+  - C++20
+  - C++23
+  - named-axis tensor
+  - Einstein notation
+  - tensor algebra
+  - autograd
+  - reverse-mode autodiff
+  - WebGPU
+  - mdspan
+  - LaTeX
+  - LyX
+  - educational
+  - canonical reference
+preferred-citation:
+  type: software
+  title: "tensor — canonical reference for differentiable named-axis tensor computation in modern C++"
+  authors:
+    - given-names: uyuutosa
+      affiliation: independent
+  repository-code: "https://github.com/uyuutosa/tensor"
+  license: MIT
+references:
+  - type: article
+    title: "Named-axis tensor algebra primer (2016 Qiita post)"
+    authors:
+      - given-names: uyuutosa
+        affiliation: independent
+    url: "https://qiita.com/uyuutosa/items/12e87f4695bd151b1d74"
+    year: 2016
+  - type: generic
+    title: "ADR-0001 — Pivot to educational named-axis DSL"
+    url: "https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0001-pivot-to-educational-named-axis-dsl.md"
+  - type: generic
+    title: "ADR-0009 — Adopt DDD ubiquitous language and Hexagonal lite"
+    url: "https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md"
+  - type: generic
+    title: "ADR-0011 — KernelBackend port API"
+    url: "https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0011-kernel-backend-port-api.md"
+  - type: generic
+    title: "ADR-0013 — Reframe as canonical reference for named-tensor computation"
+    url: "https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md"

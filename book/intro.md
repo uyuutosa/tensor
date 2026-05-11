@@ -24,7 +24,11 @@ Production users adopt the library **as-is**: no ABI stability guarantee, no com
 
 ## Reading this book
 
-Each chapter is a Jupyter notebook. The C++ code blocks are written to be executable in the [xeus-cling](https://github.com/jupyter-xeus/xeus-cling) kernel. The static site you're reading shows pre-rendered outputs; clone the repo and run `jupyter lab` to interact with them yourself.
+Each chapter is a Jupyter notebook. The C++ code blocks target the [xeus-cpp](https://github.com/compiler-research/xeus-cpp) kernel (Clang-Repl + CppInterOp); a legacy [xeus-cling](https://github.com/jupyter-xeus/xeus-cling) smoke path is retained for the introductory notebook so users on older conda-forge channels can still run it (see [ADR-0014](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0014-external-substrate-strategy.md)). The static site you're reading shows pre-rendered outputs; clone the repo and run `jupyter lab` to interact with them yourself.
+
+## How to cite this work
+
+This project is positioned ([ADR-0013](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)) as the canonical reference for differentiable named-axis tensor computation in modern C++. If you build on this work in a paper, a textbook, a derived implementation, or a downstream library, please cite it via the [`CITATION.cff`](https://github.com/uyuutosa/tensor/blob/develop/CITATION.cff) file at the repository root. The ADR sequence under [`docs/arc42/09-decisions/`](https://github.com/uyuutosa/tensor/tree/develop/docs/arc42/09-decisions) is itself the project's bibliography — individual decisions can be cited as well-defined design choices with rationale.
 
 ## Project status
 
