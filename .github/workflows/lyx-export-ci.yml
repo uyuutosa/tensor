@@ -1,0 +1,50 @@
+name: LyX export golden-file smoke
+
+# Verifies that `lyx-export/lyx_to_tex.py` produces output that matches
+# `lyx-export/example.cpp.expected` byte-for-byte. The translator handles
+# LyX `\begin_inset Formula` blocks and emits C++ that uses the project's
+# `_tex` UDL; the example + expected file are the golden round-trip.
+#
+# This is a fast (<5s) lint that does NOT require LyX to be installed —
+# it only invokes the Python translator. End-to-end "open the .lyx file
+# in LyX, hit Export → Tensor C++" is verified manually by the maintainer
+# per the install instructions in `lyx-export/LYX_PLUGIN.md`.
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'lyx-export/**'
+      - '.github/workflows/lyx-export-ci.yml'
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'lyx-export/**'
+      - '.github/workflows/lyx-export-ci.yml'
+
+concurrency:
+  group: lyx-export-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  golden-file:
+    name: lyx_to_tex example round-trip
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run translator and diff against the golden expected output
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$(python3 lyx-export/lyx_to_tex.py lyx-export/example.lyx)"
+          # Compare against the golden file. `diff -u` returns 0 only on
+          # exact match; any divergence prints the unified diff and fails
+          # the job.
+          diff -u <(printf '%s' "${out}") lyx-export/example.cpp.expected
+          echo "OK: lyx_to_tex.py output matches example.cpp.expected"
