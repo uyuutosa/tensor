@@ -24,7 +24,7 @@ last-reviewed: 2026-05-10
 
 ## TL;DR
 
-`tensor` is a **header-only C++20/23 library and bundled Jupyter book that teaches named-axis tensor algebra** — Einstein-notation operations, function tensors, reference (recursive) tensors, and convolutions reformulated as tensor inner products — with a path through automatic differentiation and WebGPU acceleration. Authoring is bidirectional with TeX / LyX so that, in the project's own slogan, *the formula is the program*. It is explicitly an educational artifact, not a production library.
+`tensor` is a **header-only C++20/23 library and bundled Jupyter book** that teaches named-axis tensor algebra — Einstein-notation operations, function tensors, reference (recursive) tensors, and convolutions reformulated as tensor inner products — with a path through automatic differentiation and WebGPU acceleration. Authoring is bidirectional with TeX / LyX so that, in the project's own slogan, *the formula is the program*. The Domain is intentionally small and readable; speed for production-shaped workloads comes from swappable `KernelBackend` adapters (reference, Eigen, WebGPU). Production adoption is permitted on **as-is terms** per [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md) — no ABI / coverage / support commitments.
 
 ---
 
@@ -32,7 +32,7 @@ last-reviewed: 2026-05-10
 
 The `tensor` repository began in ~2016 as a personal C++ template library built around an unusual idea: tensors that carry **axis labels** (`a_i`, `b_j`) and operate on each other through Einstein-style broadcasting (`a_i + b_j → c_{ij}`). The library shipped function-tensors (tensor elements that are functions), reference-tensors (tensor elements that recursively reference the previous element along an axis), and a [proof-of-concept reformulation of N-D convolution as a tensor inner product](http://qiita.com/uyuutosa/items/12e87f4695bd151b1d74).
 
-It went dormant after a single commit run. In May 2026 the project is being revived under explicit new positioning (see [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md)): a **teaching library and book** for modern C++ tensor algebra, not a production peer to Eigen, xtensor, libtorch, Kokkos, or the upcoming `std::mdspan` + `std::linalg`.
+It went dormant after a single commit run. In May 2026 the project was revived under explicit new positioning ([ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md), refined by [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md)): a **teaching library and book** for modern C++ tensor algebra whose Domain stays small and readable, with production-grade speed available through swappable backend adapters. The library does not commit to operator-coverage parity with Eigen / xtensor / libtorch / Kokkos / `std::linalg` and offers no ABI / support guarantee; production users adopt as-is.
 
 The 2016 codebase will be retired. The rewrite targets C++20 + `mdspan` interop ([ADR-0002](../09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md)), CMake + vcpkg ([ADR-0003](../09-decisions/0003-replace-eclipse-cdt-with-cmake-and-vcpkg.md)), and a hybrid runtime / NTTP named-axis API ([ADR-0004](../09-decisions/0004-adopt-hybrid-named-axis-api.md)).
 
@@ -101,5 +101,5 @@ For interim phase-by-phase deliverables, see the dated impl-plans under [`../../
 - §3 Context and Scope: [`../03-context-and-scope/system-context.md`](../03-context-and-scope/system-context.md).
 - §4 Solution Strategy: [`../04-solution-strategy/strategy.md`](../04-solution-strategy/strategy.md).
 - §5 Building Blocks: [`../05-building-blocks/overview.md`](../05-building-blocks/overview.md).
-- §9 Decisions: [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) … [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md).
+- §9 Decisions: [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) … [ADR-0011](../09-decisions/0011-kernel-backend-port-api.md).
 - §10 Quality (TBD): clarity / correctness / portability, with measurable definitions.

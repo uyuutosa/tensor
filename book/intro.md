@@ -31,10 +31,10 @@ Each chapter is a Jupyter notebook. The C++ code blocks are written to be execut
 | Phase | Status |
 | ----- | ------ |
 | Phase 1 — `0.0.1-alpha` foundation | ✅ shipped |
-| Phase 2 — autograd | ✅ shipped |
-| Phase 2.5 — backend adapters | ✅ shipped (reference + Eigen) |
-| Phase 1.5 mop-up | partial (LabelTag, `_tex` evaluator, `zero_grad`, `sgd_update` shipped; mdspan polyfill restore and xeus-cling notebook CI backlog) |
-| Phase 3 — WebGPU adapter | planned |
-| Phase 4 — `0.1.0` public release | in progress (this book scaffold) |
+| Phase 2 — autograd | ✅ shipped (MVP → activations → broadcast backward → contraction → MLP-on-toy) |
+| Phase 2.5 — backend adapters | ✅ shipped (`KernelBackend` port; reference + Eigen adapters; tutorial 08) |
+| Phase 1.5 mop-up | partial — `LabelTag` + `TypedTensor`, `_tex` evaluator, `zero_grad` + `sgd_update` ✅; mdspan polyfill restore, xeus-cling notebook CI, LyX export backlog |
+| Phase 3 — WebGPU adapter | planned (impl-plan dated 2026-05-11) |
+| Phase 4 — `0.1.0` public release | in progress (this book scaffold + GitHub Pages deploy workflow ✅; release tag and full tutorial corpus pending) |
 
 For the detailed roadmap, see the [Phase 3 plan](https://github.com/uyuutosa/tensor/blob/develop/docs/impl-plans/2026-05-11_phase-3-webgpu.md) and the [Phase 1 retrospective](https://github.com/uyuutosa/tensor/blob/develop/docs/reports/2026-05-11_phase-1-retrospective.md).

@@ -20,7 +20,7 @@ In code:
 
 ## Why this exists
 
-The educational pitch (ADR-0001) and the architectural-as-teaching-artifact stance (ADR-0009) only pay off if the Hexagonal structure is *actually* respected by the code. A rule respected only by good intentions decays in days under contributor pressure. Having the rule enforced by CMake + clang-tidy + CI lets us claim the architectural-clarity-as-feature without having to police it manually.
+The educational pitch ([ADR-0001](../arc42/09-decisions/0001-pivot-to-educational-named-axis-dsl.md), refined by [ADR-0010](../arc42/09-decisions/0010-refine-positioning-to-educational-first-production-capable.md)) and the architectural-as-teaching-artifact stance ([ADR-0009](../arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md)) only pay off if the Hexagonal structure is *actually* respected by the code. A rule respected only by good intentions decays in days under contributor pressure. Having the rule enforced by CMake + clang-tidy + CI lets us claim the architectural-clarity-as-feature without having to police it manually. The concrete shape of the `KernelBackend` port — what every backend adapter must implement — is fixed by [ADR-0011](../arc42/09-decisions/0011-kernel-backend-port-api.md); the reference and Eigen adapters currently satisfy it, with WebGPU planned (Phase 3).
 
 ## Container classification (today)
 
