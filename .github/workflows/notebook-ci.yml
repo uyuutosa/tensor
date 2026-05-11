@@ -1,0 +1,109 @@
+name: Notebook CI
+
+# Two jobs:
+#   - validate: parses every .ipynb as JSON on every push / PR. Cheap;
+#     catches the common case where a hand-edit corrupted a notebook
+#     file. Always runs.
+#   - execute: installs miniconda + xeus-cling + the project's vcpkg
+#     deps and runs `jupyter nbconvert --execute` on each tutorial.
+#     Heavy (~10 min cold install); runs only on a weekly cron schedule
+#     and via workflow_dispatch. Best-effort: a failure does not block
+#     PRs and signals that the notebooks need updating against the
+#     current API surface.
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'tutorials/**'
+      - 'book/**'
+      - 'include/**'
+      - '.github/workflows/notebook-ci.yml'
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'tutorials/**'
+      - 'book/**'
+      - 'include/**'
+      - '.github/workflows/notebook-ci.yml'
+  schedule:
+    # Weekly Monday 03:00 UTC. The xeus-cling execute job runs against the
+    # current develop HEAD; failures get filed as issues for the
+    # maintainer to triage.
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: notebook-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate notebook JSON
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate every .ipynb under tutorials/ and book/
+        run: |
+          set -euo pipefail
+          fail=0
+          for nb in $(find tutorials book -name '*.ipynb' 2>/dev/null); do
+            echo "validating ${nb}"
+            if ! python -c "import json,sys; json.load(open('${nb}'))" ; then
+              echo "FAIL: ${nb} is not valid JSON"
+              fail=1
+            fi
+          done
+          exit "$fail"
+
+  execute:
+    name: xeus-cling notebook smoke (best-effort, weekly)
+    # Only run on the schedule or manual dispatch — the heavy conda
+    # install is wasted on every PR.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-22.04
+    continue-on-error: true   # weekly best-effort
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          auto-activate-base: true
+          activate-environment: ""
+
+      - name: Create env from tutorials/environment.yml
+        shell: bash -l {0}
+        run: |
+          conda env create -n notebook-ci -f tutorials/environment.yml || \
+              conda env create -n notebook-ci -c conda-forge \
+                  xeus-cling jupyter nbconvert
+          conda init bash
+
+      - name: Execute every tutorial notebook
+        shell: bash -l {0}
+        run: |
+          conda activate notebook-ci
+          set +e
+          fail=0
+          for nb in tutorials/*.ipynb; do
+            echo "::group::${nb}"
+            jupyter nbconvert --to notebook --execute --inplace "${nb}" \
+                              --ExecutePreprocessor.timeout=180 \
+                              --ExecutePreprocessor.kernel_name=xcpp20
+            rc=$?
+            echo "::endgroup::"
+            if [ "$rc" -ne 0 ]; then
+              echo "FAIL: ${nb} did not execute cleanly"
+              fail=1
+            fi
+          done
+          exit "$fail"

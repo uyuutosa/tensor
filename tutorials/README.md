@@ -33,7 +33,8 @@ The first four notebooks together reproduce the 2016 README's narrative end-to-e
 ## Editing rules
 
 - **Notebooks track the live API.** When the API of a tutorial-cited symbol changes, the notebook is updated in the same PR.
-- **CI executes every notebook end-to-end** at release-tag time (planned for Phase 1 close); a notebook that throws or produces wrong output blocks the release.
+- **CI validates every notebook's JSON on every push** (see [`.github/workflows/notebook-ci.yml`](../.github/workflows/notebook-ci.yml)); a corrupted file is rejected.
+- **CI executes every notebook weekly** via xeus-cling on a Monday-03:00-UTC cron. The job is best-effort and `continue-on-error: true`, since xeus-cling occasionally lags the latest C++20 standard features. A failure files an implicit signal that the notebooks need updating against the current API surface — file an issue if you notice the badge red.
 - **No long-form prose lifts** from the architecture documentation. Notebooks are *learning experiences*; reference material lives under `docs/`.
 
 ## Source for `00_intro`
