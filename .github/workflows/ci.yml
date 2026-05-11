@@ -65,6 +65,16 @@ jobs:
             cc: gcc-11
             cxx: g++-11
             backend: eigen
+          # WebGPU stub backend (P3.M2): compile-only verification that
+          # the third KernelBackend slot satisfies the concept. Real
+          # WGSL kernels and Dawn integration are pending P3.M3+, so
+          # this job exercises the dispatch path only.
+          - os: ubuntu-22.04
+            compiler: gcc-11
+            preset: release-werror
+            cc: gcc-11
+            cxx: g++-11
+            backend: webgpu
 
     steps:
       - uses: actions/checkout@v4
