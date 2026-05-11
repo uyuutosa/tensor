@@ -122,13 +122,54 @@ public:
     [[nodiscard]] DynamicTensor<T> contract(DynamicTensor<T> const& a,
                                             DynamicTensor<T> const& b,
                                             ContractPlan const& plan) const {
-        // P3.M4.1 shipped the tiled GEMM WGSL source at
-        // `tensor::core::backend::webgpu::wgsl::kGemmF32`. P3.M4.2
-        // replaces this delegation with the gpu.cpp dispatch sequence
-        // specified in docs/detailed-design/webgpu-gemm-kernel.md §3 —
-        // gates on the call being a single-shared-axis matvec or matmul
-        // and delegates anything else to reference per ADR-0012.
-        return ref_.contract(a, b, plan);
+        // P3.M4.2 — Real Dawn dispatch of the tiled GEMM kernel
+        // (`kGemmF32`, PR #46) for the canonical simple-GEMM case:
+        //   - exactly one shared axis,
+        //   - a has rank 2 with the shared axis as its LAST axis,
+        //   - b has rank 1 or 2 with the shared axis as its FIRST axis,
+        //   - T == float (ADR-0012 § f32-only MVP).
+        // Other shapes (multi-shared-axis, higher-rank, transposed-B)
+        // delegate to reference, matching the Eigen adapter's scope.
+        if constexpr (!std::is_same_v<T, float>) {
+            return ref_.contract(a, b, plan);
+        } else {
+            const bool simple_gemm =
+                plan.shared.rank() == 1 &&
+                a.shape().rank() == 2 &&
+                (b.shape().rank() == 1 || b.shape().rank() == 2) &&
+                plan.a_shared_source.size() == 1 &&
+                plan.b_shared_source.size() == 1 &&
+                plan.a_shared_source[0] == a.shape().rank() - 1 &&
+                plan.b_shared_source[0] == 0;
+            if (!simple_gemm) {
+                return ref_.contract(a, b, plan);
+            }
+
+            const std::size_t M = a.shape()[0].extent;
+            const std::size_t K = a.shape()[a.shape().rank() - 1].extent;
+            const std::size_t N = (b.shape().rank() == 2)
+                                      ? b.shape()[1].extent
+                                      : std::size_t{1};
+
+            auto& ctx = detail::WebGPUContext::current();
+            const std::size_t a_bytes = M * K * sizeof(float);
+            const std::size_t b_bytes = K * N * sizeof(float);
+            const std::size_t out_bytes = M * N * sizeof(float);
+
+            auto gA = detail::make_input_buffer(ctx.device(), a_bytes);
+            auto gB = detail::make_input_buffer(ctx.device(), b_bytes);
+            auto gOut = detail::make_output_buffer(ctx.device(), out_bytes);
+
+            ctx.queue().WriteBuffer(gA, 0, a.data(), a_bytes);
+            ctx.queue().WriteBuffer(gB, 0, b.data(), b_bytes);
+
+            detail::dispatch_gemm(ctx, wgsl::kGemmF32, gA, gB, gOut, M, N, K,
+                                  wgsl::kGemmTileM, wgsl::kGemmTileN);
+
+            DynamicTensor<T> out{plan.result};
+            detail::copy_buffer_to_host(ctx, gOut, out.data(), out_bytes);
+            return out;
+        }
     }
 
     template <class T>

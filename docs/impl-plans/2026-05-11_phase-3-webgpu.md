@@ -140,7 +140,7 @@ To keep CI tractable while no self-hosted GPU runner exists, P3.M3 splits:
 Mirrors P3.M3 split:
 
 - **P3.M4.1 — Tiled GEMM WGSL source (shipped, PR #46).** `webgpu_wgsl.hpp::kGemmF32` is a single readable tiled-GEMM kernel covering both matvec (rank-2 × rank-1) and matmul (rank-2 × rank-2) with one shared axis. 16 × 16 workgroup tile; 16-deep K slab; workgroup-shared `shA` / `shB`; two `workgroupBarrier()` per outer iteration. `tests/test_webgpu_wgsl.cpp` text-validates. `docs/detailed-design/webgpu-gemm-kernel.md` is the design (with P3.M4.2 dispatch-sequence pseudo-code).
-- **P3.M4.2 — Dispatch wiring (deferred).** Replaces `webgpu::Backend::contract` delegation; gates on simple matvec / matmul case detection and delegates the rest. Same preconditions as P3.M3.2.
+- **P3.M4.2 — Dispatch wiring (shipped).** `webgpu::Backend::contract` runs the tiled GEMM kernel on the GPU for the canonical simple-GEMM case (exactly one shared axis, A rank 2 with shared as last axis, B rank 1 or 2 with shared as first axis, T = float). Other shapes delegate to reference, matching the Eigen adapter's scope. `dispatch_gemm` in `webgpu_detail/dispatch.hpp` allocates 4 bindings (a, b, out, uniform `Params{M, N, K}`), substitutes the WGSL precision placeholder, builds + dispatches with 2-D workgroups `(ceil(N/16), ceil(M/16), 1)`. **Verified locally on RTX 3090 + Dawn 2026-04 + Vulkan**: matvec (4×3 × 3 → 4) + matmul (4×3 × 3×2 → 4×2) + 64×64×64 matmul (4096 elements) all agree with reference within tight float tolerances (matvec/small matmul `1e-5`; 64³ matmul `1e-3` for accumulated error).
 
 ### P3.M6 — `tutorials/06_webgpu-acceleration.ipynb` (shipped, Option 3 form)
 
