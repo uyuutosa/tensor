@@ -1,8 +1,10 @@
 ---
-status: Accepted
+status: "Superseded by ADR-0015"
 owner: tensor
 last-reviewed: 2026-05-11
 ---
+
+> **Superseded by [ADR-0015](0015-aspire-to-canonical-reference-quality-not-self-anoint.md)** on 2026-05-11. ADR-0015 keeps the three disciplines this ADR introduced (bibliography, ubiquitous language, reproducibility) but reframes the *claim* from declarative *"is the canonical reference"* to aspirational *"aspires to canonical-reference quality"* — see ADR-0015's Context section for the maintainer's critique that triggered the supersession. Body below is preserved verbatim per the kit's ADR rule (Accepted bodies are immutable).
 
 # ADR-0013: Reframe positioning as "canonical reference for differentiable named-tensor computation in modern C++"
 

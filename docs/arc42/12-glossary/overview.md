@@ -144,9 +144,11 @@ The 15-method C++20 concept that every kernel-execution adapter must satisfy. Cu
 
 ### Canonical reference (positioning)
 
-The project's stated identity: *"the canonical reference for differentiable named-axis tensor computation in modern C++"*. Operationalised by three disciplines — bibliography (ADR sequence), ubiquitous language (this glossary), reproducibility (clean-clone build/bench/notebook under 30 minutes).
+A *canonical reference* is a work that external implementations, papers, or textbooks cite, port, or extend as the citable definition of a topic. CPython for Python, CLRS for algorithms, K&R for C, TeX for typesetting, RFC 791 for IP — these earned canonical-reference status through community adoption, not self-declaration.
 
-- Source: [ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md).
+The project **aspires to canonical-reference quality** — a deliberately aspirational framing, not a self-bestowed label. The aspiration is operationalised by three forcing-function disciplines: **bibliography** (ADR sequence + every public name traces to a source), **ubiquitous language** (this glossary; one name per concept across code / ADR / docs), **reproducibility** (clean-clone build/bench/notebook under 30 minutes). Whether the work earns the canonical-reference label is determined by external adoption.
+
+- Source: [ADR-0015](../09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md), superseding [ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md).
 
 ## Substrate (vendored / external)
 

@@ -39,7 +39,7 @@ These are the risks ADR-0014 was written to manage. The 2026-05-11 external-subs
 | -- | ---- | -------- | ------------- | ---------- |
 | R-A1 | **Domain-adapter coupling drifts** — a future PR includes `tensor/core/<X>.hpp` from an adapter header without noticing. | 🟢 Low | One hard rule from ADR-0009; reviewed at PR time. | Plan to add a `grep` CI job that fails when `include/tensor/core/*.hpp` (excluding `concepts.hpp`) imports from `tensor/{autograd,tex}/` or from a sibling adapter. Tracked in [`docs/design-guide/architectural-discipline.md`](../../design-guide/architectural-discipline.md). |
 | R-A2 | **Three named-tensor types (Tensor / DynamicTensor / TypedTensor) confuse readers.** | 🟢 Low | Decision guide [`docs/user-manual/how-to/named-tensor-types.md`](../../user-manual/how-to/named-tensor-types.md) (PR #35). | Re-audit at every major release whether the three types still serve distinct purposes; collapse one if redundant. The discussion-points report Axis B records the rejected collapse options. |
-| R-A3 | **Three discipline-claims (bibliography / ubiquitous-language / reproducibility — ADR-0013 G-8) silently rot.** | 🟡 Medium | Half-yearly bibliography audit per ADR-0013 §Compliance. | First audit due 2026-11-11. The audit checks: ADR cross-refs resolve; glossary covers every public name; clean clone → build + bench + notebook in under 30 minutes. |
+| R-A3 | **Three discipline-claims (bibliography / ubiquitous-language / reproducibility — G-8) silently rot.** | 🟡 Medium | Half-yearly bibliography audit per ADR-0015 §Compliance (superseding ADR-0013 §Compliance). | First audit due 2026-11-11. The audit checks: ADR cross-refs resolve; glossary covers every public name; clean clone → build + bench + notebook in under 30 minutes; no user-facing string asserts declarative "is the canonical reference" form. |
 
 ## 3. Maintainer-bandwidth risks
 
@@ -61,6 +61,6 @@ These are the risks ADR-0014 was written to manage. The 2026-05-11 external-subs
 
 - §1 success criteria these risks could block: [`../01-introduction-and-goals/overview.md`](../01-introduction-and-goals/overview.md)
 - §2 constraints that bound these risks' impact: [`../02-architecture-constraints/overview.md`](../02-architecture-constraints/overview.md)
-- §9 ADRs that codify mitigations: [`../09-decisions/`](../09-decisions/) — especially [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md), [ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md), [ADR-0014](../09-decisions/0014-external-substrate-strategy.md).
+- §9 ADRs that codify mitigations: [`../09-decisions/`](../09-decisions/) — especially [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md), [ADR-0015](../09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md) (superseding [ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)), [ADR-0014](../09-decisions/0014-external-substrate-strategy.md).
 - §10 quality scenarios these risks threaten: [`../10-quality/overview.md`](../10-quality/overview.md)
 - Per-phase risks-and-mitigations tables: [`../../impl-plans/`](../../impl-plans/) — Phase 3 plan has a richer GPU-specific table.

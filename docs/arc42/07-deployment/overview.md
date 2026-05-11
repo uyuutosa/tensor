@@ -70,7 +70,7 @@ Notebooks under [`tutorials/`](../../../tutorials/) get two CI surfaces ([`.gith
 
 ## 5. Citation discovery
 
-The project's "deployment" as a *citable work* (per [ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)) goes through:
+The project's "deployment" as a *citable work* (per [ADR-0015](../09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md), superseding [ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)) goes through:
 
 - [`CITATION.cff`](../../../CITATION.cff) at the repo root — drives GitHub's "Cite this repository" UI.
 - The ADR sequence under [`docs/arc42/09-decisions/`](../09-decisions/) — the project's bibliography.

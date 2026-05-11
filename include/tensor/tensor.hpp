@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 //
-// tensor — the canonical reference for differentiable named-axis tensor
-// computation in modern C++ (ADR-0013). Header-only, C++20/23, educational-
-// first and production-capable via swappable KernelBackend adapters (ADR-0010
-// / ADR-0011).
+// tensor — differentiable named-axis tensor algebra in modern C++, documented
+// and designed to canonical-reference quality (ADR-0015, superseding
+// ADR-0013). Header-only, C++20/23, educational-first and production-capable
+// via swappable KernelBackend adapters (ADR-0010 / ADR-0011).
 //
 // Umbrella header — wires the public surface together:
 //   tensor::core      — named-axis algebra (Tensor, Axis, Shape, broadcast,
