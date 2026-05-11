@@ -87,6 +87,16 @@ public:
         return accum_;
     }
 
+    // zero_grad — reset the accumulated gradient and mark it uninitialised.
+    // No-op when requires_grad is false.
+    void zero_grad() {
+        if (!accum_) return;
+        for (std::size_t i = 0; i < accum_->grad.size(); ++i) {
+            accum_->grad[i] = T{};
+        }
+        accum_->initialized = false;
+    }
+
     void seed_grad(tensor_type const& seed) {
         if (!accum_) {
             throw std::runtime_error("DynamicVariable::seed_grad: does not require_grad");

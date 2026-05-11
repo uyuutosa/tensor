@@ -62,6 +62,18 @@ public:
         return accum_;
     }
 
+    // zero_grad — reset the accumulated gradient to all-zeros and mark
+    // it uninitialised. Use between iterations of a training loop when
+    // reusing the same Variable across multiple backward() calls.
+    // No-op when requires_grad is false.
+    void zero_grad() {
+        if (!accum_) return;
+        for (std::size_t i = 0; i < accum_->grad.size(); ++i) {
+            accum_->grad[i] = T{};
+        }
+        accum_->initialized = false;
+    }
+
     // Seed the gradient (used by backward(): for a scalar loss, set d_loss/d_loss = 1).
     void seed_grad(tensor_type const& seed) {
         if (!accum_) {

@@ -15,5 +15,6 @@
 #include "tensor/autograd/contract_ops.hpp"
 #include "tensor/autograd/dynamic_variable.hpp"
 #include "tensor/autograd/grad_check.hpp"
+#include "tensor/autograd/sgd.hpp"
 #include "tensor/autograd/tape.hpp"
 #include "tensor/autograd/variable.hpp"
