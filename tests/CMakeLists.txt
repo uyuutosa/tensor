@@ -23,6 +23,7 @@ add_executable(tensor_tests
     test_label_tag.cpp
     test_typed_tensor.cpp
     test_tex_evaluate.cpp
+    test_autograd_zero_grad_sgd.cpp
 )
 
 target_link_libraries(tensor_tests
