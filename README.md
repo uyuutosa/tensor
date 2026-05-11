@@ -72,6 +72,10 @@ git subtree pull --prefix=libs/pentaglyph-docs \
   https://github.com/uyuutosa/pentaglyph-docs.git main --squash
 ```
 
+## Citing
+
+This project is positioned as the canonical reference for differentiable named-axis tensor computation in modern C++ ([ADR-0013](./docs/arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)). If you build on it, please cite via [`CITATION.cff`](./CITATION.cff). The ADR sequence under [`docs/arc42/09-decisions/`](./docs/arc42/09-decisions/) is the project's bibliography — individual decisions can be cited as well-defined design choices with rationale.
+
 ## License
 
 MIT.
