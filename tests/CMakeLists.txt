@@ -5,9 +5,7 @@ add_executable(tensor_tests
     test_axis_shape.cpp
     test_tensor.cpp
     test_format.cpp
-    # test_mdspan_interop.cpp — disabled; Phase 1.5 follow-up. See note in
-    # include/tensor/core/core.hpp on the polyfill namespace mismatch
-    # (vcpkg Kokkos port uses `Kokkos::`, not `std::` / `std::experimental::`).
+    test_mdspan_interop.cpp
     test_dynamic_tensor.cpp
     test_broadcast.cpp
     test_ops.cpp
