@@ -1,7 +1,7 @@
 ---
 status: Draft
 owner: tensor
-last-reviewed: 2026-05-10
+last-reviewed: 2026-05-11
 ---
 
 # `tensor` — Introduction and Goals
@@ -11,20 +11,21 @@ last-reviewed: 2026-05-10
 | Status        | Draft                                                          |
 | Type          | arc42 §1 (Introduction and Goals)                              |
 | Owner         | uyuutosa                                                       |
-| Related       | ADR-0001 — pivot decision; `docs/reports/2026-05-10_tensor-revival-landscape.md` |
-| Last Updated  | 2026-05-10                                                     |
+| Related       | ADR-0001 — pivot decision; ADR-0013 — canonical-reference framing; `docs/reports/2026-05-10_tensor-revival-landscape.md`; `docs/reports/2026-05-11_external-substrate-research.md` |
+| Last Updated  | 2026-05-11                                                     |
 
 ## Revision history
 
 | Version | Date       | Summary                                                        |
 | ------- | ---------- | -------------------------------------------------------------- |
-| 0.1.0   | 2026-05-10 | Initial draft after revival pivot (ADR-0001)                   |
+| 0.1.0   | 2026-05-10 | Initial draft after revival pivot (ADR-0001).                  |
+| 0.2.0   | 2026-05-11 | Reframed as canonical reference (ADR-0013). Stakeholder table expanded with future-implementer audience; goals' phrasing updated to name the bibliography / ubiquitous-language / reproducibility disciplines. Success criteria refreshed against PR #1–#44 state. |
 
 ---
 
 ## TL;DR
 
-`tensor` is a **header-only C++20/23 library and bundled Jupyter book** that teaches named-axis tensor algebra — Einstein-notation operations, function tensors, reference (recursive) tensors, and convolutions reformulated as tensor inner products — with a path through automatic differentiation and WebGPU acceleration. Authoring is bidirectional with TeX / LyX so that, in the project's own slogan, *the formula is the program*. The Domain is intentionally small and readable; speed for production-shaped workloads comes from swappable `KernelBackend` adapters (reference, Eigen, WebGPU). Production adoption is permitted on **as-is terms** per [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md) — no ABI / coverage / support commitments.
+`tensor` is **the canonical reference for differentiable named-axis tensor computation in modern C++** ([ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md), refining [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) + [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md)). It is a **header-only C++20/23 library and bundled Jupyter book** that develops named-axis tensor algebra — Einstein-notation operations, function tensors, reference (recursive) tensors, and convolutions reformulated as tensor inner products — through automatic differentiation and onto WebGPU acceleration. Authoring is bidirectional with TeX / LyX so that, in the project's own slogan, *the formula is the program*. The Domain is intentionally small and readable; speed for production-shaped workloads comes from swappable `KernelBackend` adapters (reference, Eigen, WebGPU). Production adoption is permitted on **as-is terms** per [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md) — no ABI / coverage / support commitments. As a canonical reference, the project's ADR sequence is its bibliography; each public name traces to a source (paper / textbook / ADR). See [`CITATION.cff`](../../../CITATION.cff) for citation metadata.
 
 ---
 
@@ -32,19 +33,20 @@ last-reviewed: 2026-05-10
 
 The `tensor` repository began in ~2016 as a personal C++ template library built around an unusual idea: tensors that carry **axis labels** (`a_i`, `b_j`) and operate on each other through Einstein-style broadcasting (`a_i + b_j → c_{ij}`). The library shipped function-tensors (tensor elements that are functions), reference-tensors (tensor elements that recursively reference the previous element along an axis), and a [proof-of-concept reformulation of N-D convolution as a tensor inner product](http://qiita.com/uyuutosa/items/12e87f4695bd151b1d74).
 
-It went dormant after a single commit run. In May 2026 the project was revived under explicit new positioning ([ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md), refined by [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md)): a **teaching library and book** for modern C++ tensor algebra whose Domain stays small and readable, with production-grade speed available through swappable backend adapters. The library does not commit to operator-coverage parity with Eigen / xtensor / libtorch / Kokkos / `std::linalg` and offers no ABI / support guarantee; production users adopt as-is.
+It went dormant after a single commit run. In May 2026 the project was revived under explicit new positioning ([ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md), refined by [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md), sharpened by [ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)): the **canonical reference for differentiable named-axis tensor computation in modern C++** — educational-first, production-capable via backend adapters. The Domain stays small and readable; production-grade speed is available through swappable adapters; and the project's documentation, naming, and reproducibility disciplines aim at a single goal: *to be the work that future implementations cite, port, and extend*. The library does not commit to operator-coverage parity with Eigen / xtensor / libtorch / Kokkos / `std::linalg` and offers no ABI / support guarantee; production users adopt as-is.
 
-The 2016 codebase will be retired. The rewrite targets C++20 + `mdspan` interop ([ADR-0002](../09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md)), CMake + vcpkg ([ADR-0003](../09-decisions/0003-replace-eclipse-cdt-with-cmake-and-vcpkg.md)), and a hybrid runtime / NTTP named-axis API ([ADR-0004](../09-decisions/0004-adopt-hybrid-named-axis-api.md)).
+The 2016 codebase has been retired to `archive/legacy-2016/`. The rewrite targets C++20 + `mdspan` interop ([ADR-0002](../09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md)), CMake + vcpkg ([ADR-0003](../09-decisions/0003-replace-eclipse-cdt-with-cmake-and-vcpkg.md)), and a hybrid runtime / NTTP named-axis API ([ADR-0004](../09-decisions/0004-adopt-hybrid-named-axis-api.md)). External-substrate decisions (Dawn via vcpkg, gpu.cpp vendored, xeus-cpp for notebooks, kokkos/stdBLAS shim) are bundled in [ADR-0014](../09-decisions/0014-external-substrate-strategy.md).
 
 ## 2. Stakeholders
 
-| Stakeholder                          | Interest                                                                                  |
-| ------------------------------------ | ----------------------------------------------------------------------------------------- |
-| Self-taught C++ learners exploring tensor algebra | Want a small, hackable, idiomatic library + readable notebooks. Primary audience.          |
-| University / bootcamp instructors    | Want assignable teaching material for "build your own ML framework" or "modern C++" courses. |
-| Researchers in tensor-DSL design     | Want a real working artifact to reference for named-axis API ergonomics in C++.            |
-| Production users (`as-is`)           | Adopt the library for niche workloads (named-axis algebra, `_tex`-driven kernels) once a fast `KernelBackend` adapter (Eigen / WebGPU / Kokkos) ships. **No ABI / coverage / support commitments** — see [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md). |
-| The maintainer (uyuutosa)            | Wants to revive a pet project, develop ideas, and produce a public artifact.               |
+| Stakeholder                                                | Interest                                                                                  |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **Future implementers / researchers / textbook authors**   | Want to **cite, port, or build on top of** this work. ADR sequence is the bibliography; public names trace to sources. Primary audience per [ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md). |
+| Self-taught C++ learners exploring tensor algebra          | Want a small, hackable, idiomatic library + readable notebooks. Co-primary audience; the Diátaxis split (tutorials easy, references rigorous) preserves accessibility. |
+| University / bootcamp instructors                          | Want assignable teaching material for "build your own ML framework" or "modern C++" courses; want to cite the ADR sequence as a worked example of MADR + Hexagonal-lite discipline. |
+| Researchers in tensor-DSL design                           | Want a real working artifact to reference for named-axis API ergonomics in C++, the `_tex` ↔ AST ↔ DynamicTensor round-trip, and the LyX integration story. |
+| Production users (`as-is`)                                 | Adopt the library for niche workloads (named-axis algebra, `_tex`-driven kernels) on top of a fast `KernelBackend` adapter (Eigen shipped; WebGPU in flight). **No ABI / coverage / support commitments** — see [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md). |
+| The maintainer (uyuutosa)                                  | Wants to revive a long-dormant idea and produce a public artifact future implementations can cite. |
 
 ## 3. Goals (G-1 … G-7)
 
@@ -56,7 +58,8 @@ Each goal is phrased so success is observable.
 - **G-4 — End-to-end teaching arc.** The bundled tutorials walk a learner from `a_i + b_j` through autograd to a small MLP on MNIST, with optional WebGPU acceleration. (See [ADR-0007](../09-decisions/0007-adopt-autograd-as-first-class-subsystem.md), [ADR-0008](../09-decisions/0008-distribute-as-header-only-with-jupyter-tutorials.md).)
 - **G-5 — Zero-friction installation for learners.** `git clone && cmake --preset=default && jupyter lab tutorials/` works on Linux, macOS, Windows. No proprietary GPU toolchain required. (See [ADR-0003](../09-decisions/0003-replace-eclipse-cdt-with-cmake-and-vcpkg.md), [ADR-0006](../09-decisions/0006-adopt-webgpu-as-gpu-backend.md).)
 - **G-6 — Living book, not abandoned tutorial.** A Jupyter Book site is published from the `tutorials/` directory at every release; CI executes every notebook end-to-end. (See [ADR-0008](../09-decisions/0008-distribute-as-header-only-with-jupyter-tutorials.md).)
-- **G-7 — Honest scope disclaimers.** README, repo description, and Jupyter Book front-page state plainly that `tensor` is educational; production users are pointed at Eigen / xtensor / libtorch / Kokkos / `std::linalg`. No benchmark-shopping.
+- **G-7 — Honest scope disclaimers.** README, repo description, and Jupyter Book front-page state plainly that `tensor` is educational-first; production users are pointed at Eigen / xtensor / libtorch / Kokkos / `std::linalg`. No benchmark-shopping.
+- **G-8 — Citability discipline ([ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)).** Three sub-disciplines: (i) **bibliography** — every notable design decision is traceable to a paper, an ADR, or both; the ADR sequence is the bibliography. (ii) **ubiquitous language** — public names map to names in the math literature ([ADR-0009](../09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md)). (iii) **reproducibility** — clean clone → build + bench + notebook execution in under 30 minutes on a typical laptop, with results matching the documentation. A `CITATION.cff` at the repo root makes the work citable by name.
 
 ## 4. Quality goals
 
@@ -86,12 +89,16 @@ Captured here so future reviewers do not litigate them as gaps.
 The first release is `0.1.0`. Success at `0.1.0` means:
 
 - [ ] All ADR-0001 follow-ups are closed.
-- [x] CMake build green on the {GCC 11, Clang 13, MSVC 19.30} × {Debug, Release} matrix in CI. *(achieved 2026-05-11 via PR #9.)*
-- [x] `tutorials/00_intro.ipynb` reproduces the 2016 blog post's convolutions-as-inner-products in the rewritten library. *(shipped 2026-05-10 via PR #8; xeus-cling end-to-end CI execution is the Phase 1.5 follow-up.)*
-- [ ] `tutorials/05_autograd-from-scratch.ipynb` trains a 3-layer MLP on a toy dataset. *(Phase 2 — see [`../../impl-plans/2026-05-11_phase-2-autograd.md`](../../impl-plans/2026-05-11_phase-2-autograd.md), P2.M5 + P2.M6.)*
-- [ ] `tutorials/06_webgpu-acceleration.ipynb` runs a named-axis matmul on the WebGPU backend and matches CPU results. *(Phase 3.)*
-- [ ] Jupyter Book site is reachable at the repo's GitHub Pages URL. *(Phase 4.)*
-- [x] README's first paragraph leads with the educational pitch and disclaims production use. *(shipped 2026-05-10 via PR #2; reinforced in the 2026-05-11 docs sync.)*
+- [x] CMake build green on the {GCC 11, Clang 13, MSVC 19.30} × {Debug, Release} matrix in CI. *(achieved 2026-05-11 via PR #9; matrix grew to 10 jobs via PRs #21, #38, #41.)*
+- [x] `tutorials/00_intro.ipynb` reproduces the 2016 blog post's convolutions-as-inner-products in the rewritten library. *(shipped 2026-05-10 via PR #8; notebook-CI execute path now targets xeus-cpp 0.10+ per [ADR-0014](../09-decisions/0014-external-substrate-strategy.md), with xeus-cling smoke retained.)*
+- [x] `tutorials/05_autograd-from-scratch.ipynb` walks the autograd implementation primitive-by-primitive. *(shipped 2026-05-11 via PR #15.)*
+- [x] `tutorials/07_mlp-on-toy.ipynb` trains a small MLP on a toy dataset, converging to W≈2, b≈1. *(shipped 2026-05-11 via PR #17.)*
+- [x] `tutorials/08_swappable-backends.ipynb` demonstrates the Hexagonal-lite payoff (same Domain code on reference, Eigen). *(shipped 2026-05-11 via PR #22.)*
+- [ ] `tutorials/06_webgpu-acceleration.ipynb` runs a named-axis matmul on the WebGPU backend and matches CPU results. *(Phase 3 — Phase 3.M3.1/.3 WGSL kernel sources shipped via PRs #43/#44; P3.M3.2 dispatch wiring deferred pending GPU runner.)*
+- [ ] Jupyter Book site is reachable at the repo's GitHub Pages URL. *(Phase 4 — scaffold + deploy workflow shipped via PR #28; site goes live when Pages is enabled.)*
+- [x] README's first paragraph leads with the canonical-reference framing and disclaims production use. *(canonical-reference framing landed via PR #39.)*
+- [x] `CITATION.cff` at the repo root names the work, the maintainer, and the bibliographic ADRs. *(shipped 2026-05-11 via PR #40.)*
+- [x] `third_party/` content is vendored under `VENDORED_FROM` discipline with CI enforcement. *(shipped 2026-05-11 via PR #41.)*
 
 For interim phase-by-phase deliverables, see the dated impl-plans under [`../../impl-plans/`](../../impl-plans/).
 
@@ -101,5 +108,7 @@ For interim phase-by-phase deliverables, see the dated impl-plans under [`../../
 - §3 Context and Scope: [`../03-context-and-scope/system-context.md`](../03-context-and-scope/system-context.md).
 - §4 Solution Strategy: [`../04-solution-strategy/strategy.md`](../04-solution-strategy/strategy.md).
 - §5 Building Blocks: [`../05-building-blocks/overview.md`](../05-building-blocks/overview.md).
-- §9 Decisions: [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) … [ADR-0012](../09-decisions/0012-webgpu-adapter-implementation-design.md).
+- §9 Decisions: [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) … [ADR-0014](../09-decisions/0014-external-substrate-strategy.md).
+- `CITATION.cff` at the repo root (the citable metadata for this work).
+- Detailed designs: [`../../detailed-design/`](../../detailed-design/) — currently `webgpu-element-wise-kernels.md`.
 - §10 Quality (TBD): clarity / correctness / portability, with measurable definitions.
