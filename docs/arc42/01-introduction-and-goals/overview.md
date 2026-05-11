@@ -104,11 +104,11 @@ For interim phase-by-phase deliverables, see the dated impl-plans under [`../../
 
 ## 7. Cross-references
 
-- §2 Architecture Constraints (TBD): C++20 baseline, header-only, MIT licence, solo-maintainer bandwidth.
+- §2 Architecture Constraints: [`../02-architecture-constraints/overview.md`](../02-architecture-constraints/overview.md) — TC-1..TC-9 + OC-1..OC-5.
 - §3 Context and Scope: [`../03-context-and-scope/system-context.md`](../03-context-and-scope/system-context.md).
 - §4 Solution Strategy: [`../04-solution-strategy/strategy.md`](../04-solution-strategy/strategy.md).
 - §5 Building Blocks: [`../05-building-blocks/overview.md`](../05-building-blocks/overview.md).
 - §9 Decisions: [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) … [ADR-0014](../09-decisions/0014-external-substrate-strategy.md).
 - `CITATION.cff` at the repo root (the citable metadata for this work).
 - Detailed designs: [`../../detailed-design/`](../../detailed-design/) — currently `webgpu-element-wise-kernels.md`.
-- §10 Quality (TBD): clarity / correctness / portability, with measurable definitions.
+- §10 Quality: [`../10-quality/overview.md`](../10-quality/overview.md) — quality tree + measurable scenarios (QC-1..QS-2).
