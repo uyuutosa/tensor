@@ -121,9 +121,17 @@ P3.M1 (ADR-0012) and P3.M2 (stub adapter + CMake plumbing) shipped (PRs #32 and 
 After the [external-substrate research](../reports/2026-05-11_external-substrate-research.md) was completed on the same date, the next-step substrate picture clarifies as captured in [ADR-0014](../arc42/09-decisions/0014-external-substrate-strategy.md):
 
 - **Dawn is now in vcpkg** (port `20260410.140140`, refreshed 2026-04-20). The original P3.M2 `vcpkg.json` entry can finally land — previously this step was blocked on a missing port and was deferred behind the stub. The Phase 3 build path becomes `find_package(dawn CONFIG REQUIRED)` gated on `TENSOR_KERNEL_BACKEND=webgpu`.
-- **gpu.cpp is bus-factor 1 and has no vcpkg port.** Per [ADR-0014](../arc42/09-decisions/0014-external-substrate-strategy.md), `gpu.hpp` is vendored under `third_party/gpu_cpp/` with a `VENDORED_FROM` record, not consumed as an upstream dependency.
+- **gpu.cpp is bus-factor 1 and has no vcpkg port.** Per [ADR-0014](../arc42/09-decisions/0014-external-substrate-strategy.md), `gpu.hpp` is vendored under `third_party/gpu_cpp/` with a `VENDORED_FROM` record (PR #41), not consumed as an upstream dependency.
 - **The risks-and-mitigations table line "Dawn or wgpu-native vcpkg port instability" downgrades** from `Likelihood: Medium, Impact: High` to `Likelihood: Low, Impact: Medium`. Mitigation remains the same (the choice is one CMake variable away from being reversed).
 - The `0.0.4-alpha` exit criteria still hold; the change is in *how* P3.M3 will be built, not *whether* it will ship.
+
+### P3.M3 sub-split
+
+To keep CI tractable while no self-hosted GPU runner exists, P3.M3 splits:
+
+- **P3.M3.1 — WGSL kernel sources (shipped, this PR).** `include/tensor/core/backend/webgpu_wgsl.hpp` ships the four element-wise binary kernels (`add` / `sub` / `mul` / `div`) as `constexpr std::string_view` constants in gpu.cpp's `{{workgroupSize}}` / `{{precision}}` templated form. `tests/test_webgpu_wgsl.cpp` text-validates them (no shader compilation). The dispatch design is in `docs/detailed-design/webgpu-element-wise-kernels.md`.
+- **P3.M3.2 — Dispatch wiring (deferred).** Replaces each `webgpu::Backend::{add,sub,mul,div}` stub delegation with the gpu.cpp dispatch sequence described in the detailed-design doc §3. Preconditions: vcpkg baseline bumped to include `dawn@20260410.140140`+; self-hosted GitHub Actions runner with a Dawn-compatible GPU exists; ADR-0012's compile-only-CI policy upgrades to "compile-only on generic CI + numerical-agreement on self-hosted runner".
+- **P3.M3.3 — Unary element-wise (`exp`, `log`, `relu`, `neg`).** Same shape as P3.M3.1; emit four more `constexpr std::string_view` constants, then add four `Backend::*` method swaps in the P3.M3.2 follow-up.
 
 ## Follow-ups beyond Phase 3
 
