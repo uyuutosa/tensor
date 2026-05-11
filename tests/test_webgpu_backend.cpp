@@ -131,6 +131,79 @@ TEST_CASE("webgpu vs reference: element-wise binary ops on f32 (real GPU dispatc
     check_op(w.div(a, b), r.div(a, b), "div");
 }
 
+TEST_CASE("webgpu vs reference: matvec contract on f32 (real GPU dispatch via kGemmF32)") {
+    WebGPUBackend w;
+    RefBackend r;
+    // W: 4×3 row-major, x: 3-vector → result: 4-vector.
+    DynamicTensor<float> W(DynamicShape{Axis{"i", 4}, Axis{"j", 3}},
+                           {1.0f, 2.0f, 3.0f,
+                            4.0f, 5.0f, 6.0f,
+                            7.0f, 8.0f, 9.0f,
+                            10.0f, 11.0f, 12.0f});
+    DynamicTensor<float> x(DynamicShape{Axis{"j", 3}}, {2.0f, 3.0f, 4.0f});
+    auto plan = tensor::core::contract_plan(W.shape(), x.shape());
+    auto wy = w.contract(W, x, plan);
+    auto ry = r.contract(W, x, plan);
+    REQUIRE(wy.size() == ry.size());
+    REQUIRE(wy.size() == 4);
+    for (std::size_t i = 0; i < wy.size(); ++i) {
+        CAPTURE(i);
+        CHECK(wy[i] == doctest::Approx(ry[i]).epsilon(kFloatTol));
+    }
+}
+
+TEST_CASE("webgpu vs reference: matmul contract on f32 (real GPU dispatch via kGemmF32)") {
+    WebGPUBackend w;
+    RefBackend r;
+    // A: 4×3 row-major, B: 3×2 row-major → C: 4×2 row-major.
+    DynamicTensor<float> A(DynamicShape{Axis{"i", 4}, Axis{"j", 3}},
+                           {1.0f, 2.0f, 3.0f,
+                            4.0f, 5.0f, 6.0f,
+                            7.0f, 8.0f, 9.0f,
+                            10.0f, 11.0f, 12.0f});
+    DynamicTensor<float> B(DynamicShape{Axis{"j", 3}, Axis{"k", 2}},
+                           {1.0f, 2.0f,
+                            3.0f, 4.0f,
+                            5.0f, 6.0f});
+    auto plan = tensor::core::contract_plan(A.shape(), B.shape());
+    auto wc = w.contract(A, B, plan);
+    auto rc = r.contract(A, B, plan);
+    REQUIRE(wc.size() == rc.size());
+    REQUIRE(wc.size() == 8);
+    for (std::size_t i = 0; i < wc.size(); ++i) {
+        CAPTURE(i);
+        CHECK(wc[i] == doctest::Approx(rc[i]).epsilon(kFloatTol));
+    }
+}
+
+TEST_CASE("webgpu vs reference: matmul contract on f32 at scale 64×64×64") {
+    WebGPUBackend w;
+    RefBackend r;
+    constexpr std::size_t M = 64;
+    constexpr std::size_t K = 64;
+    constexpr std::size_t N = 64;
+    std::vector<float> a_data(M * K), b_data(K * N);
+    for (std::size_t i = 0; i < a_data.size(); ++i) {
+        a_data[i] = static_cast<float>((i * 7 + 1) % 13) * 0.5f;
+    }
+    for (std::size_t i = 0; i < b_data.size(); ++i) {
+        b_data[i] = static_cast<float>((i * 11 + 3) % 17) * 0.25f;
+    }
+    DynamicTensor<float> A(DynamicShape{Axis{"i", M}, Axis{"j", K}}, a_data);
+    DynamicTensor<float> B(DynamicShape{Axis{"j", K}, Axis{"k", N}}, b_data);
+    auto plan = tensor::core::contract_plan(A.shape(), B.shape());
+    auto wc = w.contract(A, B, plan);
+    auto rc = r.contract(A, B, plan);
+    REQUIRE(wc.size() == rc.size());
+    REQUIRE(wc.size() == M * N);
+    // Wider tolerance for accumulated f32 error at this scale.
+    constexpr float kGemmTol = 1e-3f;
+    for (std::size_t i = 0; i < wc.size(); ++i) {
+        CAPTURE(i);
+        CHECK(wc[i] == doctest::Approx(rc[i]).epsilon(kGemmTol));
+    }
+}
+
 TEST_CASE("webgpu vs reference: element-wise unary ops on f32 (real GPU dispatch when available)") {
     WebGPUBackend w;
     RefBackend r;

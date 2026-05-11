@@ -175,6 +175,127 @@ void dispatch_element_wise(WebGPUContext& ctx,
     pump_until(instance, done);
 }
 
+// Uniform-buffer Params for the tiled GEMM kernel (mirrors the
+// `struct Params { M, N, K }` declared inside webgpu_wgsl.hpp::kGemmF32).
+// 16-byte alignment is implicit because the struct is 12 bytes and
+// WGSL uniform buffers are always padded to 16-byte minimum.
+struct GemmParams {
+    std::uint32_t M;
+    std::uint32_t N;
+    std::uint32_t K;
+};
+
+// Dispatch the tiled GEMM kernel (`kGemmF32`) for inputs gA (M×K),
+// gB (K×N), output gOut (M×N). 2-D dispatch with workgroup size
+// (TILE_N, TILE_M, 1) = (16, 16, 1) and totalWorkgroups
+// (ceil(N/16), ceil(M/16), 1).
+//
+// Bindings:
+//   0 = gA       (storage, read-only)
+//   1 = gB       (storage, read-only)
+//   2 = gOut     (storage, read-write)
+//   3 = uniform  (Params{M, N, K})
+inline void dispatch_gemm(WebGPUContext& ctx,
+                          std::string_view wgsl_template,
+                          wgpu::Buffer const& gA,
+                          wgpu::Buffer const& gB,
+                          wgpu::Buffer const& gOut,
+                          std::size_t M, std::size_t N, std::size_t K,
+                          std::size_t tile_m, std::size_t tile_n) {
+    auto& device = ctx.device();
+    auto& queue = ctx.queue();
+    auto& instance = ctx.instance();
+
+    // Substitute WGSL placeholders. kGemmF32 already inlines the tile
+    // constants as `const TILE_*: u32 = 16u;`, so only precision is
+    // template-substituted here. workgroupSize is implicit in the
+    // kernel's `@compute @workgroup_size(TILE_N, TILE_M, 1)`.
+    std::string wgsl = substitute_wgsl(
+        wgsl_template, std::string_view{"f32"}, std::string_view{"256"});
+
+    // ShaderModule.
+    wgpu::ShaderSourceWGSL wgslSrc{};
+    wgslSrc.code = make_string_view(wgsl);
+    wgpu::ShaderModuleDescriptor smDesc{};
+    smDesc.nextInChain = &wgslSrc;
+    auto shader = device.CreateShaderModule(&smDesc);
+
+    // Uniform buffer with Params.
+    GemmParams params{static_cast<std::uint32_t>(M),
+                      static_cast<std::uint32_t>(N),
+                      static_cast<std::uint32_t>(K)};
+    wgpu::BufferDescriptor pDesc{};
+    pDesc.size = sizeof(GemmParams);
+    pDesc.usage = wgpu::BufferUsage::Uniform | wgpu::BufferUsage::CopyDst;
+    auto gParams = device.CreateBuffer(&pDesc);
+    queue.WriteBuffer(gParams, 0, &params, sizeof(GemmParams));
+
+    // BindGroupLayout — 4 bindings (3 storage + 1 uniform).
+    std::array<wgpu::BindGroupLayoutEntry, 4> bgle{};
+    bgle[0].binding = 0;
+    bgle[0].visibility = wgpu::ShaderStage::Compute;
+    bgle[0].buffer.type = wgpu::BufferBindingType::ReadOnlyStorage;
+    bgle[1].binding = 1;
+    bgle[1].visibility = wgpu::ShaderStage::Compute;
+    bgle[1].buffer.type = wgpu::BufferBindingType::ReadOnlyStorage;
+    bgle[2].binding = 2;
+    bgle[2].visibility = wgpu::ShaderStage::Compute;
+    bgle[2].buffer.type = wgpu::BufferBindingType::Storage;
+    bgle[3].binding = 3;
+    bgle[3].visibility = wgpu::ShaderStage::Compute;
+    bgle[3].buffer.type = wgpu::BufferBindingType::Uniform;
+    wgpu::BindGroupLayoutDescriptor bglDesc{};
+    bglDesc.entryCount = 4;
+    bglDesc.entries = bgle.data();
+    auto bgl = device.CreateBindGroupLayout(&bglDesc);
+
+    // PipelineLayout.
+    wgpu::BindGroupLayout bgls[1] = {bgl};
+    wgpu::PipelineLayoutDescriptor plDesc{};
+    plDesc.bindGroupLayoutCount = 1;
+    plDesc.bindGroupLayouts = bgls;
+    auto pl = device.CreatePipelineLayout(&plDesc);
+
+    // ComputePipeline.
+    wgpu::ComputePipelineDescriptor cpDesc{};
+    cpDesc.layout = pl;
+    cpDesc.compute.module = shader;
+    cpDesc.compute.entryPoint = make_string_view("main");
+    auto pipeline = device.CreateComputePipeline(&cpDesc);
+
+    // BindGroup.
+    std::array<wgpu::BindGroupEntry, 4> bge{};
+    bge[0].binding = 0; bge[0].buffer = gA;      bge[0].offset = 0; bge[0].size = M * K * sizeof(float);
+    bge[1].binding = 1; bge[1].buffer = gB;      bge[1].offset = 0; bge[1].size = K * N * sizeof(float);
+    bge[2].binding = 2; bge[2].buffer = gOut;    bge[2].offset = 0; bge[2].size = M * N * sizeof(float);
+    bge[3].binding = 3; bge[3].buffer = gParams; bge[3].offset = 0; bge[3].size = sizeof(GemmParams);
+    wgpu::BindGroupDescriptor bgDesc{};
+    bgDesc.layout = bgl;
+    bgDesc.entryCount = 4;
+    bgDesc.entries = bge.data();
+    auto bg = device.CreateBindGroup(&bgDesc);
+
+    // Encode + dispatch (2-D).
+    auto encoder = device.CreateCommandEncoder();
+    {
+        auto pass = encoder.BeginComputePass();
+        pass.SetPipeline(pipeline);
+        pass.SetBindGroup(0, bg);
+        const std::uint32_t groups_x = static_cast<std::uint32_t>((N + tile_n - 1) / tile_n);
+        const std::uint32_t groups_y = static_cast<std::uint32_t>((M + tile_m - 1) / tile_m);
+        pass.DispatchWorkgroups(groups_x, groups_y, 1);
+        pass.End();
+    }
+    auto cmd = encoder.Finish();
+    queue.Submit(1, &cmd);
+
+    bool done = false;
+    queue.OnSubmittedWorkDone(
+        wgpu::CallbackMode::AllowProcessEvents,
+        [&done](wgpu::QueueWorkDoneStatus, wgpu::StringView) { done = true; });
+    pump_until(instance, done);
+}
+
 // Copy a GPU buffer to a host-mappable staging buffer, then map it and
 // copy the bytes into `out`. Caller owns the host buffer.
 inline void copy_buffer_to_host(WebGPUContext& ctx, wgpu::Buffer const& src,
