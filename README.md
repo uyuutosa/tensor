@@ -46,6 +46,12 @@ Live plan: see [`docs/impl-plans/`](./docs/impl-plans/) (one dated file per phas
 
 The bundled Jupyter Book is published from [`book/`](./book/) to GitHub Pages on every push to `develop` (see [`.github/workflows/deploy-book.yml`](./.github/workflows/deploy-book.yml)). Enable Pages in the repository settings (Source: *GitHub Actions*) the first time you want it live.
 
+## Contributing
+
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the contributor workflow (Git Flow, Conventional Commits, Hexagonal discipline checklist) and [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) for project norms.
+
+## Architecture docs
+
 This repository ships with the [pentaglyph-docs](https://github.com/uyuutosa/pentaglyph-docs)
 scaffold (arc42 + C4 + MADR + Diátaxis + TiSDD bound by one workflow).
 
