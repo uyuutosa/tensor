@@ -161,4 +161,106 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 // `KernelCode(string, size_t)` overload at third_party/gpu_cpp/gpu.hpp:308).
 inline constexpr std::size_t kDefaultWorkgroupSize = 256;
 
+// ─── GEMM kernel (P3.M4) ───────────────────────────────────────────────────
+//
+// Tiled GEMM expressed as one readable kernel that covers both the matvec
+// (rank-2 × rank-1) and matmul (rank-2 × rank-2) cases of `contract()`
+// with one shared axis. Higher-rank or multi-shared-axis contractions
+// delegate to reference per ADR-0012 §Decision Outcome point 6.
+//
+// Logical operation:
+//     out[m, n] = Σ_k a[m, k] * b[k, n]
+//                 (m: 0..M-1, k: 0..K-1, n: 0..N-1)
+//
+// The matvec case is matmul with N = 1: the same kernel runs without
+// special-casing. A more efficient matvec-only kernel could use a 1-D
+// workgroup, but the canonical-reference framing (ADR-0013) prefers one
+// readable kernel over two specialised ones at this stage.
+//
+// Tiling parameters (compile-time constants in the WGSL source so they
+// inline into shared-memory array bounds):
+//
+//   TILE_M × TILE_N — workgroup tile of the output matrix (16 × 16 = 256
+//                     threads, matching kDefaultWorkgroupSize).
+//   TILE_K          — number of K columns of A and K rows of B cached
+//                     into shared memory per outer iteration (16).
+//
+// Uniform `Params` buffer carries the runtime M / N / K extents (passed
+// via gpu::createKernel's params argument at third_party/gpu_cpp/gpu.hpp:
+// 1392-1409).
+//
+// Boundary handling: threads whose (row, col) fall outside (M, N) still
+// participate in cooperative shared-memory loads (writing 0.0 if their
+// tile cell is out of range) but skip the final `out[]` write.
+
+inline constexpr std::size_t kGemmTileM = 16;
+inline constexpr std::size_t kGemmTileN = 16;
+inline constexpr std::size_t kGemmTileK = 16;
+
+inline constexpr std::string_view kGemmF32 = R"WGSL(
+struct Params {
+    M : u32,
+    N : u32,
+    K : u32,
+};
+
+@group(0) @binding(0) var<storage, read>       a   : array<{{precision}}>;
+@group(0) @binding(1) var<storage, read>       b   : array<{{precision}}>;
+@group(0) @binding(2) var<storage, read_write> out : array<{{precision}}>;
+@group(0) @binding(3) var<uniform>             p   : Params;
+
+const TILE_M : u32 = 16u;
+const TILE_N : u32 = 16u;
+const TILE_K : u32 = 16u;
+
+var<workgroup> shA : array<array<{{precision}}, TILE_K>, TILE_M>;
+var<workgroup> shB : array<array<{{precision}}, TILE_N>, TILE_K>;
+
+@compute @workgroup_size(TILE_N, TILE_M, 1)
+fn main(@builtin(global_invocation_id) gid : vec3<u32>,
+        @builtin(local_invocation_id)  lid : vec3<u32>) {
+    let row : u32 = gid.y;
+    let col : u32 = gid.x;
+    let lrow : u32 = lid.y;
+    let lcol : u32 = lid.x;
+
+    var acc : {{precision}} = 0.0;
+
+    let nTiles : u32 = (p.K + TILE_K - 1u) / TILE_K;
+    for (var t : u32 = 0u; t < nTiles; t = t + 1u) {
+        // Cooperatively load one TILE_M × TILE_K tile of A and one
+        // TILE_K × TILE_N tile of B into shared memory. Each thread
+        // loads exactly one cell of each. Out-of-range cells become 0.0
+        // so the inner-product loop below can run unconditionally.
+        let aRow : u32 = row;
+        let aCol : u32 = t * TILE_K + lcol;
+        let bRow : u32 = t * TILE_K + lrow;
+        let bCol : u32 = col;
+
+        if (aRow < p.M && aCol < p.K) {
+            shA[lrow][lcol] = a[aRow * p.K + aCol];
+        } else {
+            shA[lrow][lcol] = 0.0;
+        }
+        if (bRow < p.K && bCol < p.N) {
+            shB[lrow][lcol] = b[bRow * p.N + bCol];
+        } else {
+            shB[lrow][lcol] = 0.0;
+        }
+
+        workgroupBarrier();
+
+        for (var k : u32 = 0u; k < TILE_K; k = k + 1u) {
+            acc = acc + shA[lrow][k] * shB[k][lcol];
+        }
+
+        workgroupBarrier();
+    }
+
+    if (row < p.M && col < p.N) {
+        out[row * p.N + col] = acc;
+    }
+}
+)WGSL";
+
 }  // namespace tensor::core::backend::webgpu::wgsl
