@@ -114,10 +114,21 @@ The third concrete `KernelBackend` adapter: WebGPU. Phase 2.5 shipped reference 
 
 P3.M1, P3.M2, P3.M3 minimum, and P3.M6 minimum (sections 1–2) are non-negotiable for `0.0.4-alpha`.
 
+## Status addendum — 2026-05-11 (post-research)
+
+P3.M1 (ADR-0012) and P3.M2 (stub adapter + CMake plumbing) shipped (PRs #32 and #38 respectively).
+
+After the [external-substrate research](../reports/2026-05-11_external-substrate-research.md) was completed on the same date, the next-step substrate picture clarifies as captured in [ADR-0014](../arc42/09-decisions/0014-external-substrate-strategy.md):
+
+- **Dawn is now in vcpkg** (port `20260410.140140`, refreshed 2026-04-20). The original P3.M2 `vcpkg.json` entry can finally land — previously this step was blocked on a missing port and was deferred behind the stub. The Phase 3 build path becomes `find_package(dawn CONFIG REQUIRED)` gated on `TENSOR_KERNEL_BACKEND=webgpu`.
+- **gpu.cpp is bus-factor 1 and has no vcpkg port.** Per [ADR-0014](../arc42/09-decisions/0014-external-substrate-strategy.md), `gpu.hpp` is vendored under `third_party/gpu_cpp/` with a `VENDORED_FROM` record, not consumed as an upstream dependency.
+- **The risks-and-mitigations table line "Dawn or wgpu-native vcpkg port instability" downgrades** from `Likelihood: Medium, Impact: High` to `Likelihood: Low, Impact: Medium`. Mitigation remains the same (the choice is one CMake variable away from being reversed).
+- The `0.0.4-alpha` exit criteria still hold; the change is in *how* P3.M3 will be built, not *whether* it will ship.
+
 ## Follow-ups beyond Phase 3
 
-- Plan Phase 4 (`0.1.0` public release): Jupyter Book site on GitHub Pages, full tutorial corpus, LyX export module, release tag.
-- Phase 1.5 remaining items (mdspan polyfill restore, xeus-cling notebook CI) proceed in parallel.
+- Plan Phase 4 (`0.1.0` public release): Jupyter Book site on GitHub Pages, full tutorial corpus, LyX export module, release tag. Per [ADR-0013](../arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md), Phase 4 also gains a canonical-reference framing pass (CITATION.cff; per-container "why this exists" comments; Jupyter Book "How to cite" section).
+- Phase 1.5 remaining items: notebook-CI execute job now switches to **xeus-cpp** per [ADR-0014](../arc42/09-decisions/0014-external-substrate-strategy.md), replacing the xeus-cling target that was the long-standing backlog item here.
 
 ## References
 

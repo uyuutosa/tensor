@@ -10,6 +10,11 @@ The sequence below reads bottom-up if you want the project's narrative arc; top-
 
 ### Added
 
+- **Canonical-reference reframing** in [ADR-0013](./docs/arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md): the project's positioning is sharpened from "educational-first, production-capable" to "the canonical reference for differentiable named-tensor computation in modern C++ — educational-first, production-capable via backend adapters". Refines (does not supersede) ADR-0010.
+- **External-substrate strategy** in [ADR-0014](./docs/arc42/09-decisions/0014-external-substrate-strategy.md): four coupled tactical decisions — Dawn via vcpkg (the P3.M3 unblock), gpu.cpp vendored under `third_party/gpu_cpp/`, notebook execution migrated to xeus-cpp 0.10.0, and a `tensor::linalg` shim namespace over kokkos/stdBLAS for the eventual `std::linalg` (P1673) standard library. Refines operational details of ADR-0006 / ADR-0008 / ADR-0012.
+- **External-substrate research report** ([`docs/reports/2026-05-11_external-substrate-research.md`](./docs/reports/2026-05-11_external-substrate-research.md)): Layer B audit of gpu.cpp / vcpkg port status / xeus-cling / `std::linalg` (P1673) as of 2026-05-11. Triggered ADR-0013 + ADR-0014.
+- Phase 3 **P3.M2 — WebGPU stub adapter** (PR #38): `tensor::core::backend::webgpu::Backend` satisfies the `KernelBackend` concept and delegates every method to a private `reference::Backend` instance. Selecting `-DTENSOR_KERNEL_BACKEND=webgpu` defines `TENSOR_HAS_WEBGPU` and routes through the third slot while running on CPU underneath. P3.M3+ progressively replaces method bodies with WGSL kernels dispatched via gpu.cpp + Dawn per [ADR-0012](./docs/arc42/09-decisions/0012-webgpu-adapter-implementation-design.md).
+- `CHANGELOG.md` itself in Keep a Changelog format with three logical alphas (PR #37).
 - Phase 1.5 mop-up completed: `Variable::zero_grad()` + `sgd_update()` helpers (PR #26), mdspan polyfill restore via macro-based namespace detection (PR #30), LyX export module with CLI translator + LyX export-converter plugin (PR #31), `TypedTensor<T, "i", "j", …>` compile-time-labelled wrapper (PR #24), `tensor::tex::Evaluator<T>` end-to-end (PR #25), bench framework with reference baseline (PR #33), xeus-cling notebook CI workflow (PR #36).
 - Phase 2.5 backend port + Eigen adapter shipped: ADR-0011 `KernelBackend` port API (PR #19), `tensor::core::backend::reference::Backend` (PR #20), `tensor::core::backend::eigen::Backend` (PR #21), `tutorials/08_swappable-backends.ipynb` (PR #22).
 - Phase 3 design fixed in ADR-0012 (PR #32); Phase 3 impl-plan dated (PR #27).
@@ -23,7 +28,7 @@ The sequence below reads bottom-up if you want the project's narrative arc; top-
 ### Notes
 
 - No concrete git tags cut yet; the sequence below is logical (one alpha per phase exit).
-- CI status: 8 reference jobs green; Eigen job exists but its CI iteration is pending verification; WebGPU job is planned for Phase 3.
+- CI status: 8 reference jobs green; Eigen job + WebGPU-stub compile-only job exist and run on `develop` / PR. Real GPU numerical agreement is gated by a self-hosted GPU runner that does not exist yet (deferred to P3.M3 entry per ADR-0012).
 
 ---
 

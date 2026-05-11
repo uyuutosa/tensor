@@ -1,6 +1,6 @@
 # `tensor` — named-axis tensor algebra in modern C++
 
-> Educational-first, production-capable via backend adapters.
+> The canonical reference for differentiable named-tensor computation in modern C++ — educational-first, production-capable via backend adapters.
 
 `tensor` is a header-only C++20/23 library that explores **named-axis tensor algebra** — tensors carry axis labels (`a_i`, `b_j`), and operations broadcast over them in Einstein style (`a_i + b_j → c_{ij}`). The project's slogan is *the formula is the program*: the same expression you'd write in a paper can be parsed, evaluated, and gradient-checked in a notebook.
 
@@ -10,7 +10,7 @@ This Jupyter Book renders the notebooks shipped under [`tutorials/`](https://git
 
 - **Getting started** — `00_intro` walks through the 2016 README's named-axis examples on the new API.
 - **Autograd** — `05_autograd-from-scratch` builds the tape-based reverse-mode autograd primitive by primitive; `07_mlp-on-toy` trains a small model end-to-end.
-- **Architecture** — `08_swappable-backends` shows the Hexagonal "lite" payoff: same Domain code on reference, Eigen, or (Phase 3) WebGPU.
+- **Architecture** — `08_swappable-backends` shows the Hexagonal "lite" payoff: same Domain code on reference, Eigen, or (Phase 3) WebGPU. The third adapter slot ships as a stub in Phase 3 P3.M2 — concept-satisfying and routable through the dispatch path — with WGSL kernels following in P3.M3+.
 
 ## When you want production speed
 
@@ -33,8 +33,8 @@ Each chapter is a Jupyter notebook. The C++ code blocks are written to be execut
 | Phase 1 — `0.0.1-alpha` foundation | ✅ shipped |
 | Phase 2 — autograd | ✅ shipped (MVP → activations → broadcast backward → contraction → MLP-on-toy) |
 | Phase 2.5 — backend adapters | ✅ shipped (`KernelBackend` port; reference + Eigen adapters; tutorial 08) |
-| Phase 1.5 mop-up | partial — `LabelTag` + `TypedTensor`, `_tex` evaluator, `zero_grad` + `sgd_update` ✅; mdspan polyfill restore, xeus-cling notebook CI, LyX export backlog |
-| Phase 3 — WebGPU adapter | planned (impl-plan dated 2026-05-11) |
-| Phase 4 — `0.1.0` public release | in progress (this book scaffold + GitHub Pages deploy workflow ✅; release tag and full tutorial corpus pending) |
+| Phase 1.5 mop-up | mostly ✅ — `LabelTag` + `TypedTensor`, `_tex` evaluator, `zero_grad` + `sgd_update`, mdspan polyfill restore, LyX export module + LyX plugin, bench framework + reference baseline, xeus-cling notebook CI workflow |
+| Phase 3 — WebGPU adapter | P3.M2 ✅ (stub satisfies `KernelBackend`, delegates to reference); P3.M3+ WGSL kernels planned (gpu.cpp + Dawn per ADR-0012) |
+| Phase 4 — `0.1.0` public release | in progress (book scaffold ✅, GitHub Pages deploy workflow ✅, `CONTRIBUTING.md` + `CODE_OF_CONDUCT.md` + `CHANGELOG.md` ✅; release tag and full tutorial corpus pending) |
 
 For the detailed roadmap, see the [Phase 3 plan](https://github.com/uyuutosa/tensor/blob/develop/docs/impl-plans/2026-05-11_phase-3-webgpu.md) and the [Phase 1 retrospective](https://github.com/uyuutosa/tensor/blob/develop/docs/reports/2026-05-11_phase-1-retrospective.md).
