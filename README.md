@@ -27,7 +27,7 @@ cmake --build --preset=default
 ctest --preset=default
 ```
 
-That builds the header-only library, fetches dependencies (`mdspan`, `fmt`, `doctest`) via vcpkg, and runs the test suite.
+That builds the header-only library, fetches dependencies (`mdspan`, `fmt`, `doctest`) via vcpkg, and runs the test suite. Optional: `-DTENSOR_KERNEL_BACKEND=eigen` for Eigen-backed kernels; `-DTENSOR_BUILD_BENCH=ON` to build the cross-backend performance bench (see [`docs/reports/2026-05-11_backend-performance-comparison.md`](./docs/reports/2026-05-11_backend-performance-comparison.md)).
 
 ## Status
 
