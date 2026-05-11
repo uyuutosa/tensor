@@ -114,8 +114,9 @@ Component-level views land as detailed-design docs under [`../../detailed-design
 - [`webgpu-element-wise-kernels.md`](../../detailed-design/webgpu-element-wise-kernels.md) — WebGPU element-wise binary + unary kernels (P3.M3).
 - [`webgpu-gemm-kernel.md`](../../detailed-design/webgpu-gemm-kernel.md) — WebGPU tiled GEMM (P3.M4).
 - [`webgpu-broadcast-kernels.md`](../../detailed-design/webgpu-broadcast-kernels.md) — WebGPU label-aware broadcast (P3.M5).
+- [`kernel-backend-port.md`](../../detailed-design/kernel-backend-port.md) — the `KernelBackend` C++20 concept that decouples the Domain from execution (14 methods + `backend_tag`).
 
-Planned siblings (not yet written): `kernel-backend-port.md`.
+All originally-planned detailed-design instances now ship.
 
 ## Cross-references
 

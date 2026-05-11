@@ -10,6 +10,7 @@ The sequence below reads bottom-up if you want the project's narrative arc; top-
 
 ### Added
 
+- **`docs/detailed-design/kernel-backend-port.md`**: seventh and final planned Template-3 instance — completes the detailed-design coverage of the project. Covers per-method semantics of the 14-method `KernelBackend` concept + `backend_tag` typename, the adapter-construction discipline (`static_assert(KernelBackend<Backend>)` line per adapter header + delegation pattern via private `reference::Backend ref_`), build-time selection via `TENSOR_KERNEL_BACKEND` CMake variable, alternatives-considered set (virtual base / generic dispatch / type-erased function / per-call backend / more methods) all rejected with reasons. arc42 §5 §L3 zoom-ins list updated; *all originally-planned detailed-design instances now ship*.
 - **`bench/bench.cpp` gains f32 cases for the WebGPU adapter, and `docs/reports/2026-05-11_backend-performance-comparison.md` fills in the previously-TBD Eigen and WebGPU columns** with real numbers from the maintainer's RTX 3090 + Dawn 2026-04 (Vulkan):
   - **Eigen matmul 512³**: 13.638 ms (**42× faster** than reference 571.986 ms).
   - **WebGPU matmul 512³**: 3.827 ms (**149× faster** than reference, 3.6× over Eigen at this size).
