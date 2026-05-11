@@ -161,6 +161,134 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 // `KernelCode(string, size_t)` overload at third_party/gpu_cpp/gpu.hpp:308).
 inline constexpr std::size_t kDefaultWorkgroupSize = 256;
 
+// ─── Broadcast element-wise kernels (P3.M5) ────────────────────────────────
+//
+// Generalised element-wise binary kernels that consume a `BroadcastPlan`
+// in the form of a uniform Params buffer. Used by `broadcast_add` /
+// `broadcast_sub` / `broadcast_mul` (the Einstein-style broadcast that
+// `a_i + b_j → c_{ij}` etc).
+//
+// Bindings:
+//   0 = a    (storage, read-only)
+//   1 = b    (storage, read-only)
+//   2 = out  (storage, read-write)
+//   3 = uniform `BroadcastParams`
+//
+// BroadcastParams (mirrors detail::BroadcastParams in dispatch.hpp):
+//   result_rank, a_rank, b_rank, _pad      (16 bytes header)
+//   result_extents: array<u32, 8>           (32 bytes)
+//   a_extents:      array<u32, 8>
+//   b_extents:      array<u32, 8>
+//   a_source:       array<u32, 8>           (npos sentinel = 0xFFFFFFFF)
+//   b_source:       array<u32, 8>
+//
+// Max supported rank is 8 — well above the project's typical rank ≤ 4
+// shapes. ADR-0012 §Decision Outcome point 5 says non-float delegates
+// to reference; the same applies here.
+//
+// Algorithm per thread:
+//   gid.x = result flat index
+//   delinearize to result multi-index using result_extents (row-major)
+//   project to a multi-index via a_source (npos → 0)
+//   linearize a multi-index using a_extents → a flat
+//   same for b
+//   out[gid.x] = a[a_flat] <op> b[b_flat]
+//
+// The pattern uses `kBroadcastBodyF32` as a shared body string with the
+// operator substituted; each operator-specific constant prepends the
+// per-op header to keep the constants self-contained for users who read
+// just one source.
+
+namespace detail_wgsl {
+// Shared body. Each per-op constant prepends a one-line header that
+// renames `OP` via WGSL macro-like text substitution.
+inline constexpr std::string_view kBroadcastBodyF32 = R"WGSL(
+struct BroadcastParams {
+    result_rank    : u32,
+    a_rank         : u32,
+    b_rank         : u32,
+    padding        : u32,
+    result_extents : array<u32, 8>,
+    a_extents      : array<u32, 8>,
+    b_extents      : array<u32, 8>,
+    a_source       : array<u32, 8>,
+    b_source       : array<u32, 8>,
+};
+
+@group(0) @binding(0) var<storage, read>       a   : array<{{precision}}>;
+@group(0) @binding(1) var<storage, read>       b   : array<{{precision}}>;
+@group(0) @binding(2) var<storage, read_write> out : array<{{precision}}>;
+// Use storage (read-only) instead of uniform so the u32 arrays pack
+// tightly per WGSL's std430 layout. Uniform's std140-style layout would
+// pad each u32 in an array to 16 bytes, which the C++ BroadcastParams
+// struct does not do.
+@group(0) @binding(3) var<storage, read>       p   : BroadcastParams;
+
+const NPOS : u32 = 0xFFFFFFFFu;
+
+@compute @workgroup_size({{workgroupSize}})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let i : u32 = gid.x;
+
+    // Delinearise i to result multi-index (row-major: rightmost is innermost).
+    var result_idx : array<u32, 8>;
+    var rem : u32 = i;
+    for (var ki : u32 = 0u; ki < p.result_rank; ki = ki + 1u) {
+        let k : u32 = p.result_rank - 1u - ki;
+        result_idx[k] = rem % p.result_extents[k];
+        rem = rem / p.result_extents[k];
+    }
+
+    // Project to a multi-index, then linearise using a_extents.
+    var a_idx : array<u32, 8>;
+    for (var x : u32 = 0u; x < p.a_rank; x = x + 1u) { a_idx[x] = 0u; }
+    for (var r : u32 = 0u; r < p.result_rank; r = r + 1u) {
+        let s : u32 = p.a_source[r];
+        if (s != NPOS) { a_idx[s] = result_idx[r]; }
+    }
+    var a_flat : u32 = 0u;
+    var a_stride : u32 = 1u;
+    for (var ki : u32 = 0u; ki < p.a_rank; ki = ki + 1u) {
+        let k : u32 = p.a_rank - 1u - ki;
+        a_flat = a_flat + a_idx[k] * a_stride;
+        a_stride = a_stride * p.a_extents[k];
+    }
+
+    // Same for b.
+    var b_idx : array<u32, 8>;
+    for (var x : u32 = 0u; x < p.b_rank; x = x + 1u) { b_idx[x] = 0u; }
+    for (var r : u32 = 0u; r < p.result_rank; r = r + 1u) {
+        let s : u32 = p.b_source[r];
+        if (s != NPOS) { b_idx[s] = result_idx[r]; }
+    }
+    var b_flat : u32 = 0u;
+    var b_stride : u32 = 1u;
+    for (var ki : u32 = 0u; ki < p.b_rank; ki = ki + 1u) {
+        let k : u32 = p.b_rank - 1u - ki;
+        b_flat = b_flat + b_idx[k] * b_stride;
+        b_stride = b_stride * p.b_extents[k];
+    }
+
+    out[i] = a[a_flat] {{op}} b[b_flat];
+}
+)WGSL";
+}  // namespace detail_wgsl
+
+inline constexpr std::string_view kBroadcastAddF32 = detail_wgsl::kBroadcastBodyF32;
+inline constexpr std::string_view kBroadcastSubF32 = detail_wgsl::kBroadcastBodyF32;
+inline constexpr std::string_view kBroadcastMulF32 = detail_wgsl::kBroadcastBodyF32;
+
+// Note: kBroadcastAdd/Sub/MulF32 all point at the same template; the
+// dispatcher in webgpu_detail/dispatch.hpp does the {{op}} substitution
+// (`+` / `-` / `*`) at call time, mirroring how `dispatch_element_wise`
+// substitutes `{{precision}}` and `{{workgroupSize}}`. This keeps the
+// readable WGSL text appearing once instead of three times.
+
+// Maximum rank supported by the broadcast kernel's Params buffer. The
+// project's tests and tutorials use rank ≤ 3 in practice; this gives
+// headroom without paying a meaningful uniform-buffer size cost.
+inline constexpr std::size_t kBroadcastMaxRank = 8;
+
 // ─── GEMM kernel (P3.M4) ───────────────────────────────────────────────────
 //
 // Tiled GEMM expressed as one readable kernel that covers both the matvec

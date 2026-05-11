@@ -125,6 +125,16 @@ After the [external-substrate research](../reports/2026-05-11_external-substrate
 - **The risks-and-mitigations table line "Dawn or wgpu-native vcpkg port instability" downgrades** from `Likelihood: Medium, Impact: High` to `Likelihood: Low, Impact: Medium`. Mitigation remains the same (the choice is one CMake variable away from being reversed).
 - The `0.0.4-alpha` exit criteria still hold; the change is in *how* P3.M3 will be built, not *whether* it will ship.
 
+### P3.M5 — broadcast WGSL + dispatch (shipped)
+
+The final element-wise piece on the WebGPU adapter: `broadcast_add` / `broadcast_sub` / `broadcast_mul` for the Einstein-style label-aware broadcast (`a_i + b_j → c_{ij}` etc.). One WGSL template `kBroadcastBodyF32` (parameterised by `{{precision}}` / `{{workgroupSize}}` / `{{op}}`) handles all three operators per ADR-0013's "one readable kernel over several specialised ones" stance. The kernel reads a `BroadcastParams` storage buffer (using std430 layout for tight u32 packing — uniform's std140 would pad each u32 to 16 bytes) that encodes result/A/B ranks, extents, and source-axis maps with sentinel `0xFFFFFFFF = npos`. Max supported rank 8 (project uses rank ≤ 3 in practice). Non-float dtypes and over-rank shapes delegate to reference.
+
+`reduce_sum` and `unbroadcast` continue to delegate to reference: a scalar reduction over a moderately-sized tensor on the GPU is dominated by host↔device round-trip overhead, and scatter-add (unbroadcast) needs atomicAdd-on-float patterns that don't fit the canonical-reference "one readable kernel" framing. These can be revisited in Phase 4+ if a profile-driven need emerges.
+
+**Verified locally on RTX 3090 + Dawn 2026-04**: `broadcast_add(rank-1 + rank-1 → rank-2)` outer product (12 elements) and `broadcast_{add,sub,mul}(rank-2 + rank-1 → rank-2)` (12 elements × 3 ops) all agree with reference within `1e-5`.
+
+**Phase 3 status: all element-wise + GEMM kernel surface covered on GPU.** Of the 15-method `KernelBackend` port, 12 methods (4 binary + 4 unary + 1 contract + 3 broadcast) dispatch real Dawn compute for `float`; the remaining 3 (`reduce_sum`, `unbroadcast`, and the contract methods that fall outside the simple-GEMM gate) delegate to reference. The full `KernelBackend` concept is honored; the WebGPU adapter is functionally complete.
+
 ### P3.M3 sub-split
 
 To keep CI tractable while no self-hosted GPU runner exists, P3.M3 splits:

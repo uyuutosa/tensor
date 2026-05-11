@@ -175,6 +175,139 @@ void dispatch_element_wise(WebGPUContext& ctx,
     pump_until(instance, done);
 }
 
+// Uniform-buffer Params for the broadcast kernels (mirrors
+// BroadcastParams declared inside webgpu_wgsl.hpp::kBroadcastBodyF32).
+// The std140-like layout matches WGSL uniform-block rules: scalar u32
+// is 4 bytes; array<u32, 8> is 32 bytes contiguous because each element
+// is u32-sized — WGSL does NOT round each element up to 16 bytes (that
+// rule applies to array<T> where T is < 16 bytes only for certain
+// element types; u32 arrays pack tightly).
+struct BroadcastParams {
+    std::uint32_t result_rank;
+    std::uint32_t a_rank;
+    std::uint32_t b_rank;
+    std::uint32_t padding;
+    std::uint32_t result_extents[8];
+    std::uint32_t a_extents[8];
+    std::uint32_t b_extents[8];
+    std::uint32_t a_source[8];
+    std::uint32_t b_source[8];
+};
+
+// Dispatch a broadcast element-wise kernel (`kBroadcastAddF32` etc.).
+// `op_token` is the WGSL infix operator string (`"+"`, `"-"`, `"*"`)
+// that substitutes the `{{op}}` placeholder in the kernel template.
+// Caller has already uploaded `gA` (size = a_total_elements * sizeof(float))
+// and `gB`, and provided a `gOut` sized for `result_total * sizeof(float)`.
+inline void dispatch_broadcast(WebGPUContext& ctx,
+                               std::string_view wgsl_template,
+                               std::string_view op_token,
+                               wgpu::Buffer const& gA, std::size_t a_bytes,
+                               wgpu::Buffer const& gB, std::size_t b_bytes,
+                               wgpu::Buffer const& gOut, std::size_t out_bytes,
+                               BroadcastParams const& params,
+                               std::size_t result_total,
+                               std::size_t workgroup_size) {
+    auto& device = ctx.device();
+    auto& queue = ctx.queue();
+    auto& instance = ctx.instance();
+
+    // Substitute placeholders. `{{op}}` is broadcast-kernel-specific;
+    // {{precision}} and {{workgroupSize}} are the standard ones from
+    // dispatch_element_wise.
+    std::string wgsl{wgsl_template};
+    {
+        auto replace_all = [&](std::string_view from, std::string_view to) {
+            std::string::size_type pos = 0;
+            while ((pos = wgsl.find(from.data(), pos, from.size())) !=
+                   std::string::npos) {
+                wgsl.replace(pos, from.size(), to.data(), to.size());
+                pos += to.size();
+            }
+        };
+        replace_all("{{precision}}", std::string_view{"f32"});
+        replace_all("{{workgroupSize}}", std::to_string(workgroup_size));
+        replace_all("{{op}}", op_token);
+    }
+
+    wgpu::ShaderSourceWGSL wgslSrc{};
+    wgslSrc.code = make_string_view(wgsl);
+    wgpu::ShaderModuleDescriptor smDesc{};
+    smDesc.nextInChain = &wgslSrc;
+    auto shader = device.CreateShaderModule(&smDesc);
+
+    // Params buffer — Storage (read-only) so the u32 arrays pack tightly
+    // per WGSL's std430 rules. A Uniform buffer would force the arrays
+    // to std140-like 16-byte-per-element stride which our C++ struct
+    // does not honor.
+    wgpu::BufferDescriptor pDesc{};
+    pDesc.size = sizeof(BroadcastParams);
+    pDesc.usage = wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopyDst;
+    auto gParams = device.CreateBuffer(&pDesc);
+    queue.WriteBuffer(gParams, 0, &params, sizeof(BroadcastParams));
+
+    // 4-binding layout: all storage (3 input/output + 1 params).
+    std::array<wgpu::BindGroupLayoutEntry, 4> bgle{};
+    bgle[0].binding = 0;
+    bgle[0].visibility = wgpu::ShaderStage::Compute;
+    bgle[0].buffer.type = wgpu::BufferBindingType::ReadOnlyStorage;
+    bgle[1].binding = 1;
+    bgle[1].visibility = wgpu::ShaderStage::Compute;
+    bgle[1].buffer.type = wgpu::BufferBindingType::ReadOnlyStorage;
+    bgle[2].binding = 2;
+    bgle[2].visibility = wgpu::ShaderStage::Compute;
+    bgle[2].buffer.type = wgpu::BufferBindingType::Storage;
+    bgle[3].binding = 3;
+    bgle[3].visibility = wgpu::ShaderStage::Compute;
+    bgle[3].buffer.type = wgpu::BufferBindingType::ReadOnlyStorage;
+    wgpu::BindGroupLayoutDescriptor bglDesc{};
+    bglDesc.entryCount = 4;
+    bglDesc.entries = bgle.data();
+    auto bgl = device.CreateBindGroupLayout(&bglDesc);
+
+    wgpu::BindGroupLayout bgls[1] = {bgl};
+    wgpu::PipelineLayoutDescriptor plDesc{};
+    plDesc.bindGroupLayoutCount = 1;
+    plDesc.bindGroupLayouts = bgls;
+    auto pl = device.CreatePipelineLayout(&plDesc);
+
+    wgpu::ComputePipelineDescriptor cpDesc{};
+    cpDesc.layout = pl;
+    cpDesc.compute.module = shader;
+    cpDesc.compute.entryPoint = make_string_view("main");
+    auto pipeline = device.CreateComputePipeline(&cpDesc);
+
+    std::array<wgpu::BindGroupEntry, 4> bge{};
+    bge[0].binding = 0; bge[0].buffer = gA;      bge[0].offset = 0; bge[0].size = a_bytes;
+    bge[1].binding = 1; bge[1].buffer = gB;      bge[1].offset = 0; bge[1].size = b_bytes;
+    bge[2].binding = 2; bge[2].buffer = gOut;    bge[2].offset = 0; bge[2].size = out_bytes;
+    bge[3].binding = 3; bge[3].buffer = gParams; bge[3].offset = 0; bge[3].size = sizeof(BroadcastParams);
+    wgpu::BindGroupDescriptor bgDesc{};
+    bgDesc.layout = bgl;
+    bgDesc.entryCount = 4;
+    bgDesc.entries = bge.data();
+    auto bg = device.CreateBindGroup(&bgDesc);
+
+    auto encoder = device.CreateCommandEncoder();
+    {
+        auto pass = encoder.BeginComputePass();
+        pass.SetPipeline(pipeline);
+        pass.SetBindGroup(0, bg);
+        const std::uint32_t groups = static_cast<std::uint32_t>(
+            (result_total + workgroup_size - 1) / workgroup_size);
+        pass.DispatchWorkgroups(groups, 1, 1);
+        pass.End();
+    }
+    auto cmd = encoder.Finish();
+    queue.Submit(1, &cmd);
+
+    bool done = false;
+    queue.OnSubmittedWorkDone(
+        wgpu::CallbackMode::AllowProcessEvents,
+        [&done](wgpu::QueueWorkDoneStatus, wgpu::StringView) { done = true; });
+    pump_until(instance, done);
+}
+
 // Uniform-buffer Params for the tiled GEMM kernel (mirrors the
 // `struct Params { M, N, K }` declared inside webgpu_wgsl.hpp::kGemmF32).
 // 16-byte alignment is implicit because the struct is 12 bytes and
