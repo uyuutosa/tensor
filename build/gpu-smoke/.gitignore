@@ -1,0 +1,5 @@
+# Compiled smoke binaries — ad-hoc local builds; never committed.
+smoke_dawn_add
+smoke_dawn_instance
+smoke_add
+*.o

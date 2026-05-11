@@ -2,46 +2,47 @@
 # Build + run the kAddF32 GPU smoke test on the local RTX 3090.
 #
 # Prerequisites:
-#   ~/vcpkg/vcpkg install dawn  (in classic mode; ~30-60 min build)
+#   ~/vcpkg/vcpkg install 'dawn[core,vulkan]' --triplet x64-linux
 #
-# Lib path (auto-discovered after install):
+# Lib path (vcpkg-installed):
 #   ~/vcpkg/installed/x64-linux/{include,lib}/
+#
+# Dawn is shipped as static libwebgpu_dawn.a + abseil deps. We resolve
+# the link line via pkg-config (unofficial_webgpu_dawn).
 
 set -euo pipefail
 
 VCPKG_INSTALLED="${VCPKG_INSTALLED:-$HOME/vcpkg/installed/x64-linux}"
 PROJECT_ROOT="${PROJECT_ROOT:-$HOME/proj/tensor}"
 
-if [[ ! -d "${VCPKG_INSTALLED}/include/webgpu" ]]; then
-    echo "ERROR: vcpkg-installed webgpu headers not found at ${VCPKG_INSTALLED}/include/webgpu/"
-    echo "Run:   ~/vcpkg/vcpkg install dawn   first."
+if [[ ! -f "${VCPKG_INSTALLED}/lib/libwebgpu_dawn.a" ]]; then
+    echo "ERROR: libwebgpu_dawn.a not at ${VCPKG_INSTALLED}/lib/"
+    echo "Run:   ~/vcpkg/vcpkg install 'dawn[core,vulkan]' --triplet x64-linux"
     exit 1
 fi
 
-# Discover Dawn shared-library names produced by the port.
-shopt -s nullglob
-DAWN_LIBS=(${VCPKG_INSTALLED}/lib/libwebgpu*.so ${VCPKG_INSTALLED}/lib/libdawn*.so)
-shopt -u nullglob
-if [[ ${#DAWN_LIBS[@]} -eq 0 ]]; then
-    echo "ERROR: no libwebgpu*/libdawn* under ${VCPKG_INSTALLED}/lib/"
-    ls "${VCPKG_INSTALLED}/lib/" 2>&1 | head -20
-    exit 1
-fi
-echo "Dawn libs found:"
-for L in "${DAWN_LIBS[@]}"; do echo "  ${L}"; done
+export PKG_CONFIG_PATH="${VCPKG_INSTALLED}/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 
-# Compile + link.
+DAWN_CFLAGS=$(pkg-config --cflags unofficial_webgpu_dawn)
+DAWN_LIBS=$(pkg-config --libs unofficial_webgpu_dawn)
+
+echo "Dawn cflags: ${DAWN_CFLAGS}"
+echo "Dawn libs:   ${DAWN_LIBS}"
+
+# -lvulkan = system Vulkan loader; pthread / dl are pulled in by Dawn
+# and absl. -lX11 -lXrandr -lXinerama -lXcursor -lXi -lXxf86vm are not
+# needed because we built dawn[core,vulkan] without X11 / GL.
 g++ \
     -std=c++20 \
     -O2 \
     -Wall -Wextra -Wpedantic \
     -I"${PROJECT_ROOT}/third_party/gpu_cpp" \
     -I"${PROJECT_ROOT}/include" \
-    -I"${VCPKG_INSTALLED}/include" \
-    -Wl,-rpath,"${VCPKG_INSTALLED}/lib" \
+    ${DAWN_CFLAGS} \
     -o smoke_add \
     smoke_add.cpp \
-    "${DAWN_LIBS[@]}"
+    ${DAWN_LIBS} \
+    -lvulkan -lpthread -ldl
 
 echo
 echo "=== running smoke_add ==="
