@@ -1,7 +1,7 @@
 ---
 status: Draft
 owner: tensor
-last-reviewed: 2026-05-10
+last-reviewed: 2026-05-11
 ---
 
 # `tensor` — Building Block View (arc42 §5)
@@ -11,7 +11,7 @@ last-reviewed: 2026-05-10
 | Status        | Draft                                                          |
 | Type          | arc42 §5 (Building Block View)                                 |
 | Owner         | uyuutosa                                                       |
-| Last Updated  | 2026-05-10                                                     |
+| Last Updated  | 2026-05-11                                                     |
 
 > Per `.claude/rules/documentation.md` and arc42 convention, this file is a **navigation index** for the static decomposition. The C4 L2 container diagram in [`../../diagrams/c4/workspace.dsl`](../../diagrams/c4/workspace.dsl) is the structural single source of truth; this prose mirrors it. Implementation HOW lives under [`../../detailed-design/`](../../detailed-design/).
 
@@ -25,7 +25,7 @@ Names match the DSL exactly; do not introduce synonyms.
 
 The library is laid out as a Hexagonal (Ports & Adapters) "lite" architecture per [ADR-0009](../09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md). Each container below carries a **hexagonal classification** — `Domain`, `DrivingAdapter`, or `DrivenAdapter`. The dependency rule is one-way: `Domain` depends on no adapter; adapters depend on `Domain`; **no adapter depends on another adapter directly** ([`../../design-guide/architectural-discipline.md`](../../design-guide/architectural-discipline.md) explains and how it is enforced).
 
-**Shipped / in-flight as of 2026-05-11** (after PR #1–#33): `tensor::core` ✅ (incl. `LabelTag` + `TypedTensor` compile-time path, mdspan interop); `tensor::tex` ✅ (parser + `to_latex` + `_tex` UDL + Evaluator end-to-end); `tensor::autograd` ✅ (Phase 2 full: MVP, activations, broadcast backward, contraction, `zero_grad`, `sgd_update`); two backend adapters ✅ (`reference`, `eigen`) + WebGPU adapter design fixed in [ADR-0012](../09-decisions/0012-webgpu-adapter-implementation-design.md); tutorials 00 / 05 / 07 / 08 ✅; Jupyter Book scaffold ✅ ([`book/`](../../../book/)); perf bench framework ✅ ([`../../../bench/`](../../../bench/)); LyX export module + LyX plugin ✅ ([`../../../lyx-export/`](../../../lyx-export/)). **In flight / planned**: WebGPU adapter implementation (Phase 3 P3.M2+); xeus-cling notebook CI (Phase 1.5 backlog); `0.1.0` release tag (Phase 4 close).
+**Shipped / in-flight as of 2026-05-11** (after PR #1–#38): `tensor::core` ✅ (incl. `LabelTag` + `TypedTensor` compile-time path, mdspan interop); `tensor::tex` ✅ (parser + `to_latex` + `_tex` UDL + Evaluator end-to-end); `tensor::autograd` ✅ (Phase 2 full: MVP, activations, broadcast backward, contraction, `zero_grad`, `sgd_update`); **three backend adapters** ✅ (`reference`, `eigen`, **`webgpu` stub** delegating to reference per ADR-0012 / P3.M2) + WebGPU adapter design fixed in [ADR-0012](../09-decisions/0012-webgpu-adapter-implementation-design.md); tutorials 00 / 05 / 07 / 08 ✅; Jupyter Book scaffold ✅ ([`book/`](../../../book/)); perf bench framework ✅ ([`../../../bench/`](../../../bench/)); LyX export module + LyX plugin ✅ ([`../../../lyx-export/`](../../../lyx-export/)); `CONTRIBUTING.md` + `CODE_OF_CONDUCT.md` + `CHANGELOG.md` ✅; xeus-cling notebook CI workflow ✅. **In flight / planned**: WGSL kernels (Phase 3 P3.M3+ — element-wise, GEMM, broadcast/reduce); `0.1.0` release tag (Phase 4 close).
 
 ```
                 ┌─────────────────────────────────────┐
@@ -55,7 +55,7 @@ The library is laid out as a Hexagonal (Ports & Adapters) "lite" architecture pe
 | `tensor::core`           | **Domain**        | 1 ✅              | Named-axis tensor types (`Tensor<T,N>`, `Shape<N>`, `Axis`, `LabelTag<...>`), expression templates, `mdspan` interop *(deferred to Phase 1.5)*, the four arithmetic ops, indexing. Owns `concepts.hpp` declaring `TensorLike`, `Shape`, `Axis`, `KernelBackend`, `BufferExporter` ports. | [0002](../09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md), [0004](../09-decisions/0004-adopt-hybrid-named-axis-api.md), [0009](../09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md) |
 | `tensor::autograd`       | **Domain** (ext.) | 2 🚧 (MVP shipped) | Tape-based reverse-mode autograd over named-axis tensors; `Variable<Tensor>` wrapper, registered backwards, gradient-checking harness. Declares `Differentiable`, `BackwardOp`, `BackwardSink` concepts in its own `concepts.hpp`. | [0007](../09-decisions/0007-adopt-autograd-as-first-class-subsystem.md), [0009](../09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md) |
 | `tensor::tex`            | **DrivingAdapter** | 1 ✅ (MVP) → 3 (LyX) | `consteval` LaTeX-subset parser *(parser is runtime in MVP; consteval upgrade is Phase 1.5)* exposed via the `_tex` UDL, runtime parser, `to_latex` renderer; later: LyX export module. Implements the `ExpressionSource` and `ExpressionSink` ports declared in `tensor::core::concepts`. | [0005](../09-decisions/0005-adopt-tex-lyx-as-authoring-surface.md) |
-| `tensor::gpu`            | **DrivenAdapter** | 3 (planned)      | WebGPU code generator (named-axis expression → WGSL kernel) and runtime adapter (Dawn / wgpu-native). Implements the `KernelBackend` port declared in `tensor::core::concepts`. | [0006](../09-decisions/0006-adopt-webgpu-as-gpu-backend.md) |
+| `tensor::core::backend::webgpu` | **DrivenAdapter** | 3 🚧 (P3.M2 stub shipped) | WebGPU adapter satisfying `KernelBackend`. PR #38 shipped a stub that delegates to `reference::Backend`; P3.M3+ replaces method bodies with WGSL kernels dispatched via gpu.cpp + Dawn. (Container renamed from `tensor::gpu` in PR #38 to match the implemented namespace.) | [0006](../09-decisions/0006-adopt-webgpu-as-gpu-backend.md), [0012](../09-decisions/0012-webgpu-adapter-implementation-design.md) |
 | `tutorials/`             | (out of hexagon)  | 1 ✅ (00 shipped) | Jupyter notebooks (xeus-cling C++20 kernel) demonstrating each container; CI-executed end-to-end per release | [0008](../09-decisions/0008-distribute-as-header-only-with-jupyter-tutorials.md) |
 | Jupyter Book site        | (out of hexagon)  | 4                | Static site generated from `tutorials/`, deployed to GitHub Pages                                    | [0008](../09-decisions/0008-distribute-as-header-only-with-jupyter-tutorials.md) |
 | `lyx-export/` (optional) | **DrivingAdapter** | 3+               | LyX module that exports tensor-bearing `.lyx` documents to `_tex`-compatible source                  | [0005](../09-decisions/0005-adopt-tex-lyx-as-authoring-surface.md) |

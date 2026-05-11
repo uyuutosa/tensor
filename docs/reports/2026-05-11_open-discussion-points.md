@@ -101,6 +101,8 @@ These are three points on a 2-dimensional axis (rank × label-time). Functionali
 
 ## Axis E — WebGPU runtime stability concern
 
+> **Resolution — 2026-05-11**: the original Option 1 (hold ADR-0012 with a 2-week timebox) was followed; PR #38 shipped the P3.M2 stub. The [external-substrate research (2026-05-11)](./2026-05-11_external-substrate-research.md) then audited the runtime question end-to-end. Key findings: Dawn is now in vcpkg as `20260410.140140`; gpu.cpp is bus-factor 1 with no vcpkg port. [ADR-0014](../arc42/09-decisions/0014-external-substrate-strategy.md) captures the resolved strategy: **Dawn via vcpkg, gpu.cpp vendored under `third_party/gpu_cpp/`**, with `wgpu-native` left as an opt-in flag. The 2-week timebox is effectively retired by ADR-0014.
+
 **Synthesis.** [ADR-0012](../arc42/09-decisions/0012-webgpu-adapter-implementation-design.md) picked **gpu.cpp on Dawn** with wgpu-native as fallback. As of May 2026:
 
 - **gpu.cpp** — Answer.AI's project, single maintainer; active through 2025 but no major releases since. Risk: bus factor 1.
@@ -115,7 +117,7 @@ These are three points on a 2-dimensional axis (rank × label-time). Functionali
 
 **Trade-offs.** (1) commits early and lets implementation start; (2) hedges against gpu.cpp's bus factor at the cost of more integration code; (3) is the most expensive engineering choice because every other piece (CMake, vcpkg, CI) wants the runtime to be known.
 
-**Recommendation.** **Option 1 with a 2-week timebox** — proceed with gpu.cpp + Dawn per ADR-0012. If P3.M2 (CMake plumbing) hits a vcpkg-port wall in ≤ 2 weeks, supersede ADR-0012 with ADR-0013 picking wgpu-native. Either path is reversible because the Hexagonal port keeps the runtime swap to one CMake variable.
+**Recommendation.** **Option 1 with a 2-week timebox** — proceed with gpu.cpp + Dawn per ADR-0012. If P3.M2 (CMake plumbing) hits a vcpkg-port wall in ≤ 2 weeks, supersede ADR-0012 with ADR-0013 picking wgpu-native. Either path is reversible because the Hexagonal port keeps the runtime swap to one CMake variable. **(See resolution note above; ADR-0014 captures the final operational choice.)**
 
 ---
 
@@ -163,15 +165,15 @@ The rules were correct for Phase 1's solo-bandwidth constraints. After PR #33 th
 
 ## Recommendation summary
 
-| Axis | Recommendation                                                         | Decision-by         |
-| ---- | ---------------------------------------------------------------------- | ------------------- |
-| A    | One high-quality launch post (option 2)                               | Maintainer; before `0.1.0` tag |
-| B    | Status quo + "which type when?" how-to doc                            | Next mop-up PR      |
-| C    | Profile-driven 1-week perf investigation (option 2)                    | Phase 1.5+ slot     |
-| D    | Defer C++23 to Phase 5+ when `std::linalg` lands broadly               | No action now       |
-| E    | Hold ADR-0012 choice with a 2-week timebox at P3.M2                    | Phase 3 entry       |
-| F    | Light-touch CONTRIBUTING.md + CODE_OF_CONDUCT.md now (option 2)        | Next PR             |
-| G    | Keep ADR-0001 out-of-scope as is; revisit at Phase 5+                  | No action now       |
+| Axis | Recommendation                                                         | Decision-by         | Status (2026-05-11)                              |
+| ---- | ---------------------------------------------------------------------- | ------------------- | ----------------------------------------------- |
+| A    | One high-quality launch post (option 2)                               | Maintainer; before `0.1.0` tag | reframed by ADR-0013 ("canonical reference"); launch-post scope grows accordingly |
+| B    | Status quo + "which type when?" how-to doc                            | Next mop-up PR      | how-to shipped in PR #35                         |
+| C    | Profile-driven 1-week perf investigation (option 2)                    | Phase 1.5+ slot     | unchanged; pending                               |
+| D    | Defer C++23 to Phase 5+ when `std::linalg` lands broadly               | No action now       | confirmed by external-substrate research (`<linalg>` ships in 2028+) |
+| E    | Hold ADR-0012 choice with a 2-week timebox at P3.M2                    | Phase 3 entry       | resolved by ADR-0014 (Dawn via vcpkg + gpu.cpp vendored) |
+| F    | Light-touch CONTRIBUTING.md + CODE_OF_CONDUCT.md now (option 2)        | Next PR             | shipped in PR #35                                |
+| G    | Keep ADR-0001 out-of-scope as is; revisit at Phase 5+                  | No action now       | reframed by ADR-0013 (canonical-reference posture narrows additions further) |
 
 ## What I'm asking for
 
