@@ -32,6 +32,12 @@ target_compile_features(tensor INTERFACE cxx_std_20)
 find_package(fmt CONFIG REQUIRED)
 target_link_libraries(tensor INTERFACE fmt::fmt)
 
+# mdspan polyfill (Kokkos reference impl, default namespace
+# Kokkos::Experimental::). Used by tensor/core/mdspan_interop.hpp; the
+# adapter detects native std::mdspan via __cpp_lib_mdspan when available.
+find_package(mdspan CONFIG REQUIRED)
+target_link_libraries(tensor INTERFACE std::mdspan)
+
 # Eigen3 is required when the active backend is `eigen` (ADR-0011 / P2.5.M3).
 # The reference backend has no third-party deps, so non-eigen builds skip
 # the find_package call entirely.

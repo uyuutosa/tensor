@@ -10,6 +10,7 @@
   "dependencies": [
     "fmt",
     "doctest",
-    "eigen3"
+    "eigen3",
+    "mdspan"
   ]
 }
