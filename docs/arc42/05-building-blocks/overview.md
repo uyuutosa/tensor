@@ -113,6 +113,7 @@ Component-level views land as detailed-design docs under [`../../detailed-design
 - [`tensor-tex.md`](../../detailed-design/tensor-tex.md) — `_tex` UDL parser, `Expression` AST, `Evaluator`, LyX export module.
 - [`webgpu-element-wise-kernels.md`](../../detailed-design/webgpu-element-wise-kernels.md) — WebGPU element-wise binary + unary kernels (P3.M3).
 - [`webgpu-gemm-kernel.md`](../../detailed-design/webgpu-gemm-kernel.md) — WebGPU tiled GEMM (P3.M4).
+- [`webgpu-broadcast-kernels.md`](../../detailed-design/webgpu-broadcast-kernels.md) — WebGPU label-aware broadcast (P3.M5).
 
 Planned siblings (not yet written): `kernel-backend-port.md`.
 
