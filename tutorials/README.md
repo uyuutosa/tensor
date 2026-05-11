@@ -24,7 +24,7 @@ This pulls xeus-cpp 0.10.0+, vcpkg, the C++20 toolchain, and Jupyter Book. Once 
 | 03  | Convolutions reformulated as tensor inner products | scaffolded  | 1 |
 | 04  | TeX bridge — *the formula is the program*          | scaffolded  | 1 |
 | 05  | Build your own autograd from scratch               | **shipped** (this directory) | 2 (P2.M5) |
-| 06  | WebGPU acceleration                                | planned     | 3 |
+| 06  | WebGPU acceleration (design walkthrough)           | **shipped** (this directory; live-execution form pending GPU runner) | 3 (P3.M6) |
 | 07  | A small MLP on a toy dataset                       | **shipped** (this directory) | 2 (P2.M6) |
 | 08  | Swappable backends — Hexagonal payoff (reference vs Eigen) | **shipped** (this directory) | 2.5 (P2.5.M5) |
 

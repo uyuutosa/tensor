@@ -94,7 +94,7 @@ The first release is `0.1.0`. Success at `0.1.0` means:
 - [x] `tutorials/05_autograd-from-scratch.ipynb` walks the autograd implementation primitive-by-primitive. *(shipped 2026-05-11 via PR #15.)*
 - [x] `tutorials/07_mlp-on-toy.ipynb` trains a small MLP on a toy dataset, converging to W≈2, b≈1. *(shipped 2026-05-11 via PR #17.)*
 - [x] `tutorials/08_swappable-backends.ipynb` demonstrates the Hexagonal-lite payoff (same Domain code on reference, Eigen). *(shipped 2026-05-11 via PR #22.)*
-- [ ] `tutorials/06_webgpu-acceleration.ipynb` runs a named-axis matmul on the WebGPU backend and matches CPU results. *(Phase 3 — Phase 3.M3.1/.3 WGSL kernel sources shipped via PRs #43/#44; P3.M3.2 dispatch wiring deferred pending GPU runner.)*
+- [x] `tutorials/06_webgpu-acceleration.ipynb` exists and walks the reader through Phase 3 end-to-end. *(Shipped in Option 3 "design walkthrough" form per Phase 4 release rehearsal #48 — narrates the eight committed WGSL kernels and the dispatch wiring design without executing GPU code. The live-execution form follows when P3.M3.2 / P3.M4.2 land with a GPU runner.)*
 - [ ] Jupyter Book site is reachable at the repo's GitHub Pages URL. *(Phase 4 — scaffold + deploy workflow shipped via PR #28; site goes live when Pages is enabled.)*
 - [x] README's first paragraph leads with the canonical-reference framing and disclaims production use. *(canonical-reference framing landed via PR #39.)*
 - [x] `CITATION.cff` at the repo root names the work, the maintainer, and the bibliographic ADRs. *(shipped 2026-05-11 via PR #40.)*
