@@ -12,6 +12,7 @@
 
 #include <doctest/doctest.h>
 
+#include <array>
 #include <string_view>
 
 // The header is in the webgpu adapter directory but does not depend on
@@ -30,15 +31,29 @@ bool contains(std::string_view haystack, std::string_view needle) {
 
 }  // namespace
 
-TEST_CASE("webgpu::wgsl: kernel sources are non-empty") {
-    CHECK(!wgsl::kAddF32.empty());
-    CHECK(!wgsl::kSubF32.empty());
-    CHECK(!wgsl::kMulF32.empty());
-    CHECK(!wgsl::kDivF32.empty());
+namespace {
+constexpr std::array kBinaryKernels = {
+    wgsl::kAddF32, wgsl::kSubF32, wgsl::kMulF32, wgsl::kDivF32,
+};
+constexpr std::array kUnaryKernels = {
+    wgsl::kExpF32, wgsl::kLogF32, wgsl::kReluF32, wgsl::kNegF32,
+};
+}  // namespace
+
+TEST_CASE("webgpu::wgsl: binary kernel sources are non-empty") {
+    for (auto src : kBinaryKernels) {
+        CHECK(!src.empty());
+    }
 }
 
-TEST_CASE("webgpu::wgsl: all kernels declare the three storage bindings") {
-    for (auto src : {wgsl::kAddF32, wgsl::kSubF32, wgsl::kMulF32, wgsl::kDivF32}) {
+TEST_CASE("webgpu::wgsl: unary kernel sources are non-empty") {
+    for (auto src : kUnaryKernels) {
+        CHECK(!src.empty());
+    }
+}
+
+TEST_CASE("webgpu::wgsl: binary kernels declare three storage bindings") {
+    for (auto src : kBinaryKernels) {
         CHECK(contains(src, "@group(0) @binding(0)"));
         CHECK(contains(src, "@group(0) @binding(1)"));
         CHECK(contains(src, "@group(0) @binding(2)"));
@@ -47,26 +62,54 @@ TEST_CASE("webgpu::wgsl: all kernels declare the three storage bindings") {
     }
 }
 
+TEST_CASE("webgpu::wgsl: unary kernels declare exactly two storage bindings") {
+    for (auto src : kUnaryKernels) {
+        CHECK(contains(src, "@group(0) @binding(0)"));
+        CHECK(contains(src, "@group(0) @binding(1)"));
+        // Unary kernels must not declare a third binding — the binding-2
+        // line that appears in binary kernels has no counterpart here.
+        CHECK_FALSE(contains(src, "@group(0) @binding(2)"));
+        CHECK(contains(src, "var<storage, read>"));
+        CHECK(contains(src, "var<storage, read_write>"));
+    }
+}
+
 TEST_CASE("webgpu::wgsl: all kernels are templated on workgroupSize + precision") {
-    for (auto src : {wgsl::kAddF32, wgsl::kSubF32, wgsl::kMulF32, wgsl::kDivF32}) {
+    for (auto src : kBinaryKernels) {
+        CHECK(contains(src, "{{workgroupSize}}"));
+        CHECK(contains(src, "{{precision}}"));
+    }
+    for (auto src : kUnaryKernels) {
         CHECK(contains(src, "{{workgroupSize}}"));
         CHECK(contains(src, "{{precision}}"));
     }
 }
 
 TEST_CASE("webgpu::wgsl: all kernels declare a 1-D compute entry point") {
-    for (auto src : {wgsl::kAddF32, wgsl::kSubF32, wgsl::kMulF32, wgsl::kDivF32}) {
+    for (auto src : kBinaryKernels) {
+        CHECK(contains(src, "@compute @workgroup_size({{workgroupSize}})"));
+        CHECK(contains(src, "fn main(@builtin(global_invocation_id) gid: vec3<u32>)"));
+        CHECK(contains(src, "arrayLength(&out)"));
+    }
+    for (auto src : kUnaryKernels) {
         CHECK(contains(src, "@compute @workgroup_size({{workgroupSize}})"));
         CHECK(contains(src, "fn main(@builtin(global_invocation_id) gid: vec3<u32>)"));
         CHECK(contains(src, "arrayLength(&out)"));
     }
 }
 
-TEST_CASE("webgpu::wgsl: each kernel encodes its own operator") {
+TEST_CASE("webgpu::wgsl: each binary kernel encodes its own operator") {
     CHECK(contains(wgsl::kAddF32, "out[i] = a[i] + b[i]"));
     CHECK(contains(wgsl::kSubF32, "out[i] = a[i] - b[i]"));
     CHECK(contains(wgsl::kMulF32, "out[i] = a[i] * b[i]"));
     CHECK(contains(wgsl::kDivF32, "out[i] = a[i] / b[i]"));
+}
+
+TEST_CASE("webgpu::wgsl: each unary kernel encodes its own activation") {
+    CHECK(contains(wgsl::kExpF32, "out[i] = exp(a[i])"));
+    CHECK(contains(wgsl::kLogF32, "out[i] = log(a[i])"));
+    CHECK(contains(wgsl::kReluF32, "out[i] = max(a[i], 0.0)"));
+    CHECK(contains(wgsl::kNegF32, "out[i] = -a[i]"));
 }
 
 TEST_CASE("webgpu::wgsl: default workgroup size matches gpu.cpp canonical 256") {

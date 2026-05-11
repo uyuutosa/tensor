@@ -93,6 +93,69 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 }
 )WGSL";
 
+// Element-wise unary kernels — one shader per activation / sign operation.
+//
+// Same shape as the binary kernels above, but with two storage bindings
+// instead of three:
+//   - input:  read-only storage buffer `a`, sized N.
+//   - output: read-write storage buffer `out`, also sized N.
+//
+// Mapped to `KernelBackend`'s unary methods: `exp`, `log`, `relu`, `neg`.
+// These are the activations Phase 2 autograd already supports on the
+// reference + Eigen adapters; P3.M3.2 swaps them to GPU dispatch.
+
+inline constexpr std::string_view kExpF32 = R"WGSL(
+@group(0) @binding(0) var<storage, read>       a   : array<{{precision}}>;
+@group(0) @binding(1) var<storage, read_write> out : array<{{precision}}>;
+
+@compute @workgroup_size({{workgroupSize}})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let i = gid.x;
+    if (i >= arrayLength(&out)) { return; }
+    out[i] = exp(a[i]);
+}
+)WGSL";
+
+inline constexpr std::string_view kLogF32 = R"WGSL(
+@group(0) @binding(0) var<storage, read>       a   : array<{{precision}}>;
+@group(0) @binding(1) var<storage, read_write> out : array<{{precision}}>;
+
+@compute @workgroup_size({{workgroupSize}})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let i = gid.x;
+    if (i >= arrayLength(&out)) { return; }
+    out[i] = log(a[i]);
+}
+)WGSL";
+
+// ReLU expressed via `max(a, 0)` rather than a branch; the WGSL `max`
+// built-in maps to a single GPU instruction on every Dawn-supported
+// backend (Vulkan, Metal, D3D12). The literal `0.0` is implicitly the
+// active precision because the operand type drives it.
+inline constexpr std::string_view kReluF32 = R"WGSL(
+@group(0) @binding(0) var<storage, read>       a   : array<{{precision}}>;
+@group(0) @binding(1) var<storage, read_write> out : array<{{precision}}>;
+
+@compute @workgroup_size({{workgroupSize}})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let i = gid.x;
+    if (i >= arrayLength(&out)) { return; }
+    out[i] = max(a[i], 0.0);
+}
+)WGSL";
+
+inline constexpr std::string_view kNegF32 = R"WGSL(
+@group(0) @binding(0) var<storage, read>       a   : array<{{precision}}>;
+@group(0) @binding(1) var<storage, read_write> out : array<{{precision}}>;
+
+@compute @workgroup_size({{workgroupSize}})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let i = gid.x;
+    if (i >= arrayLength(&out)) { return; }
+    out[i] = -a[i];
+}
+)WGSL";
+
 // Default workgroup size for the element-wise kernels above. 256 is the
 // canonical Dawn / WebGPU choice (matches gpu.cpp's default in the
 // `KernelCode(string, size_t)` overload at third_party/gpu_cpp/gpu.hpp:308).
