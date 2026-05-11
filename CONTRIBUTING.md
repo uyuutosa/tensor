@@ -70,7 +70,7 @@ When you open a PR that touches `include/`, paste this checklist into the descri
 
 ## Vendored third-party code
 
-Anything bus-factor 1 in our substrate stack is vendored, not linked ([ADR-0014](./docs/arc42/09-decisions/0014-external-substrate-strategy.md)). Currently this covers `third_party/gpu_cpp/` (a snapshot of [AnswerDotAI/gpu.cpp](https://github.com/AnswerDotAI/gpu.cpp) at tag `0.2.0`).
+Anything bus-factor 1 in our substrate stack is vendored, not linked ([ADR-0014](./docs/arc42/09-decisions/0014-external-substrate-strategy.md)). As of 2026-05-12, `third_party/` is empty — the only vendored substrate (`gpu_cpp/` at tag 0.2.0) was removed once [ADR-0016](./docs/arc42/09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md) superseded ADR-0014 §Decision Outcome point 2 (the project talks to Dawn directly via `webgpu_cpp.h` now). The discipline below still applies for any future vendoring (e.g. if we vendor `kokkos/stdBLAS` to ship the `tensor::linalg` shim per ADR-0014 §Decision Outcome point 4).
 
 Rules for vendored directories:
 

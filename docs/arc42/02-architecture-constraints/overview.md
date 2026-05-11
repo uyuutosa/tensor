@@ -43,7 +43,7 @@ last-reviewed: 2026-05-11
 
 None apply to first-party content. The project does not handle PII, does not perform regulated computation (medical / financial / safety-critical), and has no certification target.
 
-Vendored content (currently only `third_party/gpu_cpp/`) carries the upstream's license. The maintainer's obligation is to preserve the LICENSE file and not modify the vendored code without re-vendoring discipline (per OC noted in TC-9 above).
+Vendored content carries the upstream's license. As of 2026-05-12, `third_party/` is empty — the only vendored substrate (`gpu_cpp/` at tag 0.2.0) was removed once [ADR-0016](../09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md) superseded ADR-0014 §Decision Outcome point 2 (Dawn is reached directly via `webgpu_cpp.h` instead). For any future vendoring (e.g. `kokkos/stdBLAS` for the `tensor::linalg` shim), the maintainer's obligation is to preserve the LICENSE file and not modify the vendored code without re-vendoring discipline (per TC-9 above).
 
 ## 4. Cross-references
 

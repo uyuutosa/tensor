@@ -5,16 +5,21 @@
 // Phase 3 P3.M3.1 (per the addendum in docs/impl-plans/2026-05-11_phase-3-webgpu.md).
 // This header holds the WGSL source for the WebGPU adapter's compute kernels
 // as `constexpr std::string_view` constants. The kernels are written in the
-// `{{workgroupSize}}` / `{{precision}}` templated form expected by
-// gpu::KernelCode (see third_party/gpu_cpp/gpu.hpp:291-389) — at runtime
-// gpu.cpp substitutes the placeholders before passing the source to Dawn /
-// WGSL compilation.
+// `{{workgroupSize}}` / `{{precision}}` templated form; the project's own
+// `tensor::core::backend::webgpu::detail::substitute_wgsl` in
+// `webgpu_detail/dispatch.hpp` performs the substitution at dispatch time
+// before the source is passed to Dawn via `wgpu::Device::CreateShaderModule`.
+// The templating convention originated with gpu.cpp's `KernelCode` class;
+// per ADR-0016 the project does not use gpu.cpp itself, but the syntax is
+// kept for legibility and continuity with the design docs.
 //
-// The dispatch wiring that actually feeds these strings to gpu.cpp lives in
-// docs/detailed-design/webgpu-element-wise-kernels.md (the design) and lands
-// in P3.M3.2 (the dedicated PR with self-hosted GPU runner). Until then the
-// WebGPU Backend's add/sub/mul/div methods still delegate to reference per
-// ADR-0012; the kernels here are inert citable source code.
+// The dispatch wiring that feeds these strings into Dawn lives in
+// `webgpu_detail/dispatch.hpp` (compile + bind + submit + wait); the
+// per-operator pseudo-code is documented in
+// `docs/detailed-design/webgpu-element-wise-kernels.md`. As of P3.M3.2
+// (PR #60) the 8 element-wise methods on `webgpu::Backend` run real
+// compute on the GPU for `float`; other dtypes delegate to reference
+// per ADR-0012.
 //
 // Per ADR-0013 (canonical-reference framing), these kernel sources are
 // themselves a citable artifact — they are how the named-axis algebra
@@ -36,7 +41,7 @@ namespace tensor::core::backend::webgpu::wgsl {
 //   - workgroup is 1-D (`{{workgroupSize}}` threads on the x-axis);
 //     totalWorkgroups = ceil(N / workgroupSize).
 //   - `{{precision}}` is f32 in the Phase 3 MVP per ADR-0012; f16 is a
-//     follow-up that gpu.cpp's `enable f16;` prelude already supports.
+//     follow-up that WGSL's `enable f16;` prelude supports.
 //
 // The bodies are intentionally one-liners. Phase 4+ may add fused
 // kernels (e.g. `a * b + c`); they would live alongside these.
@@ -157,8 +162,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 )WGSL";
 
 // Default workgroup size for the element-wise kernels above. 256 is the
-// canonical Dawn / WebGPU choice (matches gpu.cpp's default in the
-// `KernelCode(string, size_t)` overload at third_party/gpu_cpp/gpu.hpp:308).
+// canonical Dawn / WebGPU choice — fits in a single subgroup on most
+// modern GPUs and balances occupancy against shared-memory pressure.
 inline constexpr std::size_t kDefaultWorkgroupSize = 256;
 
 // ─── Broadcast element-wise kernels (P3.M5) ────────────────────────────────
@@ -313,9 +318,9 @@ inline constexpr std::size_t kBroadcastMaxRank = 8;
 //   TILE_K          — number of K columns of A and K rows of B cached
 //                     into shared memory per outer iteration (16).
 //
-// Uniform `Params` buffer carries the runtime M / N / K extents (passed
-// via gpu::createKernel's params argument at third_party/gpu_cpp/gpu.hpp:
-// 1392-1409).
+// Uniform `Params` buffer carries the runtime M / N / K extents (set
+// up by `detail::dispatch_gemm` in `dispatch.hpp` per ADR-0016 — the
+// project no longer uses gpu.cpp's `Bindings<N>` helper).
 //
 // Boundary handling: threads whose (row, col) fall outside (M, N) still
 // participate in cooperative shared-memory loads (writing 0.0 if their

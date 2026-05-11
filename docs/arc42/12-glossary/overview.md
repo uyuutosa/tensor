@@ -154,7 +154,7 @@ The project **aspires to canonical-reference quality** — a deliberately aspira
 
 ### gpu.cpp
 
-[AnswerDotAI/gpu.cpp](https://github.com/AnswerDotAI/gpu.cpp): a thin C++ wrapper around the WebGPU C API. Vendored under [`third_party/gpu_cpp/gpu.hpp`](../../../third_party/gpu_cpp/gpu.hpp) at tag `0.2.0` per [ADR-0014](../09-decisions/0014-external-substrate-strategy.md).
+[AnswerDotAI/gpu.cpp](https://github.com/AnswerDotAI/gpu.cpp): a thin C++ wrapper around the WebGPU C API. Originally chosen as the project's WebGPU surface (ADR-0014 §Decision Outcome point 2) and vendored at tag `0.2.0`. Superseded 2026-05-12 by [ADR-0016](../09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md): gpu.cpp@0.2.0 was 14 months behind the current Dawn's async-callback API and would have required a maintained patched fork. The project now talks to Dawn directly via Dawn's own `webgpu_cpp.h` (Google-maintained, always synchronised). The vendored `third_party/gpu_cpp/` directory was removed once Stage 3 dispatch wiring (PRs #60 / #61 / #62) committed against `webgpu_cpp.h`.
 
 ### Dawn
 
@@ -162,7 +162,7 @@ The project **aspires to canonical-reference quality** — a deliberately aspira
 
 ### WGSL
 
-WebGPU Shading Language. The kernel sources committed under [`include/tensor/core/backend/webgpu_wgsl.hpp`](../../../include/tensor/core/backend/webgpu_wgsl.hpp) are WGSL with gpu.cpp's `{{precision}}` / `{{workgroupSize}}` placeholders.
+WebGPU Shading Language. The kernel sources committed under [`include/tensor/core/backend/webgpu_wgsl.hpp`](../../../include/tensor/core/backend/webgpu_wgsl.hpp) are WGSL with `{{precision}}` / `{{workgroupSize}}` placeholders (the templating convention originated with gpu.cpp's `KernelCode`; the project does the substitution itself in `webgpu_detail/dispatch.hpp::substitute_wgsl` per ADR-0016).
 
 ### xeus-cpp
 
