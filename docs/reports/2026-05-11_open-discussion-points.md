@@ -143,6 +143,35 @@ These are three points on a 2-dimensional axis (rank × label-time). Functionali
 
 ---
 
+## Axis H — Python SDK (deferred to "after the C++ side is in order")
+
+> **Captured 2026-05-11** at the maintainer's direction: *"裏側が整ったらPython SDKも考えたい、最後で良い"* — once the C++ side is in order, want to think about a Python SDK; it can be last.
+
+**Synthesis.** Once Phase 3 dispatch wiring lands (P3.M3.2 / P3.M4.2 with a real GPU runner), Phase 4 `0.1.0` cuts, and Phase 5+ `tensor::linalg` shim lands ([ADR-0014](../arc42/09-decisions/0014-external-substrate-strategy.md)), the C++ surface is feature-complete enough that a Python wrapper would have a stable target to bind. The canonical-reference framing ([ADR-0013](../arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)) would extend naturally: the Python surface mirrors the C++ names, the ADR sequence remains the bibliography, citation tooling (`CITATION.cff`) covers both.
+
+**Options.**
+
+1. **pybind11 wrapper** — the standard choice; mature; verbose but well-understood. Same `Tensor`, `Variable`, `Evaluator` types exposed; NumPy interop via buffer protocol; DLPack for zero-copy with PyTorch / JAX.
+2. **nanobind wrapper** — pybind11's faster successor from the same author. ~3× faster build, smaller binaries, type stubs out of the box. Newer; smaller community.
+3. **Cython wrapper** — would let the SDK match NumPy / pandas ergonomics more closely. Heavier build dependency; loses some compile-time type information from the C++ side.
+4. **Python-side reimplementation** — port the named-axis algebra to pure Python over NumPy. Rejected on sight: defeats the canonical-reference purpose; doubles maintenance.
+
+**Trade-offs.** (1) is the safe boring choice. (2) is the high-leverage modern choice but the project would be one of nanobind's earlier large adopters. (3) misaligns with the C++-canonical posture.
+
+**Recommendation (provisional, revisit when Phase 5+ ships).** **Option 2 — nanobind** is the natural fit because: (a) the project's canonical-reference posture is itself a "modern choice over conservative choice" stance; (b) nanobind's better build / binary characteristics matter more for an educational artifact a learner installs from PyPI; (c) the maintainer's solo bandwidth benefits from less boilerplate.
+
+**Sequencing — what must land first.**
+
+1. **Phase 3 P3.M3.2 / P3.M4.2 — dispatch wiring** (GPU runner + Eigen 5 baseline bump). Without this, the GPU half of the SDK has no story.
+2. **Phase 4 `0.1.0` release tag**. The Python SDK targets a tagged C++ commit, not `develop` HEAD.
+3. **Phase 5+ `tensor::linalg` shim**. Once `std::linalg` (P1673) is reachable through the shim, the Python SDK's `linalg` submodule has the same call sequence under both C++26-native and shimmed builds.
+
+After those three, **Phase 6 — Python SDK** becomes the natural next major phase. Tentative scope: `tensor` PyPI package, `import tensor` brings in `Tensor` / `DynamicTensor` / `TypedTensor` / `Variable` / `tex.parse` / `tex.evaluate`; backend selection is a Python-side configure-time flag mapping to a `-DTENSOR_KERNEL_BACKEND=...` build of the wheel.
+
+**Open questions for the maintainer at Phase 6 entry.** (a) PyPI publishing identity (maintainer's account or an org). (b) Whether to publish wheels via conda-forge as well — historically `xeus-cpp` is conda-forge, so conda-forge wheels would close the loop with the notebook story. (c) Whether the Python SDK gets its own repo or stays a subdirectory `python/` here.
+
+**No action now**; capture is so this direction does not get forgotten.
+
 ## Axis G — Sparse tensors, distributed training, autograd higher-order
 
 **Synthesis.** [ADR-0001 §Out of scope](../arc42/09-decisions/0001-pivot-to-educational-named-axis-dsl.md) explicitly rules out:
@@ -174,6 +203,7 @@ The rules were correct for Phase 1's solo-bandwidth constraints. After PR #33 th
 | E    | Hold ADR-0012 choice with a 2-week timebox at P3.M2                    | Phase 3 entry       | resolved by ADR-0014 (Dawn via vcpkg + gpu.cpp vendored) |
 | F    | Light-touch CONTRIBUTING.md + CODE_OF_CONDUCT.md now (option 2)        | Next PR             | shipped in PR #35                                |
 | G    | Keep ADR-0001 out-of-scope as is; revisit at Phase 5+                  | No action now       | reframed by ADR-0013 (canonical-reference posture narrows additions further) |
+| H    | Python SDK (nanobind recommended); after Phase 3.M*.2 + Phase 4 + Phase 5 land | Phase 6 entry         | maintainer-flagged 2026-05-11 ("最後で良い"); sequenced behind dispatch wiring + release + std::linalg shim |
 
 ## What I'm asking for
 
