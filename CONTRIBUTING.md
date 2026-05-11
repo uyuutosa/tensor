@@ -1,6 +1,8 @@
 # Contributing to `tensor`
 
-Thanks for your interest. `tensor` is an **educational-first** library ([ADR-0001](./docs/arc42/09-decisions/0001-pivot-to-educational-named-axis-dsl.md) refined by [ADR-0010](./docs/arc42/09-decisions/0010-refine-positioning-to-educational-first-production-capable.md)); contributions are welcome on the same terms — clarity > correctness > portability > performance, and the educational artifact is the primary deliverable.
+Thanks for your interest. `tensor` is positioned ([ADR-0013](./docs/arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md), refining [ADR-0001](./docs/arc42/09-decisions/0001-pivot-to-educational-named-axis-dsl.md) + [ADR-0010](./docs/arc42/09-decisions/0010-refine-positioning-to-educational-first-production-capable.md)) as the **canonical reference for differentiable named-axis tensor computation in modern C++** — educational-first, production-capable via backend adapters. Contributions are welcome on the same terms: clarity > correctness > portability > performance, and the educational + citable artifact is the primary deliverable.
+
+A canonical-reference contribution is one that adds **depth** in the existing surface — a clearer derivation, a tighter test, a more readable ADR — rather than **breadth** for breadth's sake (e.g. a 17th activation function added "for completeness" is unlikely to land; a redesign that makes the existing six activations more legible likely will). When in doubt, open an issue first and link the source (paper / textbook / ADR) the change descends from.
 
 ## Quickstart for contributors
 
@@ -65,6 +67,17 @@ When you open a PR that touches `include/`, paste this checklist into the descri
       `DrivenAdapter` in `docs/arc42/05-building-blocks/overview.md`.
 - [ ] Any new port is declared as a C++20 concept in the owning container's `concepts.hpp`.
 ```
+
+## Vendored third-party code
+
+Anything bus-factor 1 in our substrate stack is vendored, not linked ([ADR-0014](./docs/arc42/09-decisions/0014-external-substrate-strategy.md)). Currently this covers `third_party/gpu_cpp/` (a snapshot of [AnswerDotAI/gpu.cpp](https://github.com/AnswerDotAI/gpu.cpp) at tag `0.2.0`).
+
+Rules for vendored directories:
+
+1. Every subdirectory of `third_party/` must contain a `VENDORED_FROM` file naming upstream repo, commit / tag, license, and the re-vendor procedure. The CI script [`tools/check-vendored.sh`](./tools/check-vendored.sh) enforces this.
+2. **Do not patch vendored code.** If upstream has a bug, fix it upstream (or document the workaround in our consuming code, not in the vendored file). When upstream releases a fix, re-vendor.
+3. To re-vendor: pick a newer upstream commit (preferably a tagged release), fetch the file(s), update the `VENDORED_FROM` pin, and open a PR titled `third_party: re-vendor <project> at <tag>`.
+4. Preserve the upstream `LICENSE`. Vendored code keeps its own license; the repository's MIT license applies only to first-party code under `include/`, `tests/`, `bench/`, `tutorials/`, and `docs/`.
 
 ## Documentation alongside code
 

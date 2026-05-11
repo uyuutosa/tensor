@@ -14,7 +14,18 @@ env:
   VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-cache
 
 jobs:
+  # Fast lint pass — checks that every subdirectory of third_party/ has a
+  # VENDORED_FROM file. Enforces ADR-0014 §Compliance ("vendor, not link"
+  # discipline for bus-factor-1 substrates such as gpu.cpp).
+  vendored-check:
+    name: third_party/ VENDORED_FROM lint
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tools/check-vendored.sh
+
   build-and-test:
+    needs: vendored-check
     name: ${{ matrix.os }} / ${{ matrix.compiler }} / ${{ matrix.preset }}
     runs-on: ${{ matrix.os }}
     strategy:
