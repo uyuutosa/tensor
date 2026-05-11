@@ -73,6 +73,14 @@ public:
         return ref_.div(a, b);
     }
 
+    // P3.M3.1 shipped the WGSL source for the four binary kernels at
+    // `tensor::core::backend::webgpu::wgsl::k{Add,Sub,Mul,Div}F32`;
+    // P3.M3.3 ships the four unary kernels below at
+    // `tensor::core::backend::webgpu::wgsl::k{Exp,Log,Relu,Neg}F32`
+    // (see include/tensor/core/backend/webgpu_wgsl.hpp). P3.M3.2 replaces
+    // each delegation with the gpu.cpp dispatch sequence specified in
+    // docs/detailed-design/webgpu-element-wise-kernels.md §3 (binary) and
+    // §3.1 (unary). Until then, continue to delegate to reference.
     template <class T>
     [[nodiscard]] DynamicTensor<T> exp(DynamicTensor<T> const& a) const {
         return ref_.exp(a);

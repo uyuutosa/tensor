@@ -22,20 +22,21 @@ This document specifies how the four element-wise binary operators (`add`, `sub`
 
 The design is split into two slices to keep CI tractable while no self-hosted GPU runner exists:
 
-- **P3.M3.1 (shipped)** — WGSL kernel sources committed under [`include/tensor/core/backend/webgpu_wgsl.hpp`](../../include/tensor/core/backend/webgpu_wgsl.hpp) as `constexpr std::string_view` constants. Inert code — citable, reviewable, well-formedness-tested in [`tests/test_webgpu_wgsl.cpp`](../../tests/test_webgpu_wgsl.cpp). The WebGPU stub still delegates to `reference::Backend`.
-- **P3.M3.2 (deferred)** — Dispatch wiring (this document's §3) replaces each delegation with a real `gpu.cpp` call sequence. Precondition: vcpkg manifest baseline bumped to one that contains the `dawn` port (per ADR-0014); self-hosted GitHub Actions runner with a Dawn-compatible GPU; ADR-0012's compile-only-CI policy upgraded with a runner that can run the cross-validation test against real silicon.
+- **P3.M3.1 (shipped, PR #43)** — Binary WGSL kernel sources (`kAddF32` / `kSubF32` / `kMulF32` / `kDivF32`) committed under [`include/tensor/core/backend/webgpu_wgsl.hpp`](../../include/tensor/core/backend/webgpu_wgsl.hpp) as `constexpr std::string_view` constants. Inert code — citable, reviewable, well-formedness-tested in [`tests/test_webgpu_wgsl.cpp`](../../tests/test_webgpu_wgsl.cpp). The WebGPU stub still delegates to `reference::Backend`.
+- **P3.M3.3 (shipped, this PR)** — Unary WGSL kernel sources (`kExpF32` / `kLogF32` / `kReluF32` / `kNegF32`) — same template as P3.M3.1 but with two storage bindings (input + output) instead of three. Brings the WebGPU adapter's element-wise *source* surface to feature parity with the reference + Eigen adapters (8 ops: 4 binary + 4 unary).
+- **P3.M3.2 (deferred)** — Dispatch wiring (this document's §3 binary + §3.1 unary) replaces each delegation with a real `gpu.cpp` call sequence. Precondition: vcpkg manifest baseline bumped to one that contains the `dawn` port (per ADR-0014); self-hosted GitHub Actions runner with a Dawn-compatible GPU; ADR-0012's compile-only-CI policy upgraded with a runner that can run the cross-validation test against real silicon.
 
 ## 1. Scope
 
 In scope:
 
 - Four element-wise binary operators that take two same-shape `DynamicTensor<T>` and return a same-shape `DynamicTensor<T>`: `add`, `sub`, `mul`, `div`.
+- Four element-wise unary operators: `exp`, `log`, `relu`, `neg` (P3.M3.3).
 - `f32` precision only (per ADR-0012). Other precisions delegate to `reference::Backend`.
 - Inputs and outputs are flat (rank does not matter for element-wise) — the kernel iterates over `arrayLength(&out)`.
 
-Out of scope (deferred to P3.M3.3 / P3.M3.4 / P3.M3.5):
+Out of scope (deferred to P3.M4 / P3.M5):
 
-- Unary element-wise (`exp`, `log`, `relu`, `neg`) — same shape but each needs its own one-line WGSL body. They follow this design.
 - Broadcast element-wise (`broadcast_add`, etc.) — same flat dispatch model but with a uniform buffer carrying the `BroadcastPlan`.
 - Tiled GEMM (`contract`) — P3.M4. Separate design.
 - Tree-reduction (`reduce_sum`) and scatter-add (`unbroadcast`) — P3.M5. Separate designs.
@@ -60,6 +61,33 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 Placeholders use gpu.cpp's `{{workgroupSize}}` / `{{precision}}` convention (see [`third_party/gpu_cpp/gpu.hpp:291-389`](../../third_party/gpu_cpp/gpu.hpp) — `gpu::KernelCode` constructor performs the substitutions before WGSL compilation).
 
 `{{workgroupSize}}` defaults to 256 (the canonical Dawn choice; matches `gpu::KernelCode(string, size_t)` default at `third_party/gpu_cpp/gpu.hpp:308`). `{{precision}}` is `f32` in Phase 3 MVP; `f16` is a Phase 4 follow-up (gpu.cpp's `enable f16;` prelude is already wired).
+
+### 2.1 Unary kernel shape (P3.M3.3)
+
+Unary kernels follow the same template with one fewer binding:
+
+```wgsl
+@group(0) @binding(0) var<storage, read>       a   : array<{{precision}}>;
+@group(0) @binding(1) var<storage, read_write> out : array<{{precision}}>;
+
+@compute @workgroup_size({{workgroupSize}})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let i = gid.x;
+    if (i >= arrayLength(&out)) { return; }
+    out[i] = <OP(a[i])>;
+}
+```
+
+Where `<OP(a[i])>` is:
+
+| Operator | Body | WGSL built-in |
+| -------- | ---- | ------------- |
+| `exp`    | `exp(a[i])`        | [`exp`](https://www.w3.org/TR/WGSL/#exp-builtin) |
+| `log`    | `log(a[i])`        | [`log`](https://www.w3.org/TR/WGSL/#log-builtin) (natural log) |
+| `relu`   | `max(a[i], 0.0)`   | [`max`](https://www.w3.org/TR/WGSL/#max-float-builtin) — single GPU instruction on Vulkan / Metal / D3D12 |
+| `neg`    | `-a[i]`            | unary minus |
+
+ReLU is expressed via `max` rather than a branch because branching prevents some optimisations on uniformly-shaped data. The literal `0.0` is implicitly typed by the operand precision.
 
 ## 3. Dispatch wiring (P3.M3.2 — design)
 
@@ -126,7 +154,16 @@ template <class T>
 }
 ```
 
-Substitute `kAddF32` → `kSubF32` / `kMulF32` / `kDivF32` for the other three operators.
+Substitute `kAddF32` → `kSubF32` / `kMulF32` / `kDivF32` for the other three binary operators.
+
+### 3.1 Unary dispatch sequence
+
+The unary dispatch sequence is identical to §3 with two changes:
+
+1. **One input tensor** — only `gA` is uploaded; no `gB`.
+2. **Two-binding kernel** — `gpu::Bindings bindings{gA, gOut};` instead of three.
+
+Replace `kAddF32` with `kExpF32` / `kLogF32` / `kReluF32` / `kNegF32` per operator. Everything else (Context, totalWorkgroups, blocking sync, download) is identical.
 
 ### Context lifetime
 
@@ -147,11 +184,12 @@ ADR-0012 §Decision Outcome point 4 picked blocking-sync-per-call for MVP. Step 
 
 ## 4. Test plan
 
-### P3.M3.1 (this PR — already shipped)
+### P3.M3.1 + P3.M3.3 (shipped)
 
-- `tests/test_webgpu_wgsl.cpp` asserts the four WGSL constants are non-empty.
+- `tests/test_webgpu_wgsl.cpp` asserts the eight WGSL constants are non-empty.
+- Asserts each binary kernel declares three storage bindings, each unary kernel declares exactly two.
 - Asserts each contains the expected `@compute @workgroup_size(` declaration.
-- Asserts each contains the expected `out[i] = a[i] <OP> b[i];` line.
+- Asserts each contains the expected `out[i] = ...` body matching the operator.
 - No shader compilation; no Dawn linkage required.
 
 ### P3.M3.2 (deferred PR with GPU runner)
