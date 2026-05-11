@@ -39,11 +39,11 @@ TEST_CASE("zero_grad resets accumulator and following backward is fresh") {
     Tape::current().clear();
     Variable<double, 1> x(Tensor<double, 1>(Shape<1>{Axis{"i", 3}}, {1, 2, 3}), true);
 
-    backward(sum_all(x * x));
+    { auto loss = sum_all(x * x); backward(loss); }
     x.zero_grad();
     Tape::current().clear();
 
-    backward(sum_all(x * x));
+    { auto loss = sum_all(x * x); backward(loss); }
     CHECK(x.grad()[0] == doctest::Approx(2.0));
     CHECK(x.grad()[1] == doctest::Approx(4.0));
     CHECK(x.grad()[2] == doctest::Approx(6.0));
@@ -59,7 +59,7 @@ TEST_CASE("DynamicVariable::zero_grad mirrors Variable::zero_grad") {
     Tape::current().clear();
     DynamicVariable<double> x(
         DynamicTensor<double>(DynamicShape{Axis{"i", 2}}, {2, 5}), true);
-    backward(sum_all(x * x));
+    { auto loss = sum_all(x * x); backward(loss); }
     CHECK(x.grad()[0] == doctest::Approx(4.0));
     x.zero_grad();
     CHECK(x.grad()[0] == doctest::Approx(0.0));
@@ -69,7 +69,7 @@ TEST_CASE("DynamicVariable::zero_grad mirrors Variable::zero_grad") {
 TEST_CASE("sgd_update produces x - lr * grad") {
     Tape::current().clear();
     Variable<double, 1> x(Tensor<double, 1>(Shape<1>{Axis{"i", 3}}, {1, 2, 3}), true);
-    backward(sum_all(x * x));
+    { auto loss = sum_all(x * x); backward(loss); }
     // grad = (2, 4, 6); lr = 0.1 → new values (0.8, 1.6, 2.4)
     auto x_new = sgd_update(x, 0.1);
     REQUIRE(x_new.size() == 3);

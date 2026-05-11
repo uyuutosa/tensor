@@ -250,3 +250,9 @@ paket-files/
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+# CMake build directories
+build/reference-test/
+build/webgpu-test/
+build/default/
+build/eigen-test/
