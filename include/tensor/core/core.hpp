@@ -25,6 +25,7 @@
 // to a Phase 1.5 follow-up. The header is preserved in the repo for that
 // follow-up to reuse but is not built or tested at this milestone.
 #include "tensor/core/ops.hpp"
+#include "tensor/core/reduce.hpp"
 #include "tensor/core/reference_tensor.hpp"
 #include "tensor/core/shape.hpp"
 #include "tensor/core/tensor.hpp"

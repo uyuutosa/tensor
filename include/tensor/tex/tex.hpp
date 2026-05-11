@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "tensor/tex/evaluate.hpp"
 #include "tensor/tex/expression.hpp"
 #include "tensor/tex/parser.hpp"
 #include "tensor/tex/render.hpp"
