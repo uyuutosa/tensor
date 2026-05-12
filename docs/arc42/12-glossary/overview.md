@@ -171,6 +171,22 @@ The compile-time constraint on shape-template arguments. A type `S` satisfies `S
 - Code: `tensor::core::ShapeLike` (in `concepts.hpp`)
 - Source: parallel to `AxisLike`; the project's own.
 
+### Named-axis (this project) vs `NamedMapping` (Modular MAX) — vocabulary disambiguation
+
+The word "named" appears in at least two unrelated meanings in modern tensor toolchains. This project's **named-axis** refers to **per-tensor semantic axis labels** (`a_i`, `b_j`) that the algebra respects: `a_i + b_j → c_{ij}` is well-defined because the labels carry the semantic. The labels are part of each tensor's identity ([ADR-0004](../09-decisions/0004-adopt-hybrid-named-axis-api.md)).
+
+[Modular MAX](https://docs.modular.com/max/changelog/)'s `NamedMapping` (introduced 2026-04 with Mojo 1.0 beta) is the [JAX `PartitionSpec`](https://docs.jax.dev/en/latest/_autosummary/jax.sharding.PartitionSpec.html)-equivalent for naming **mesh axes for distributed sharding** — i.e. naming the axes of the *physical device mesh* a tensor is sharded over, not the axes of the *tensor* itself. Mojo's `Tensor` (and `LayoutTensor`) stayed positional; `NamedMapping` is layered on top for distribution, not for semantic axis identity.
+
+The two meanings are not interoperable:
+
+- A reader searching "Mojo named tensor" will land on `NamedMapping` and find a sharding helper, not a tensor with semantic axis labels.
+- A reader looking for the JAX-style sharding contract will not find it in this project — distribution is out of scope per [arc42 §5 Out of scope](../01-introduction-and-goals/overview.md#5-out-of-scope).
+- A reader looking for per-tensor named-axis algebra in C++ will not find it in Mojo MAX as of 2026-05.
+
+Captured here so the term clash does not produce a doc-search false positive after `0.1.0` ship.
+
+- Source: [Modular 26.3 release notes](https://www.modular.com/blog/modular-26-3-mojo-1-0-beta-max-video-gen-and-more); [MAX changelog](https://docs.modular.com/max/changelog/); the landscape re-check report [`2026-05-12_landscape-recheck-and-adversarial-review.md`](../../reports/2026-05-12_landscape-recheck-and-adversarial-review.md) §A.4.
+
 ### Adapter (Driving / Driven)
 
 A header outside the Domain that either *drives* the Domain (e.g. `tensor::tex` produces expression graphs) or is *driven by* the Domain (e.g. `tensor::core::backend::eigen` implements the `KernelBackend` port).
