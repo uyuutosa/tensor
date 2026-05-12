@@ -29,9 +29,15 @@ jobs:
           python-version: "3.11"
 
       - name: Install Jupyter Book
+        # Pin to the classic 0.15.x line. The project's book/_toc.yml uses
+        # `format: jb-book` (classic CFG) which jupyter-book 2.x (MyST-MD
+        # rewrite) does not parse — picking up jupyter-book 2.x silently via
+        # `pip install jupyter-book` fails at build with
+        # "EISDIR: illegal operation on a directory, read" + "No file exports
+        # found." Re-evaluate the 2.x migration after `0.1.0` ship.
         run: |
           python -m pip install --upgrade pip
-          python -m pip install jupyter-book
+          python -m pip install 'jupyter-book>=0.15,<1'
 
       - name: Build the book
         # Use the repository root so the TOC's `../tutorials/...` paths
