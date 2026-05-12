@@ -8,6 +8,23 @@ The sequence below reads bottom-up if you want the project's narrative arc; top-
 
 ## [Unreleased]
 
+(nothing yet — next entries land after `0.1.0`)
+
+## [0.1.0] - 2026-05-12
+
+First public tag. Phase 1 + Phase 1.5 + Phase 2 + Phase 2.5 + Phase 3 all shipped per `book/roadmap.md`; release readiness audit GREEN per `docs/reports/2026-05-11_phase-4-release-rehearsal.md`. The project aspires to canonical-reference-quality documentation and design for differentiable named-axis tensor computation in modern C++ ([ADR-0015](./docs/arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md), superseding ADR-0013). Production users adopt as-is.
+
+Highlights at the cut:
+
+- **Three `KernelBackend` adapters** (per ADR-0009 + ADR-0010 + ADR-0011): `reference` (canonical CPU), `eigen` (Eigen 3.4 SIMD + GEMM), `webgpu` (Dawn via `webgpu_cpp.h` per ADR-0016 — **12 of 15 methods dispatch real GPU compute on `float`**, verified on RTX 3090 with Dawn `20260410.140140`).
+- **Autograd** (per ADR-0007): `Variable<T, N>` + `DynamicVariable<T>`, registered backwards, broadcast-aware unbroadcast, contraction backward via contraction, `gradient_check`, `zero_grad`, `sgd_update`.
+- **`_tex` UDL + LyX export** (per ADR-0005): the headline "the formula is the program" feature — LaTeX-subset parser → `Expression` AST → `Evaluator<T>` → `DynamicTensor<T>`. LyX module + `lyx_to_tex.py` translator + golden-file CI smoke.
+- **Documentation surface**: 17 ADRs; arc42 §1–§12 all substantive; 7 detailed-design instances (`tensor::core`, `tensor::autograd`, `tensor::tex`, `webgpu-element-wise-kernels`, `webgpu-gemm-kernel`, `webgpu-broadcast-kernels`, `kernel-backend-port`); `CITATION.cff`; `docs/INDEX.md` project-grounded; C4 workspace.dsl with three concrete adapter containers.
+- **6 Jupyter tutorial notebooks** (xeus-cpp 0.10+ `xcpp20` kernel per ADR-0014 §3, with `legacy-xeus-cling` smoke for `00_intro`): 00 intro, 01 formula-is-the-program, 05 autograd-from-scratch, 06 webgpu-acceleration, 07 mlp-on-toy, 08 swappable-backends.
+- **CI matrix**: 10 jobs (Linux / macOS / Windows × Debug / Release × reference / eigen / webgpu backends); notebook CI with weekly cron + legacy xeus-cling smoke; LyX export golden-file CI; vendored-check (legacy).
+
+All entries previously under `[Unreleased]` (PRs #1 through #90, in reverse-chronological order from the cut) are folded into this release. See the `### Added` section below for the full feature list.
+
 ### Added
 
 - **Final arc42 sweep — §1 success criterion + §7 / §8 / §10 stale-substrate references**:
