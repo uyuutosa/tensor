@@ -5,17 +5,39 @@ parts:
     chapters:
       - file: ../tutorials/00_intro.ipynb
         title: "Intro — named-axis tensors"
+
   - caption: Autograd
     chapters:
       - file: ../tutorials/05_autograd-from-scratch.ipynb
         title: "Build your own autograd"
       - file: ../tutorials/07_mlp-on-toy.ipynb
         title: "A small model trained on toy data"
-  - caption: Architecture
+
+  - caption: Architecture and backends
     chapters:
       - file: ../tutorials/08_swappable-backends.ipynb
-        title: "Swappable backends — Hexagonal payoff"
+        title: "Swappable backends — Hexagonal payoff (reference vs Eigen)"
+      - file: ../tutorials/06_webgpu-acceleration.ipynb
+        title: "WebGPU acceleration (design walkthrough)"
+
+  - caption: Performance and verification
+    chapters:
+      - file: ../docs/reports/2026-05-11_backend-performance-comparison.md
+        title: "Backend perf comparison — reference vs Eigen vs WebGPU"
+      - file: ../docs/reports/2026-05-12_gpu-cpp-dawn-abi-drift-and-raw-dawn-smoke.md
+        title: "gpu.cpp vs Dawn ABI drift + raw-Dawn smoke (RTX 3090)"
+
   - caption: Reference
     chapters:
       - file: architecture
       - file: roadmap
+      - file: ../docs/arc42/01-introduction-and-goals/overview.md
+        title: "arc42 §1 — Introduction and Goals"
+      - file: ../docs/arc42/05-building-blocks/overview.md
+        title: "arc42 §5 — Building Blocks"
+      - file: ../docs/arc42/09-decisions/README.md
+        title: "arc42 §9 — ADR index"
+      - file: ../docs/arc42/12-glossary/overview.md
+        title: "arc42 §12 — Glossary"
+      - file: ../docs/detailed-design/kernel-backend-port.md
+        title: "Detailed design — KernelBackend port"
