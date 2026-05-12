@@ -105,9 +105,10 @@ NB_MODULE(_tensor_native, m) {
 
     // ── Axis ──────────────────────────────────────────────────────────
     nb::class_<Axis>(m, "Axis")
-        .def(nb::init([](std::string label, std::size_t extent) {
-                 return Axis{std::string_view{label}, extent};
-             }),
+        .def("__init__",
+             [](Axis* self, std::string label, std::size_t extent) {
+                 new (self) Axis(std::string_view{label}, extent);
+             },
              "label"_a, "extent"_a,
              "Construct an `Axis` from a string label and a non-negative "
              "extent. The label carries the named-axis semantic the "
