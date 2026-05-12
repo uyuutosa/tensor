@@ -10,6 +10,12 @@ The sequence below reads bottom-up if you want the project's narrative arc; top-
 
 ### Added
 
+- **`CONTRIBUTING.md` + arc42 §1 audit-refresh**:
+  - CONTRIBUTING's Hexagonal-discipline checklist updated for ADR-0011's actual code layout (the `tensor::gpu` namespace was renamed to `tensor::core::backend::webgpu` when the `KernelBackend` port formalised; the checklist now correctly says "no header in `core/backend/<adapter>/` includes from another adapter" and adds a `static_assert(KernelBackend<Backend>)` line per the kernel-backend-port detailed design).
+  - CONTRIBUTING's tutorials section dropped the "xeus-cling re-execution is part of the future CI plan" line — the execute path shipped in PR #36 and migrated to xeus-cpp 0.10+ per ADR-0014 §3 in PR #42, with `legacy-xeus-cling` retained as a parallel smoke job for `00_intro.ipynb`.
+  - arc42 §1 frontmatter `last-reviewed: 2026-05-12`; revision history gains v0.2.2 capturing the ADR-0016 substrate refinement + the Phase 3 P3.M3.2 / P3.M4.2 / P3.M5 dispatch wiring (12 of 15 methods on real GPU) + the success-criteria refresh against PR #1–#74 state.
+  - arc42 §1 stakeholder table's Production-users row no longer says "WebGPU in flight" — names the three shipped adapters and the 12-of-15-methods state.
+  - arc42 §1 §7 cross-references extended from "ADR-0001 … ADR-0014" to "ADR-0001 … ADR-0016" with the supersession + refinement chain noted; the detailed-design line listed only `webgpu-element-wise-kernels.md` and now enumerates all seven Template-3 instances.
 - **`README.md` + `docs/diagrams/c4/workspace.dsl` audit-refresh for Phase 3 shipped state**:
   - README's Status table now reflects: Phase 1.5 ✅ shipped (not "mostly"), Phase 2.5 ✅ shipped (perf report not backlog — RTX 3090 three-backend measurements landed 2026-05-12), Phase 3 ✅ functionally complete (12 of 15 `KernelBackend` methods on real GPU; the remaining 3 delegate to reference matching the Eigen adapter's scope), Phase 4 release-ready as of 2026-05-12 (Pages + tag are maintainer-only).
   - README's intro bullet for WebGPU no longer calls the adapter a "stub" — names the 12-of-15 real-dispatch state with ADR-0016 in the chain.

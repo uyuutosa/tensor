@@ -59,13 +59,19 @@ This project enforces a **Hexagonal "lite"** layering. The hard rule from [`docs
 When you open a PR that touches `include/`, paste this checklist into the description:
 
 ```markdown
-### Hexagonal discipline (ADR-0009)
-- [ ] No header in `include/tensor/core/` (excluding `concepts.hpp`) includes
-      from `include/tensor/{tex,gpu,autograd}/`.
-- [ ] No header in `include/tensor/<adapter>/` includes from any other adapter.
+### Hexagonal discipline (ADR-0009 / ADR-0011)
+- [ ] No header in `include/tensor/core/` (excluding `concepts.hpp` and
+      `include/tensor/core/backend/<adapter>/`) includes from
+      `include/tensor/{tex,autograd}/` or from another adapter.
+- [ ] No header in `include/tensor/core/backend/<adapter>/` includes from
+      another `backend/<adapter>/`.
 - [ ] Any new container is classified `Domain` / `DrivingAdapter` /
-      `DrivenAdapter` in `docs/arc42/05-building-blocks/overview.md`.
+      `DrivenAdapter` in `docs/arc42/05-building-blocks/overview.md` and
+      mirrored in `docs/diagrams/c4/workspace.dsl`.
 - [ ] Any new port is declared as a C++20 concept in the owning container's `concepts.hpp`.
+- [ ] Any new adapter has `static_assert(KernelBackend<Backend>)` next to
+      its definition (the conformance pattern documented in
+      `docs/detailed-design/kernel-backend-port.md`).
 ```
 
 ## Vendored third-party code
@@ -90,7 +96,7 @@ Architecturally significant decisions are recorded as **MADR v3.0 ADRs** under [
 Tutorial notebooks live under [`tutorials/`](./tutorials/). When you ship a new feature that learners would expect to see explained, consider adding a section to an existing notebook rather than writing a new one. Notebook authoring guidelines:
 
 - One concept per section; 1–3 cells per concept.
-- Output cells are committed (the Jupyter Book site renders them; xeus-cling re-execution is part of the future CI plan).
+- Output cells are committed (the Jupyter Book site renders them). [`notebook-ci.yml`](./.github/workflows/notebook-ci.yml) re-executes every notebook weekly against xeus-cpp 0.10+ per [ADR-0014 §3](./docs/arc42/09-decisions/0014-external-substrate-strategy.md), with a parallel `legacy-xeus-cling` smoke job that runs only `00_intro.ipynb` to keep older conda-forge channels green.
 - Cross-link to the relevant ADR or `docs/` section so learners can fall through to the architecture surface.
 
 ## Reporting issues

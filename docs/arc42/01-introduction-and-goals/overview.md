@@ -1,7 +1,7 @@
 ---
 status: Draft
 owner: tensor
-last-reviewed: 2026-05-11
+last-reviewed: 2026-05-12
 ---
 
 # `tensor` — Introduction and Goals
@@ -11,8 +11,8 @@ last-reviewed: 2026-05-11
 | Status        | Draft                                                          |
 | Type          | arc42 §1 (Introduction and Goals)                              |
 | Owner         | uyuutosa                                                       |
-| Related       | ADR-0001 — pivot decision; ADR-0013 (superseded by ADR-0015) + ADR-0015 — canonical-reference *quality* aspiration; `docs/reports/2026-05-10_tensor-revival-landscape.md`; `docs/reports/2026-05-11_external-substrate-research.md` |
-| Last Updated  | 2026-05-11                                                     |
+| Related       | ADR-0001 — pivot decision; ADR-0013 (superseded by ADR-0015) + ADR-0015 — canonical-reference *quality* aspiration; ADR-0014 + ADR-0016 — external-substrate strategy + refinement; `docs/reports/2026-05-10_tensor-revival-landscape.md`; `docs/reports/2026-05-11_external-substrate-research.md`; `docs/reports/2026-05-12_gpu-cpp-dawn-abi-drift-and-raw-dawn-smoke.md` |
+| Last Updated  | 2026-05-12                                                     |
 
 ## Revision history
 
@@ -21,6 +21,7 @@ last-reviewed: 2026-05-11
 | 0.1.0   | 2026-05-10 | Initial draft after revival pivot (ADR-0001).                  |
 | 0.2.0   | 2026-05-11 | Reframed as canonical reference (ADR-0013). Stakeholder table expanded with future-implementer audience; goals' phrasing updated to name the bibliography / ubiquitous-language / reproducibility disciplines. Success criteria refreshed against PR #1–#44 state. |
 | 0.2.1   | 2026-05-11 | ADR-0015 supersedes ADR-0013: the three disciplines stay, but the *claim* moves from declarative ("is the canonical reference") to aspirational ("aspires to canonical-reference quality"). Per the maintainer's critique that self-declared canonical-reference status carries the same shape as self-declared SOTA — embarrassment risk if the community never adopts the work. TL;DR / §1 / §6 wording updated accordingly. |
+| 0.2.2   | 2026-05-12 | ADR-0016 refines ADR-0014 §Decision Outcome point 2 (drop gpu.cpp wrapper, talk to Dawn directly via `webgpu_cpp.h`) after the local RTX 3090 Stage 2 smoke surfaced gpu.cpp@0.2.0's 14-month lag behind Dawn's async-callback API. Phase 3 P3.M3.2 + P3.M4.2 + P3.M5 dispatch wiring shipped on RTX 3090: 12 of 15 `KernelBackend` methods (4 binary + 4 unary + 1 contract + 3 broadcast) now execute real Dawn compute on `float`, cross-validated against reference within `1e-5` / `1e-3`. §1 "WebGPU in flight" wording replaced with the Phase 3 functionally-complete state; §6 success criteria refreshed against PR #1–#74 state; §7 cross-references list extended to ADR-0016 and enumerates the seven detailed-design instances. |
 
 ---
 
@@ -46,7 +47,7 @@ The 2016 codebase has been retired to `archive/legacy-2016/`. The rewrite target
 | Self-taught C++ learners exploring tensor algebra          | Want a small, hackable, idiomatic library + readable notebooks. Co-primary audience; the Diátaxis split (tutorials easy, references rigorous) preserves accessibility. |
 | University / bootcamp instructors                          | Want assignable teaching material for "build your own ML framework" or "modern C++" courses; want to cite the ADR sequence as a worked example of MADR + Hexagonal-lite discipline. |
 | Researchers in tensor-DSL design                           | Want a real working artifact to reference for named-axis API ergonomics in C++, the `_tex` ↔ AST ↔ DynamicTensor round-trip, and the LyX integration story. |
-| Production users (`as-is`)                                 | Adopt the library for niche workloads (named-axis algebra, `_tex`-driven kernels) on top of a fast `KernelBackend` adapter (Eigen shipped; WebGPU in flight). **No ABI / coverage / support commitments** — see [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md). |
+| Production users (`as-is`)                                 | Adopt the library for niche workloads (named-axis algebra, `_tex`-driven kernels) on top of a fast `KernelBackend` adapter (reference + Eigen + WebGPU all shipped as of 2026-05-12; WebGPU dispatches real Dawn compute on 12 of 15 methods for `float`). **No ABI / coverage / support commitments** — see [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md). |
 | The maintainer (uyuutosa)                                  | Wants to revive a long-dormant idea and produce a public artifact future implementations can cite. |
 
 ## 3. Goals (G-1 … G-7)
@@ -109,7 +110,7 @@ For interim phase-by-phase deliverables, see the dated impl-plans under [`../../
 - §3 Context and Scope: [`../03-context-and-scope/system-context.md`](../03-context-and-scope/system-context.md).
 - §4 Solution Strategy: [`../04-solution-strategy/strategy.md`](../04-solution-strategy/strategy.md).
 - §5 Building Blocks: [`../05-building-blocks/overview.md`](../05-building-blocks/overview.md).
-- §9 Decisions: [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) … [ADR-0014](../09-decisions/0014-external-substrate-strategy.md).
+- §9 Decisions: [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) … [ADR-0016](../09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md). The supersession + refinement chain in force as of 2026-05-12: ADR-0013 superseded by ADR-0015; ADR-0014 §Decision Outcome point 2 refined by ADR-0016.
 - `CITATION.cff` at the repo root (the citable metadata for this work).
-- Detailed designs: [`../../detailed-design/`](../../detailed-design/) — currently `webgpu-element-wise-kernels.md`.
+- Detailed designs ([`../../detailed-design/`](../../detailed-design/)): seven Template-3 instances covering the Domain quad (`tensor-core.md`, `tensor-autograd.md`, `tensor-tex.md`) + the WebGPU adapter trio (`webgpu-element-wise-kernels.md`, `webgpu-gemm-kernel.md`, `webgpu-broadcast-kernels.md`) + the port surface (`kernel-backend-port.md`).
 - §10 Quality: [`../10-quality/overview.md`](../10-quality/overview.md) — quality tree + measurable scenarios (QC-1..QS-2).
