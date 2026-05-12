@@ -30,7 +30,7 @@ workspace "tensor" "Header-only C++20/23 named-axis differentiable tensor librar
             eigenBackend = container "tensor::core::backend::eigen" "Eigen 3.4 SIMD + GEMM adapter for the KernelBackend port; delegates non-trivial ops to reference per ADR-0011's documented scope." "C++20 headers + Eigen" "DrivenAdapter"
             webgpuBackend = container "tensor::core::backend::webgpu" "Dawn-backed WebGPU adapter for the KernelBackend port. As of 2026-05-12, 12 of 15 methods dispatch real GPU compute on float (4 binary + 4 unary + 1 contract + 3 broadcast); the rest delegate to reference. Talks to Dawn directly via webgpu_cpp.h (ADR-0016)." "C++20 headers + WGSL" "DrivenAdapter"
             lyx = container "lyx-export" "LyX module + Python translator that exports tensor-bearing LyX documents to the consteval _tex DSL. CI smoke verifies the golden-file diff." "LyX module + Python 3" "DrivingAdapter"
-            tutorials = container "tutorials/" "Five Jupyter notebooks (00_intro, 05_autograd-from-scratch, 06_webgpu-acceleration, 07_mlp-on-toy, 08_swappable-backends). Outside the hexagon — demos, not adapters." "Jupyter (xeus-cpp / xeus-cling C++20)" "Tutorial"
+            tutorials = container "tutorials/" "Six Jupyter notebooks (00_intro, 01_formula-is-the-program, 05_autograd-from-scratch, 06_webgpu-acceleration, 07_mlp-on-toy, 08_swappable-backends). Outside the hexagon — demos, not adapters." "Jupyter (xeus-cpp / xeus-cling C++20)" "Tutorial"
             book = container "Jupyter Book site" "Static site generated from book/_toc.yml referencing tutorials/ + arc42 + detailed-design + reports. Deployed to GitHub Pages." "Jupyter Book / HTML" "Site"
         }
 

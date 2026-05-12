@@ -11,7 +11,7 @@ last-reviewed: 2026-05-12
 | Status        | Draft                                                          |
 | Type          | arc42 §3 (Context and Scope)                                   |
 | Owner         | uyuutosa                                                       |
-| Related       | `arc42/01-introduction-and-goals/overview.md`; ADR-0001..ADR-0016 (the supersession + refinement chain in force as of 2026-05-12: ADR-0013 superseded by ADR-0015; ADR-0014 §Decision Outcome point 2 refined by ADR-0016) |
+| Related       | `arc42/01-introduction-and-goals/overview.md`; ADR-0001..ADR-0017 (the supersession + refinement chain in force as of 2026-05-12: ADR-0013 superseded by ADR-0015; ADR-0014 §Decision Outcome point 2 refined by ADR-0016; ADR-0015 §Compliance bullet 3 refined by ADR-0017) |
 | Last Updated  | 2026-05-12                                                     |
 
 > The C4 Level 1 system-context diagram lives in [`../../diagrams/c4/workspace.dsl`](../../diagrams/c4/workspace.dsl). Render via the [`/diagram-render`](../../../.claude/skills/diagram-render/SKILL.md) skill; this file mirrors the diagram in prose and tables.
