@@ -7,7 +7,7 @@
 | [`docs/arc42/01-introduction-and-goals/overview.md`](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/01-introduction-and-goals/overview.md) | Goals (G-1..G-7), quality goals, success criteria. |
 | [`docs/arc42/04-solution-strategy/strategy.md`](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/04-solution-strategy/strategy.md) | Top-7 design decisions and how they hang together. |
 | [`docs/arc42/05-building-blocks/overview.md`](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/05-building-blocks/overview.md) | Container decomposition with Hexagonal classification. |
-| [`docs/arc42/09-decisions/`](https://github.com/uyuutosa/tensor/tree/develop/docs/arc42/09-decisions) | All sixteen foundational ADRs (ADR-0013 superseded by ADR-0015; ADR-0014 §Decision Outcome point 2 refined by ADR-0016). |
+| [`docs/arc42/09-decisions/`](https://github.com/uyuutosa/tensor/tree/develop/docs/arc42/09-decisions) | All seventeen foundational ADRs (ADR-0013 superseded by ADR-0015; ADR-0014 §Decision Outcome point 2 refined by ADR-0016; ADR-0015 §Compliance bullet 3 refined by ADR-0017). |
 | [`docs/detailed-design/`](https://github.com/uyuutosa/tensor/tree/develop/docs/detailed-design) | Seven Template-3 detailed designs — `tensor::core`, `tensor::autograd`, `tensor::tex`, the WebGPU adapter trio (element-wise / GEMM / broadcast), and the `KernelBackend` port surface. |
 
 ## The Hexagonal "lite" layering

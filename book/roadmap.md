@@ -27,6 +27,6 @@ A dated, append-only sequence of phases. Each phase has an [`impl-plan`](https:/
 ## How to follow along
 
 - **Per-phase impl-plans + retrospectives**: [`docs/impl-plans/`](https://github.com/uyuutosa/tensor/tree/develop/docs/impl-plans), [`docs/reports/`](https://github.com/uyuutosa/tensor/tree/develop/docs/reports).
-- **Live decisions**: [`docs/arc42/09-decisions/`](https://github.com/uyuutosa/tensor/tree/develop/docs/arc42/09-decisions) (16 ADRs as of 2026-05-12; ADR-0013 superseded by ADR-0015; ADR-0014 §Decision Outcome point 2 refined by ADR-0016).
+- **Live decisions**: [`docs/arc42/09-decisions/`](https://github.com/uyuutosa/tensor/tree/develop/docs/arc42/09-decisions) (17 ADRs as of 2026-05-12; ADR-0013 superseded by ADR-0015; ADR-0014 §Decision Outcome point 2 refined by ADR-0016; ADR-0015 §Compliance bullet 3 refined by ADR-0017).
 - **Detailed designs**: [`docs/detailed-design/`](https://github.com/uyuutosa/tensor/tree/develop/docs/detailed-design) — 7 instances covering `tensor::core`, `tensor::autograd`, `tensor::tex`, the WebGPU adapter trio (element-wise / GEMM / broadcast), and the `KernelBackend` port surface.
 - **Discussion-points report**: [`docs/reports/2026-05-11_open-discussion-points.md`](https://github.com/uyuutosa/tensor/blob/develop/docs/reports/2026-05-11_open-discussion-points.md) — eight axes of "next decisions" with maintainer recommendations and status updates.

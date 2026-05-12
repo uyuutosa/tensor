@@ -18,7 +18,7 @@ last-reviewed: 2026-05-12
 | -------- | ---------- | ---- |
 | **New reader / API user** | [`../README.md`](../README.md) → [`book/intro.md`](../book/intro.md) | [`arc42/01-introduction-and-goals/overview.md`](./arc42/01-introduction-and-goals/overview.md) §1 + [`../tutorials/00_intro.ipynb`](../tutorials/00_intro.ipynb) |
 | **Contributor** | [`../CONTRIBUTING.md`](../CONTRIBUTING.md) → [`design-guide/architectural-discipline.md`](./design-guide/architectural-discipline.md) | [`arc42/05-building-blocks/overview.md`](./arc42/05-building-blocks/overview.md) + the [`detailed-design/`](./detailed-design/) instance closest to your work |
-| **Implementer / future port** | [`arc42/04-solution-strategy/strategy.md`](./arc42/04-solution-strategy/strategy.md) → [`arc42/09-decisions/`](./arc42/09-decisions/) (16 ADRs) | [`detailed-design/kernel-backend-port.md`](./detailed-design/kernel-backend-port.md) for the port contract; [`detailed-design/webgpu-*.md`](./detailed-design/) for adapter examples |
+| **Implementer / future port** | [`arc42/04-solution-strategy/strategy.md`](./arc42/04-solution-strategy/strategy.md) → [`arc42/09-decisions/`](./arc42/09-decisions/) (17 ADRs) | [`detailed-design/kernel-backend-port.md`](./detailed-design/kernel-backend-port.md) for the port contract; [`detailed-design/webgpu-*.md`](./detailed-design/) for adapter examples |
 | **Textbook author / researcher** | [`arc42/12-glossary/overview.md`](./arc42/12-glossary/overview.md) → [`../CITATION.cff`](../CITATION.cff) | the four `detailed-design/tensor-*.md` (`core` / `autograd` / `tex`) Domain instances + the `reports/` historical record |
 
 ## Standards adopted
@@ -33,7 +33,7 @@ last-reviewed: 2026-05-12
 ## Layer A — durable design (slow change, code-coupled)
 
 - [`arc42/`](./arc42/) — arc42 §1–§12 architecture description. **All 12 sections substantive** as of 2026-05-12; entry points: [§1 Goals](./arc42/01-introduction-and-goals/overview.md), [§4 Strategy](./arc42/04-solution-strategy/strategy.md), [§5 Building blocks](./arc42/05-building-blocks/overview.md), [§9 ADR index](./arc42/09-decisions/), [§12 Glossary](./arc42/12-glossary/overview.md).
-- [`arc42/09-decisions/`](./arc42/09-decisions/) — **16 ADRs** (Accepted). ADR-0013 → superseded by [ADR-0015](./arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md); ADR-0014 §Decision Outcome point 2 → refined by [ADR-0016](./arc42/09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md). Accepted ADR bodies are immutable — supersede with a new ADR.
+- [`arc42/09-decisions/`](./arc42/09-decisions/) — **17 ADRs** (Accepted). ADR-0013 → superseded by [ADR-0015](./arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md); ADR-0014 §Decision Outcome point 2 → refined by [ADR-0016](./arc42/09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md); ADR-0015 §Compliance bullet 3 → refined by [ADR-0017](./arc42/09-decisions/0017-clarify-reproducibility-envelope.md) (reproducibility envelope split into build+test+bench and notebook audit). Accepted ADR bodies are immutable — supersede with a new ADR.
 - [`detailed-design/`](./detailed-design/) — **7 Template-3 instances**: [`tensor-core.md`](./detailed-design/tensor-core.md) (Domain centerpiece), [`tensor-autograd.md`](./detailed-design/tensor-autograd.md), [`tensor-tex.md`](./detailed-design/tensor-tex.md), [`webgpu-element-wise-kernels.md`](./detailed-design/webgpu-element-wise-kernels.md), [`webgpu-gemm-kernel.md`](./detailed-design/webgpu-gemm-kernel.md), [`webgpu-broadcast-kernels.md`](./detailed-design/webgpu-broadcast-kernels.md), [`kernel-backend-port.md`](./detailed-design/kernel-backend-port.md).
 - [`diagrams/c4/`](./diagrams/c4/) — Structurizr DSL (`workspace.dsl`) is the source of truth; SVG renders are committed under `exports/` so repo web UIs can display them without local tooling.
 - [`design-guide/`](./design-guide/) — operational conventions: [`architectural-discipline.md`](./design-guide/architectural-discipline.md) (Hexagonal enforcement), [`version-control.md`](./design-guide/version-control.md), [`code-tours.md`](./design-guide/code-tours.md), [`ai-augmented-pr.md`](./design-guide/ai-augmented-pr.md).
@@ -56,7 +56,7 @@ See [`templates/README.md`](./templates/README.md) for the index and selection f
 - [`templates/2_prd.md`](./templates/2_prd.md) — PRD with `FR-<CAT>-NNN` / `NFR-<CAT>-NNN` IDs
 - [`templates/3_module-detailed-design.md`](./templates/3_module-detailed-design.md) — Google Design Doc + Pragmatic Engineer module spec (this project's 7 `detailed-design/` instances all use it)
 - [`templates/4_use-case.md`](./templates/4_use-case.md) — Cockburn casual + user story + Given/When/Then
-- [`templates/5_adr.md`](./templates/5_adr.md) — MADR v3.0 ADR with Y-statement (this project's 16 ADRs all use it)
+- [`templates/5_adr.md`](./templates/5_adr.md) — MADR v3.0 ADR with Y-statement (this project's 17 ADRs all use it)
 - [`templates/6_persona.md`](./templates/6_persona.md) — Cooper goal-directed persona (UX research, optional)
 - [`templates/7_journey-map.md`](./templates/7_journey-map.md) — Kalbach customer journey map (UX research, optional)
 - [`templates/8_service-blueprint.md`](./templates/8_service-blueprint.md) — Bitner service blueprint (UX research, optional, cross-functional services)
