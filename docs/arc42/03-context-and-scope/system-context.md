@@ -1,7 +1,7 @@
 ---
 status: Draft
 owner: tensor
-last-reviewed: 2026-05-10
+last-reviewed: 2026-05-12
 ---
 
 # `tensor` — System Context (arc42 §3)
@@ -11,8 +11,8 @@ last-reviewed: 2026-05-10
 | Status        | Draft                                                          |
 | Type          | arc42 §3 (Context and Scope)                                   |
 | Owner         | uyuutosa                                                       |
-| Related       | `arc42/01-introduction-and-goals/overview.md`; ADR-0001..0008  |
-| Last Updated  | 2026-05-10                                                     |
+| Related       | `arc42/01-introduction-and-goals/overview.md`; ADR-0001..ADR-0016 (the supersession + refinement chain in force as of 2026-05-12: ADR-0013 superseded by ADR-0015; ADR-0014 §Decision Outcome point 2 refined by ADR-0016) |
+| Last Updated  | 2026-05-12                                                     |
 
 > The C4 Level 1 system-context diagram lives in [`../../diagrams/c4/workspace.dsl`](../../diagrams/c4/workspace.dsl). Render via the [`/diagram-render`](../../../.claude/skills/diagram-render/SKILL.md) skill; this file mirrors the diagram in prose and tables.
 
@@ -39,8 +39,8 @@ The library is **not** intended for production engineers picking a tensor lib fo
 | Identifier            | Description                                                                          | Interface                              |
 | --------------------- | ------------------------------------------------------------------------------------ | -------------------------------------- |
 | `toolchain`           | Host C++ compiler + build tools: GCC 11+ / Clang 13+ / MSVC 19.30+, CMake 3.25+, vcpkg | Compile-time. `tensor` is consumed as a header-only CMake interface library. |
-| `jupyterStack`        | Jupyter Lab / Notebook with the [xeus-cling](https://github.com/jupyter-xeus/xeus-cling) C++20 kernel | Runtime. Tutorials execute inside this kernel. |
-| `webgpuRuntime`       | [Dawn](https://dawn.googlesource.com/dawn) (desktop) or [wgpu-native](https://github.com/gfx-rs/wgpu-native) — uses the OS GPU driver already on the learner's machine | Runtime. `tensor::gpu` dispatches WGSL kernels through the [WebGPU API](https://www.w3.org/TR/webgpu/). Phase 3+. |
+| `jupyterStack`        | Jupyter Lab / Notebook with the [xeus-cpp](https://github.com/compiler-research/xeus-cpp) 0.10+ `xcpp20` C++20 kernel (ADR-0014 §3); a parallel `legacy-xeus-cling` job keeps `00_intro.ipynb` runnable on older conda-forge channels via [xeus-cling](https://github.com/jupyter-xeus/xeus-cling) | Runtime. Tutorials execute inside this kernel. |
+| `webgpuRuntime`       | [Dawn](https://dawn.googlesource.com/dawn) — vcpkg port `20260410.140140` (ADR-0014 §1 + ADR-0016) — uses the OS GPU driver (Vulkan / Metal / D3D12) already on the learner's machine | Runtime. `tensor::core::backend::webgpu` dispatches WGSL kernels through the [WebGPU API](https://www.w3.org/TR/webgpu/) via Dawn's own `webgpu_cpp.h`. As of 2026-05-12, 12 of 15 `KernelBackend` methods dispatch real GPU compute on `float`. |
 | `browser`             | Chrome / Firefox / Safari with WebGPU support                                        | Reads the Jupyter Book site. (Future) runs browser-side demos. |
 | `ghPages`             | GitHub Pages                                                                         | Build-time deploy target for the Jupyter Book site.            |
 | `upstreamPentaglyph`  | The [pentaglyph-docs](https://github.com/uyuutosa/pentaglyph-docs) repository — vendored as a git subtree at `libs/pentaglyph-docs/` | Build-time / authoring-time. `git subtree pull` keeps the kit current. |
@@ -52,7 +52,7 @@ The system under design is **the `tensor` repository as a whole**, including:
 - The header-only C++20 library (`tensor/` namespace, distributed via `include/`).
 - The `tutorials/` notebook corpus.
 - The Jupyter Book site generated from those notebooks.
-- The (Phase 3+) LyX export module.
+- The LyX export module + plugin (`lyx-export/`).
 
 The system does **not** include the C++ toolchain, the Jupyter stack, or the WebGPU runtime — those are external dependencies the learner installs. The rule of thumb: anything the maintainer can fix by editing this repo is inside; anything else is outside.
 
@@ -73,8 +73,8 @@ The system does **not** include the C++ toolchain, the Jupyter stack, or the Web
 | `learner`     | `tensor`          | Builds against, reads, and runs tutorials of               |
 | `instructor`  | `tensor`          | Assigns tutorials and exercises from                       |
 | `tensor`      | `toolchain`       | Is consumed by (CMake + vcpkg)                             |
-| `tensor`      | `jupyterStack`    | Tutorials run inside (xeus-cling kernel)                   |
-| `tensor`      | `webgpuRuntime`   | Dispatches GPU kernels through (Phase 3+)                  |
+| `tensor`      | `jupyterStack`    | Tutorials run inside (xeus-cpp / xeus-cling kernel)        |
+| `tensor`      | `webgpuRuntime`   | Dispatches GPU kernels through (Dawn via `webgpu_cpp.h`)   |
 | `tensor`      | `ghPages`         | Jupyter Book site is published to                          |
 | `tensor`      | `upstreamPentaglyph` | Vendored documentation kit is pulled from               |
 
