@@ -10,7 +10,8 @@ Phase 6 status (2026-05-12):
 - P6.M2 ✅ — `Axis` + `DynamicShape` + `DynamicTensor` (float64) +
   `DynamicTensorF32` (float32) with the four arithmetic operators
   under Einstein-style label broadcast.
-- P6.M3 — `contract` + NumPy interop (next).
+- P6.M3 ✅ — `contract` (named-axis Einstein-sum) + NumPy interop
+  (`from_numpy(arr, labels)` + `t.numpy()`).
 - P6.M4 — autograd (`DynamicVariable`, `backward`, `gradient_check`).
 - P6.M5 — `tex.parse` + `Evaluator` (the `_tex` UDL equivalent).
 - P6.M6 — runtime backend selection; `0.2.0` release with first PyPI
@@ -45,6 +46,8 @@ from ._tensor_native import (
     DynamicShape,
     DynamicTensor,
     DynamicTensorF32,
+    contract,
+    from_numpy,
 )
 
 __all__ = [
@@ -54,6 +57,8 @@ __all__ = [
     "DynamicShape",
     "DynamicTensor",
     "DynamicTensorF32",
+    "contract",
+    "from_numpy",
 ]
 
 

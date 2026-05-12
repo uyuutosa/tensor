@@ -29,6 +29,11 @@ parts:
       - file: ../docs/reports/2026-05-12_gpu-cpp-dawn-abi-drift-and-raw-dawn-smoke.md
         title: "gpu.cpp vs Dawn ABI drift + raw-Dawn smoke (RTX 3090)"
 
+  - caption: Python SDK
+    chapters:
+      - file: ../python/notebooks/00_python-sdk-tour.ipynb
+        title: "Python SDK tour — DynamicTensor / contract / NumPy interop"
+
   - caption: Reference
     chapters:
       - file: architecture
