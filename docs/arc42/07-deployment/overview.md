@@ -1,7 +1,7 @@
 ---
 status: Draft
 owner: tensor
-last-reviewed: 2026-05-11
+last-reviewed: 2026-05-12
 ---
 
 # `tensor` — Deployment View (arc42 §7)
@@ -80,7 +80,7 @@ When the maintainer cuts `0.1.0` (Phase 4 close per [#48](https://github.com/uyu
 
 ## 6. What this section does *not* cover
 
-- The compiled artifacts users of *adapters* depend on (Eigen, Dawn, gpu.cpp) — these come from their own deployment pipelines (vcpkg, vendored, etc.).
+- The compiled artifacts users of *adapters* depend on (Eigen via vcpkg `eigen3`; Dawn via vcpkg `dawn[core,vulkan]` per [ADR-0014 §1](../09-decisions/0014-external-substrate-strategy.md)) — these come from their own deployment pipelines.
 - The Hugging Face / PyPI / Conda distribution paths — `tensor` is not distributed via those channels and has no plan to be.
 
 ## 7. Cross-references

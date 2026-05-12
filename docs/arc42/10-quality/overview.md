@@ -1,7 +1,7 @@
 ---
 status: Draft
 owner: tensor
-last-reviewed: 2026-05-11
+last-reviewed: 2026-05-12
 ---
 
 # `tensor` — Quality Requirements (arc42 §10)
@@ -167,17 +167,17 @@ Each scenario is in the Source / Stimulus / Environment / Response / Response Me
 | Stimulus          | The PR's diff includes a `docs/` change (per `.claude/rules/documentation.md`).                    |
 | Environment       | PR review.                                                                                          |
 | Response          | The arc42 §5, detailed-design, or ADR file most relevant to the code change is updated.            |
-| Response measure  | Manual audit in code review; periodic audits (see PR #11, PR #29, PR #34, PR #45) catch drift.     |
+| Response measure  | Manual audit in code review; periodic audits (PRs #11, #29, #34, #45, #71–#77, #88) catch drift.   |
 
-### QS-2 — Substrate sturdiness ([ADR-0014](../09-decisions/0014-external-substrate-strategy.md))
+### QS-2 — Substrate sturdiness ([ADR-0014](../09-decisions/0014-external-substrate-strategy.md), refined by [ADR-0016](../09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md))
 
 | Field             | Value                                                                                              |
 | ----------------- | -------------------------------------------------------------------------------------------------- |
-| Source            | The maintainer's quarterly substrate review.                                                        |
-| Stimulus          | Three external signals: (i) gpu.cpp commit cadence / v0.2.x releases, (ii) libc++ / MSVC STL `<linalg>` shipping, (iii) xeus-cpp Clang-23 / Clang-24 alignment. |
+| Source            | The maintainer's half-yearly substrate review (aligned with the ADR-0015 / ADR-0017 bibliography-audit cadence). |
+| Stimulus          | Three external signals: (i) Dawn vcpkg port `20260410.140140`+ refresh cadence and any Dawn ABI surface changes; (ii) libc++ / libstdc++ / MSVC STL `<linalg>` (P1673) shipping; (iii) xeus-cpp 0.10+ release cadence and Clang-Repl + CppInterOp alignment. |
 | Environment       | Audit notebook / report (Layer B).                                                                  |
-| Response          | Each signal gets a one-line status update; substrate decisions in ADR-0014 are re-validated.       |
-| Response measure  | Quarterly audit report under `docs/reports/`. First report due ~2026-08-11 (3 months post-ADR-0014). |
+| Response          | Each signal gets a one-line status update; substrate decisions in ADR-0014 + ADR-0016 are re-validated against the current vendor state. |
+| Response measure  | Half-yearly audit report under `docs/reports/`. First audit due 2026-11-11 per [ADR-0015 §Compliance](../09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md) / [ADR-0017](../09-decisions/0017-clarify-reproducibility-envelope.md). |
 
 ## 3. Cross-references
 
