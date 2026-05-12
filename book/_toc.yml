@@ -5,6 +5,8 @@ parts:
     chapters:
       - file: ../tutorials/00_intro.ipynb
         title: "Intro — named-axis tensors"
+      - file: ../tutorials/01_formula-is-the-program.ipynb
+        title: "The formula is the program — _tex UDL end-to-end"
 
   - caption: Autograd
     chapters:
