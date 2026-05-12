@@ -1,7 +1,7 @@
 ---
 status: Draft
 owner: tensor
-last-reviewed: 2026-05-11
+last-reviewed: 2026-05-12
 ---
 
 # `tensor` — Architecture Constraints (arc42 §2)
@@ -11,7 +11,7 @@ last-reviewed: 2026-05-11
 | Status        | Draft                                                          |
 | Type          | arc42 §2 (Architecture Constraints)                            |
 | Owner         | uyuutosa                                                       |
-| Last Updated  | 2026-05-11                                                     |
+| Last Updated  | 2026-05-12                                                     |
 
 > Per arc42 §2: this file records **only what is genuinely fixed** — things that cannot be renegotiated by architecture. Items still up for debate live in §9 ADRs (and may move here once Accepted), not here.
 
@@ -23,7 +23,7 @@ last-reviewed: 2026-05-11
 | TC-2  | **Header-only distribution.**                                            | [ADR-0008](../09-decisions/0008-distribute-as-header-only-with-jupyter-tutorials.md)         | Never under current scope — would supersede with a new ADR.            |
 | TC-3  | **Build system: CMake ≥ 3.25 + vcpkg manifest mode.**                    | [ADR-0003](../09-decisions/0003-replace-eclipse-cdt-with-cmake-and-vcpkg.md)                 | Never under current scope.                                             |
 | TC-4  | **Compiler matrix: GCC ≥ 11, Clang ≥ 13, MSVC ≥ 19.30, AppleClang ≥ 14.** | CI matrix in [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml)                  | Phase 5+ if C++23 / C++26 baseline forces a higher floor.              |
-| TC-5  | **No proprietary GPU toolchain.** GPU work uses WebGPU via Dawn / gpu.cpp; CUDA-direct is explicitly disqualified. | [ADR-0006](../09-decisions/0006-adopt-webgpu-as-gpu-backend.md), [§5 ADR-0001 § Out of scope](../01-introduction-and-goals/overview.md)                | Never under current scope.                                             |
+| TC-5  | **No proprietary GPU toolchain.** GPU work uses WebGPU via Dawn (`webgpu_cpp.h` direct per [ADR-0016](../09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md)); CUDA-direct is explicitly disqualified. | [ADR-0006](../09-decisions/0006-adopt-webgpu-as-gpu-backend.md), [§5 ADR-0001 § Out of scope](../01-introduction-and-goals/overview.md)                | Never under current scope.                                             |
 | TC-6  | **MIT license for first-party code under `include/`, `tests/`, `bench/`, `tutorials/`, `docs/`.** Vendored content under `third_party/` retains its upstream license. | `LICENSE` file at repo root; [ADR-0014 §Decision Outcome point 2](../09-decisions/0014-external-substrate-strategy.md) | Never.                                                                |
 | TC-7  | **One canonical kernel-port surface (`KernelBackend`).** All GPU / SIMD / BLAS work plugs in via this port; the Domain depends on no adapter directly. | [ADR-0009](../09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md), [ADR-0011](../09-decisions/0011-kernel-backend-port-api.md)                                   | Never under current scope.                                             |
 | TC-8  | **No ABI stability guarantee.** Versions remain alpha until the maintainer chooses to commit; even at `1.0.0` the project may break ABI in minor versions per the as-is positioning. | [ADR-0010 §Decision Outcome point 3](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md)                              | Only via a new ADR that explicitly supersedes ADR-0010 point 3.        |
