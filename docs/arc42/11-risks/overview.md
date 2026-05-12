@@ -1,7 +1,7 @@
 ---
 status: Draft
 owner: tensor
-last-reviewed: 2026-05-11
+last-reviewed: 2026-05-12
 ---
 
 # `tensor` — Risks and Technical Debt (arc42 §11)
@@ -11,7 +11,7 @@ last-reviewed: 2026-05-11
 | Status        | Draft                                                          |
 | Type          | arc42 §11 (Risks and Technical Debt)                           |
 | Owner         | uyuutosa                                                       |
-| Last Updated  | 2026-05-11                                                     |
+| Last Updated  | 2026-05-12                                                     |
 
 > Per arc42 §11: this file consolidates the **risks** that could derail the project and the **technical debt** the maintainer has accepted. Per-phase impl-plans carry their own risks-and-mitigations tables; this file promotes the durable / cross-phase risks to a single audited place.
 
@@ -31,7 +31,7 @@ These are the risks ADR-0014 was written to manage. The 2026-05-11 external-subs
 | R-S2 | **xeus-cpp breaks on a Clang upgrade.** Young project (v0.10.0 April 2026); short stability track record. | 🟡 Medium | Active development; new releases ~ monthly. | `notebook-ci.yml` `legacy-xeus-cling` job runs `00_intro.ipynb` against xeus-cling as a smoke fallback. If xeus-cpp breaks, the worst case is the Jupyter Book deploy falls back to pre-rendered output. |
 | R-S3 | **Dawn vcpkg port disappears or refuses to build on a supported triplet.** | 🟡 Medium | Port present and current at `20260410.140140` (2026-04-20). | `wgpu-native` is the documented fallback ([ADR-0006](../09-decisions/0006-adopt-webgpu-as-gpu-backend.md), [ADR-0012](../09-decisions/0012-webgpu-adapter-implementation-design.md)). The Hexagonal port keeps the runtime swap to one CMake variable. |
 | R-S4 | **`std::linalg` ships earlier than expected and diverges from kokkos/stdBLAS.** | 🟢 Low | Not shipped in any vendor STL as of 2026-05. | The planned `tensor::linalg` shim uses `__cpp_lib_linalg` feature detection (per ADR-0014); when `<linalg>` ships, the shim flips and downstream sees no break. |
-| R-S5 | **vcpkg baseline bump (needed for P3.M3.2 / P3.M4.2) pulls Eigen 3 → 5 and breaks the Eigen backend.** | 🟡 Medium | Baseline pinned at `99a97de2...` (no Eigen 5); the `webgpu` manifest feature documents the bump path. | When P3.M3.2 lands, bundle the baseline bump + Eigen 5 compatibility in one PR with focused CI iteration. CHANGELOG `[Unreleased]` documents the choice. |
+| R-S5 | **vcpkg baseline bump pulls Eigen 3 → 5 and breaks the Eigen backend.** | 🟢 Low | **No longer load-bearing.** PRs #60 / #61 / #62 shipped P3.M3.2 / P3.M4.2 / P3.M5 dispatch wiring against the locally-installed Dawn without needing a baseline bump. The `webgpu` manifest feature in `vcpkg.json` continues to document the bump path for any future user who wants Dawn from a non-local source. | If a future PR forces the bump, bundle Eigen 5 compatibility in the same PR with focused CI iteration. |
 
 ## 2. Architectural risks
 
@@ -47,15 +47,15 @@ These are the risks ADR-0014 was written to manage. The 2026-05-11 external-subs
 | -- | ---- | -------- | ------------- | ---------- |
 | R-M1 | **Solo bandwidth saturates** — incoming issues or PR review backlog grow faster than the maintainer's capacity. | 🟡 Medium | None to-date. | `CONTRIBUTING.md` sets expectations: depth-over-breadth heuristic; fast responses not guaranteed. ADR-0010 + ADR-0013 limit acceptable contribution scope. Worst-case fallback is archiving the project with a public message; OC-1 already accepts this risk. |
 | R-M2 | **Production users file coverage-parity issues.** | 🟢 Low | None to-date. | README + ADR-0010 disclaimer language; CONTRIBUTING.md depth-over-breadth heuristic. Politely close with a link to the relevant ADR. |
-| R-M3 | **Documentation drift** — `arc42` / `detailed-design` / `ADR` content gets stale relative to merged code. | 🟡 Medium | Three audits done (PR #11, PR #29, PR #34, PR #45). | Periodic audits + `.claude/rules/documentation.md` "code change implies doc change" PR-time discipline. R-A3's half-yearly audit also catches drift. |
+| R-M3 | **Documentation drift** — `arc42` / `detailed-design` / `ADR` content gets stale relative to merged code. | 🟡 Medium | Eight audits done (PRs #11, #29, #34, #45, #71, #72, #73, #74, #75). | Periodic audits + `.claude/rules/documentation.md` "code change implies doc change" PR-time discipline. R-A3's half-yearly audit also catches drift. |
 
 ## 4. Performance / quality risks
 
 | # | Risk | Severity | Current state | Mitigation |
 | -- | ---- | -------- | ------------- | ---------- |
 | R-Q1 | **Autograd tape allocation pressure** dominates a real-size MLP training loop. | 🟡 Medium | One `std::function<void()>` per registered backward op; thread-local `std::vector` reallocation. | Discussion-points Axis C flags this; mitigation is a profile-driven 1-week investigation slice (P1.5+ slot). No action until evidence demands it (priority 1: clarity > priority 4: performance). |
-| R-Q2 | **No real-GPU numerical verification** for the WebGPU backend until a self-hosted runner exists. | 🔴 High (for Phase 3 close) | WGSL kernel sources committed (PRs #43, #44, #46); dispatch wiring stub-delegates. | Phase 4 rehearsal report (#48) recommends Option 3 "design-walkthrough" tutorial 06 — narrate the WGSL sources + dispatch design without executing GPU code. `0.1.0` ships under this framing; real GPU verification is post-`0.1.0`. |
-| R-Q3 | **`f64` operations on the WebGPU backend** fall through to reference, surprising users. | 🟢 Low | ADR-0012 documents the `f32`-only MVP. README + tutorial-08 mention the type-dispatch. | Document explicitly in tutorial 06 (when written); add a runtime warning when a `f64` op hits the WebGPU backend (deferred to P3.M3.2 PR). |
+| R-Q2 | **No real-GPU numerical verification** for the WebGPU backend until a self-hosted runner exists. | 🟢 Low | **No longer load-bearing.** PRs #60 / #61 / #62 ran the shipped WGSL kernels on the maintainer's RTX 3090 via locally-installed Dawn + Vulkan; 12 of 15 `KernelBackend` methods cross-validate against reference within `1e-5` / `1e-3` for `float`. The Phase 4 rehearsal Option 3 "design-walkthrough" framing for tutorial 06 remains in place (so the notebook stays GPU-free in CI), but the underlying *correctness* of the WGSL sources is no longer unverified. | If a self-hosted GPU runner ever lands, expand notebook CI to execute tutorial 06 cells. Until then, the maintainer reruns `webgpu` tests locally before each release per the [release rehearsal report](../../reports/2026-05-11_phase-4-release-rehearsal.md) §3 checklist. |
+| R-Q3 | **`f64` operations on the WebGPU backend** fall through to reference, surprising users. | 🟢 Low | ADR-0012 documents the `f32`-only MVP. README + tutorial-08 mention the type-dispatch; PRs #60–#62 use `if constexpr (!std::is_same_v<T, float>)` to delegate non-`float` paths to reference at compile time so the fallthrough is unambiguous to anyone reading the adapter source. | Document explicitly in tutorial 06 once it gains live-execution cells; consider a runtime warning when an `f64` op hits the WebGPU backend if user reports surface. |
 
 ## 5. Cross-references
 
