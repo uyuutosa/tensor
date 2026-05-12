@@ -1,0 +1,17 @@
+format:
+  line_width: 100
+  tab_size: 4
+  use_tabchars: false
+  separate_ctrl_name_with_space: false
+  separate_fn_name_with_space: false
+  dangle_parens: false
+  command_case: lower
+  keyword_case: upper
+
+markup:
+  bullet_char: "-"
+  enum_char: "."
+  first_comment_is_literal: false
+
+lint:
+  disabled_codes: []

@@ -1,0 +1,44 @@
+# `tensor` — named-axis tensor algebra in modern C++
+
+> Differentiable named-axis tensor algebra in modern C++ — educational-first, production-capable via backend adapters. Documented and designed to canonical-reference quality ([ADR-0015](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md)).
+
+`tensor` is a header-only C++20/23 library that explores **named-axis tensor algebra** — tensors carry axis labels (`a_i`, `b_j`), and operations broadcast over them in Einstein style (`a_i + b_j → c_{ij}`). The project's slogan is *the formula is the program*: the same expression you'd write in a paper can be parsed, evaluated, and gradient-checked in a notebook.
+
+## What this book covers
+
+This Jupyter Book renders the notebooks shipped under [`tutorials/`](https://github.com/uyuutosa/tensor/tree/develop/tutorials) so a reader can follow the project end-to-end without leaving the browser.
+
+- **Getting started** — `00_intro` walks through the 2016 README's named-axis examples on the new API.
+- **Autograd** — `05_autograd-from-scratch` builds the tape-based reverse-mode autograd primitive by primitive; `07_mlp-on-toy` trains a small model end-to-end.
+- **Architecture** — `08_swappable-backends` shows the Hexagonal "lite" payoff: same Domain code on reference, Eigen, or (Phase 3) WebGPU. The third adapter slot ships as a stub in Phase 3 P3.M2 — concept-satisfying and routable through the dispatch path — with WGSL kernels following in P3.M3+.
+
+## When you want production speed
+
+The Domain is intentionally small and readable. Speed for production-shaped workloads comes from swappable `KernelBackend` adapters (reference, Eigen, WebGPU). Configure with:
+
+```bash
+cmake --preset=default -DTENSOR_KERNEL_BACKEND=eigen
+```
+
+Production users adopt the library **as-is**: no ABI stability guarantee, no commitment to operator-coverage parity with mature libraries (Eigen / xtensor / libtorch / Kokkos / `std::linalg`), no formal support. See [ADR-0001](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0001-pivot-to-educational-named-axis-dsl.md) and [ADR-0010](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0010-refine-positioning-to-educational-first-production-capable.md) for the positioning, and [`docs/`](https://github.com/uyuutosa/tensor/tree/develop/docs) for the full architecture surface.
+
+## Reading this book
+
+Each chapter is a Jupyter notebook. The C++ code blocks target the [xeus-cpp](https://github.com/compiler-research/xeus-cpp) kernel (Clang-Repl + CppInterOp); a legacy [xeus-cling](https://github.com/jupyter-xeus/xeus-cling) smoke path is retained for the introductory notebook so users on older conda-forge channels can still run it (see [ADR-0014](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0014-external-substrate-strategy.md)). The static site you're reading shows pre-rendered outputs; clone the repo and run `jupyter lab` to interact with them yourself.
+
+## How to cite this work
+
+This project aspires to canonical-reference-quality documentation and design ([ADR-0015](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md), superseding [ADR-0013](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)). Whether the work earns canonical-reference status is determined by external adoption, not by self-declaration; the three disciplines (bibliography / ubiquitous language / reproducibility) aim to make the work ready when (and if) such adoption happens. If you build on this work in a paper, a textbook, a derived implementation, or a downstream library, please cite it via the [`CITATION.cff`](https://github.com/uyuutosa/tensor/blob/develop/CITATION.cff) file at the repository root. The ADR sequence under [`docs/arc42/09-decisions/`](https://github.com/uyuutosa/tensor/tree/develop/docs/arc42/09-decisions) is itself the project's bibliography — individual decisions can be cited as well-defined design choices with rationale.
+
+## Project status
+
+| Phase | Status |
+| ----- | ------ |
+| Phase 1 — `0.0.1-alpha` foundation | ✅ shipped |
+| Phase 2 — autograd | ✅ shipped (MVP → activations → broadcast backward → contraction → MLP-on-toy) |
+| Phase 2.5 — backend adapters | ✅ shipped (`KernelBackend` port; reference + Eigen adapters; tutorial 08) |
+| Phase 1.5 mop-up | mostly ✅ — `LabelTag` + `TypedTensor`, `_tex` evaluator, `zero_grad` + `sgd_update`, mdspan polyfill restore, LyX export module + LyX plugin, bench framework + reference baseline, xeus-cling notebook CI workflow |
+| Phase 3 — WebGPU adapter | P3.M2 ✅ (stub satisfies `KernelBackend`, delegates to reference); P3.M3+ WGSL kernels planned (gpu.cpp + Dawn per ADR-0012) |
+| Phase 4 — `0.1.0` public release | in progress (book scaffold ✅, GitHub Pages deploy workflow ✅, `CONTRIBUTING.md` + `CODE_OF_CONDUCT.md` + `CHANGELOG.md` ✅; release tag and full tutorial corpus pending) |
+
+For the detailed roadmap, see the [Phase 3 plan](https://github.com/uyuutosa/tensor/blob/develop/docs/impl-plans/2026-05-11_phase-3-webgpu.md) and the [Phase 1 retrospective](https://github.com/uyuutosa/tensor/blob/develop/docs/reports/2026-05-11_phase-1-retrospective.md).

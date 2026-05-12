@@ -1,0 +1,43 @@
+# Jupyter Book configuration for the tensor project.
+# See https://jupyterbook.org/customize/config.html for the full reference.
+
+title: tensor — named-axis tensor algebra in modern C++
+author: uyuutosa
+copyright: "2026"
+logo: ""
+
+# Where to find content. Notebooks live in ../tutorials/; the TOC
+# imports them via relative paths.
+only_build_toc_files: true
+
+# Execute notebooks at build time. Set to "off" until xeus-cling is
+# installed on the GitHub Actions runner; see deploy-book.yml.
+execute:
+  execute_notebooks: "off"
+  timeout: 180
+
+# Bibliography file (none yet).
+bibtex_bibfiles: []
+
+# Repository link integration.
+repository:
+  url: https://github.com/uyuutosa/tensor
+  branch: develop
+  path_to_book: book
+
+# HTML theme + interactive features.
+html:
+  use_issues_button: true
+  use_repository_button: true
+  use_edit_page_button: true
+  favicon: ""
+  baseurl: ""
+
+# Sphinx options (Jupyter Book wraps Sphinx).
+sphinx:
+  extra_extensions:
+    - sphinx.ext.autodoc
+    - sphinx.ext.napoleon
+  config:
+    html_show_copyright: false
+    nb_execution_show_tb: true

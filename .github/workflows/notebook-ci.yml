@@ -1,0 +1,150 @@
+name: Notebook CI
+
+# Three jobs:
+#   - validate: parses every .ipynb as JSON on every push / PR. Cheap;
+#     catches the common case where a hand-edit corrupted a notebook
+#     file. Always runs.
+#   - execute (xeus-cpp): installs miniconda + xeus-cpp 0.10+ + the
+#     project's vcpkg deps and runs `jupyter nbconvert --execute` on
+#     each tutorial. Heavy (~10 min cold install); runs only on a
+#     weekly cron schedule and via workflow_dispatch. Best-effort: a
+#     failure does not block PRs and signals that the notebooks need
+#     updating against the current API surface. Primary kernel per
+#     ADR-0014.
+#   - legacy-xeus-cling: runs only 00_intro.ipynb (the C++17-subset
+#     introductory notebook) against the legacy xeus-cling kernel so
+#     users on older conda-forge channels can still trust the intro
+#     works. Best-effort; cron-only.
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'tutorials/**'
+      - 'book/**'
+      - 'include/**'
+      - '.github/workflows/notebook-ci.yml'
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'tutorials/**'
+      - 'book/**'
+      - 'include/**'
+      - '.github/workflows/notebook-ci.yml'
+  schedule:
+    # Weekly Monday 03:00 UTC. The xeus-cling execute job runs against the
+    # current develop HEAD; failures get filed as issues for the
+    # maintainer to triage.
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: notebook-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate notebook JSON
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate every .ipynb under tutorials/ and book/
+        run: |
+          set -euo pipefail
+          fail=0
+          for nb in $(find tutorials book -name '*.ipynb' 2>/dev/null); do
+            echo "validating ${nb}"
+            if ! python -c "import json,sys; json.load(open('${nb}'))" ; then
+              echo "FAIL: ${nb} is not valid JSON"
+              fail=1
+            fi
+          done
+          exit "$fail"
+
+  execute:
+    name: xeus-cpp notebook smoke (best-effort, weekly)
+    # Only run on the schedule or manual dispatch — the heavy conda
+    # install is wasted on every PR.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-22.04
+    continue-on-error: true   # weekly best-effort
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          auto-activate-base: true
+          activate-environment: ""
+
+      - name: Create env from tutorials/environment.yml
+        shell: bash -l {0}
+        run: |
+          conda env create -n notebook-ci -f tutorials/environment.yml || \
+              conda env create -n notebook-ci -c conda-forge \
+                  xeus-cpp jupyter nbconvert
+          conda init bash
+
+      - name: Execute every tutorial notebook
+        shell: bash -l {0}
+        # xeus-cpp registers `xcpp20` on conda-forge (same kernel name as
+        # xeus-cling used), so the notebook metadata does not need to
+        # change.
+        run: |
+          conda activate notebook-ci
+          set +e
+          fail=0
+          for nb in tutorials/*.ipynb; do
+            echo "::group::${nb}"
+            jupyter nbconvert --to notebook --execute --inplace "${nb}" \
+                              --ExecutePreprocessor.timeout=180 \
+                              --ExecutePreprocessor.kernel_name=xcpp20
+            rc=$?
+            echo "::endgroup::"
+            if [ "$rc" -ne 0 ]; then
+              echo "FAIL: ${nb} did not execute cleanly"
+              fail=1
+            fi
+          done
+          exit "$fail"
+
+  legacy-xeus-cling:
+    name: xeus-cling legacy smoke (00_intro only, weekly)
+    # Same trigger discipline as the primary execute job.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-22.04
+    continue-on-error: true   # weekly best-effort
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          auto-activate-base: true
+          activate-environment: ""
+
+      - name: Create env with xeus-cling
+        shell: bash -l {0}
+        run: |
+          conda create -n legacy-cling -c conda-forge -y \
+              xeus-cling jupyter nbconvert cmake ninja
+          conda init bash
+
+      - name: Execute 00_intro.ipynb against xeus-cling
+        shell: bash -l {0}
+        run: |
+          conda activate legacy-cling
+          jupyter nbconvert --to notebook --execute --inplace \
+                            tutorials/00_intro.ipynb \
+                            --ExecutePreprocessor.timeout=180 \
+                            --ExecutePreprocessor.kernel_name=xcpp20

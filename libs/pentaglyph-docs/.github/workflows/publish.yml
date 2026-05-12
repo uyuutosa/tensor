@@ -1,0 +1,89 @@
+name: Publish CLI to npm (OIDC trusted publishing)
+
+# Triggers on tag push of the form pentaglyph-cli-vX.Y.Z
+# Also supports manual dispatch for emergency re-publish (re-runs current cli/package.json version).
+#
+# Auth model: OpenID Connect trusted publishing — no NPM_TOKEN required.
+# The workflow exchanges its OIDC ID token for a short-lived npm publish credential.
+# Setup on the npm side is one-time: npmjs.com → @uyuutosa/pentaglyph → Settings → Trusted Publisher
+#   - Provider:           GitHub Actions
+#   - Organization/user:  uyuutosa
+#   - Repository:         pentaglyph-docs
+#   - Workflow filename:  publish.yml
+#   - Environment name:   (leave blank, or set "production" if you also configure it here)
+
+on:
+  push:
+    tags:
+      - 'pentaglyph-cli-v*'
+  workflow_dispatch:
+    inputs:
+      confirm_version:
+        description: 'Type the cli/package.json version exactly (e.g. 0.0.4) to confirm manual publish'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    name: Publish @uyuutosa/pentaglyph via OIDC
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # Required for OIDC trusted publishing
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun (for prepack sync-template script)
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node.js (need npm >= 11.5 for trusted publishing)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Upgrade npm to latest (>= 11.5 required for OIDC)
+        run: npx --yes npm@latest --version
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify version matches tag (or manual input)
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            TAG_VERSION="${GITHUB_REF_NAME#pentaglyph-cli-v}"
+            echo "Tag: $GITHUB_REF_NAME → version $TAG_VERSION"
+          else
+            TAG_VERSION="${{ github.event.inputs.confirm_version }}"
+            echo "Manual dispatch: confirm_version=$TAG_VERSION"
+          fi
+          echo "package.json version: $PKG_VERSION"
+          if [[ "$PKG_VERSION" != "$TAG_VERSION" ]]; then
+            echo "::error::Version mismatch — package.json=$PKG_VERSION but tag/input=$TAG_VERSION"
+            exit 1
+          fi
+
+      - name: Sync template/ from repo root into cli/
+        run: bun run sync-template
+
+      - name: Publish via OIDC trusted publishing
+        # No NPM_TOKEN needed — OIDC token + id-token: write permission handles auth.
+        # Provenance attestation is generated and published automatically by npm CLI 11.5+.
+        run: npx --yes npm@latest publish --access=public
+
+      - name: Verify publish landed
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          sleep 5  # registry propagation
+          PUBLISHED=$(npm view @uyuutosa/pentaglyph@$PKG_VERSION version 2>/dev/null || echo "MISSING")
+          if [[ "$PUBLISHED" != "$PKG_VERSION" ]]; then
+            echo "::error::Verify failed — registry returned '$PUBLISHED' for @uyuutosa/pentaglyph@$PKG_VERSION"
+            exit 1
+          fi
+          echo "Published @uyuutosa/pentaglyph@$PKG_VERSION via OIDC ✓"

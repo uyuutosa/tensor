@@ -1,0 +1,26 @@
+name: tensor-tutorials
+
+channels:
+  - conda-forge
+  - nodefaults
+
+# Primary kernel is xeus-cpp (ADR-0014). xeus-cpp 0.10.0+ registers the
+# kernel name `xcpp20` on conda-forge, so existing notebooks targeting the
+# C++20 kernel work without metadata changes. xeus-cpp is built on Clang-
+# Repl + CppInterOp, which gives modern C++ diagnostics and handles the
+# class-type NTTPs (`FixedString`, `LabelTag`) that xeus-cling on Clang-13
+# can choke on.
+#
+# A legacy xeus-cling smoke path is retained in CI for users on older
+# conda-forge channels (see .github/workflows/notebook-ci.yml's
+# legacy-xeus-cling job, which runs only 00_intro.ipynb).
+dependencies:
+  - python=3.11
+  - jupyterlab>=4.0
+  - jupyter-book>=1.0
+  - xeus-cpp>=0.10
+  - cmake>=3.25
+  - ninja
+  # The library itself is header-only; the C++20 toolchain pulls in mdspan
+  # and other vcpkg deps via libstdc++ + the conda-shipped Clang. Learners
+  # only need this env file + the repo clone.

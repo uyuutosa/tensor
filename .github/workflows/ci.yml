@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-cache
+
+jobs:
+  # Fast lint pass — checks that every subdirectory of third_party/ has a
+  # VENDORED_FROM file. Enforces ADR-0014 §Compliance ("vendor, not link"
+  # discipline for bus-factor-1 substrates such as gpu.cpp).
+  vendored-check:
+    name: third_party/ VENDORED_FROM lint
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash tools/check-vendored.sh
+
+  build-and-test:
+    needs: vendored-check
+    name: ${{ matrix.os }} / ${{ matrix.compiler }} / ${{ matrix.preset }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu — GCC 11 (C++20 baseline minimum)
+          - os: ubuntu-22.04
+            compiler: gcc-11
+            preset: debug-werror
+            cc: gcc-11
+            cxx: g++-11
+          - os: ubuntu-22.04
+            compiler: gcc-11
+            preset: release-werror
+            cc: gcc-11
+            cxx: g++-11
+          # Ubuntu — Clang 13
+          - os: ubuntu-22.04
+            compiler: clang-13
+            preset: debug-werror
+            cc: clang-13
+            cxx: clang++-13
+          - os: ubuntu-22.04
+            compiler: clang-13
+            preset: release-werror
+            cc: clang-13
+            cxx: clang++-13
+          # macOS — system Clang
+          - os: macos-14
+            compiler: appleclang
+            preset: debug-werror
+          - os: macos-14
+            compiler: appleclang
+            preset: release-werror
+          # Windows — MSVC 19.30+
+          - os: windows-2022
+            compiler: msvc
+            preset: debug-werror
+          - os: windows-2022
+            compiler: msvc
+            preset: release-werror
+          # Eigen backend smoke (one job to keep matrix small) — verifies
+          # the Eigen adapter produces results agreeing with reference.
+          - os: ubuntu-22.04
+            compiler: gcc-11
+            preset: release-werror
+            cc: gcc-11
+            cxx: g++-11
+            backend: eigen
+          # WebGPU stub backend (P3.M2): compile-only verification that
+          # the third KernelBackend slot satisfies the concept. Real
+          # WGSL kernels and Dawn integration are pending P3.M3+, so
+          # this job exercises the dispatch path only.
+          - os: ubuntu-22.04
+            compiler: gcc-11
+            preset: release-werror
+            cc: gcc-11
+            cxx: g++-11
+            backend: webgpu
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Linux compilers and Ninja
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+          if [[ "${{ matrix.compiler }}" == gcc-11 ]]; then
+            sudo apt-get install -y gcc-11 g++-11
+          elif [[ "${{ matrix.compiler }}" == clang-13 ]]; then
+            sudo apt-get install -y clang-13
+          fi
+
+      - name: Install Ninja (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Install Ninja (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: choco install ninja -y
+
+      - name: Set up MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Bootstrap vcpkg
+        shell: bash
+        # NOTE: do NOT shallow-clone. vcpkg's manifest mode needs the full
+        # git history to look up port-version trees referenced by the
+        # builtin-baseline; a --depth=1 clone produces "failed to unpack
+        # tree object" errors during dependency resolution.
+        run: |
+          git clone https://github.com/microsoft/vcpkg "$RUNNER_TEMP/vcpkg"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            "$RUNNER_TEMP/vcpkg/bootstrap-vcpkg.bat" -disableMetrics
+          else
+            "$RUNNER_TEMP/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+          fi
+          echo "VCPKG_ROOT=$RUNNER_TEMP/vcpkg" >> "$GITHUB_ENV"
+          mkdir -p "${{ env.VCPKG_DEFAULT_BINARY_CACHE }}"
+
+      - name: Cache vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ matrix.os }}-${{ matrix.compiler }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Configure (Linux/macOS)
+        if: runner.os != 'Windows'
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          BACKEND_ARG=""
+          if [ -n "${{ matrix.backend }}" ]; then
+            BACKEND_ARG="-DTENSOR_KERNEL_BACKEND=${{ matrix.backend }}"
+          fi
+          cmake --preset=${{ matrix.preset }} ${BACKEND_ARG}
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          BACKEND_ARG=""
+          if [ -n "${{ matrix.backend }}" ]; then
+            BACKEND_ARG="-DTENSOR_KERNEL_BACKEND=${{ matrix.backend }}"
+          fi
+          cmake --preset=${{ matrix.preset }} ${BACKEND_ARG}
+
+      - name: Build
+        run: cmake --build --preset=${{ matrix.preset }}
+
+      - name: Test
+        run: ctest --preset=${{ matrix.preset }}
