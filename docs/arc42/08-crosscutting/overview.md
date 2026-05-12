@@ -1,7 +1,7 @@
 ---
 status: Draft
 owner: tensor
-last-reviewed: 2026-05-11
+last-reviewed: 2026-05-12
 ---
 
 # `tensor` — Crosscutting Concepts (arc42 §8)
@@ -29,7 +29,7 @@ This policy keeps the educational kernel for arithmetic operators a single legib
 ## 2. Memory management
 
 - **No raw `new` / `delete` in the public surface.** `Tensor<T, N>` and `DynamicTensor<T>` own their buffers via `std::vector<T>`; `TypedTensor<T, Labels...>` is a thin wrapper.
-- **Each operator returns a new tensor.** The reference adapter allocates per call; the Eigen adapter reuses Eigen's stack-allocated map types where possible but still allocates the result. WebGPU dispatch (when wired) will allocate GPU buffers per call (gpu.cpp's `TensorPool` reclaims them at Context destruction). Per-call allocation is a quality-4 (performance) tradeoff that priorities 1–3 ([§10 quality](../10-quality/overview.md)) explicitly trump.
+- **Each operator returns a new tensor.** The reference adapter allocates per call; the Eigen adapter reuses Eigen's stack-allocated map types where possible but still allocates the result. The WebGPU adapter (shipped per [PRs #60–#62](https://github.com/uyuutosa/tensor/pulls?q=is%3Apr+is%3Amerged)) allocates Dawn `wgpu::Buffer` objects per dispatch; the `WebGPUContext` singleton ([`webgpu_detail/context.hpp`](../../../include/tensor/core/backend/webgpu_detail/context.hpp)) keeps Instance / Adapter / Device / Queue alive across calls, so only buffers (not the Dawn objects) are re-created. Per-call allocation is a quality-4 (performance) tradeoff that priorities 1–3 ([§10 quality](../10-quality/overview.md)) explicitly trump.
 - **No expression-template fusion.** See [`detailed-design/tensor-core.md §5.3`](../../detailed-design/tensor-core.md) for the alternative-considered rejection.
 - **Tape allocation.** `tensor::autograd::Tape` is a `thread_local std::vector<std::function<void()>>`; each registered backward closure allocates one `std::function`. This is per-call allocation pressure that the [discussion-points report Axis C](../../reports/2026-05-11_open-discussion-points.md) flags as a future profile-driven investigation target.
 
@@ -88,7 +88,7 @@ The library has no localised strings. ADRs, arc42, detailed-design, CHANGELOG, R
 
 ## 10. Logging policy
 
-No logger. `tensor::core` performs no logging; `tensor::autograd::gradient_check` and the test suite print to `std::cout` / `std::cerr` directly. If a future contributor wants to add diagnostic logging to the WebGPU dispatch wiring (P3.M3.2 / P3.M4.2), the canonical choice is `fmt::print` (already a dependency); upstream gpu.cpp's `LOG` macro is also available transparently through the vendored header.
+No logger. `tensor::core` performs no logging; `tensor::autograd::gradient_check` and the test suite print to `std::cout` / `std::cerr` directly. If a future contributor wants to add diagnostic logging to the WebGPU dispatch wiring ([`webgpu_detail/dispatch.hpp`](../../../include/tensor/core/backend/webgpu_detail/dispatch.hpp)), the canonical choice is `fmt::print` (already a dependency).
 
 ## 11. Cross-references
 

@@ -91,7 +91,7 @@ Captured here so future reviewers do not litigate them as gaps.
 
 The first release is `0.1.0`. Success at `0.1.0` means:
 
-- [ ] All ADR-0001 follow-ups are closed.
+- [x] All ADR-0001 follow-ups are closed. *(achieved 2026-05-12: Phase 1 + 1.5 + 2 + 2.5 + 3 all shipped per `book/roadmap.md`; the "educational-first, production-capable via backend adapters" north star refined by ADR-0010 / ADR-0015 is fully realised in shipped code — three `KernelBackend` adapters (reference + Eigen + WebGPU) with 12 of 15 methods on real GPU per PRs #60–#62, autograd Phase 2 + `zero_grad` + `sgd_update`, `_tex` UDL + Evaluator + LyX export, 17 ADRs, 7 detailed-design instances, 6 notebooks.)*
 - [x] CMake build green on the {GCC 11, Clang 13, MSVC 19.30} × {Debug, Release} matrix in CI. *(achieved 2026-05-11 via PR #9; matrix grew to 10 jobs via PRs #21, #38, #41.)*
 - [x] `tutorials/00_intro.ipynb` reproduces the 2016 blog post's convolutions-as-inner-products in the rewritten library. *(shipped 2026-05-10 via PR #8; notebook-CI execute path now targets xeus-cpp 0.10+ per [ADR-0014](../09-decisions/0014-external-substrate-strategy.md), with xeus-cling smoke retained.)*
 - [x] `tutorials/05_autograd-from-scratch.ipynb` walks the autograd implementation primitive-by-primitive. *(shipped 2026-05-11 via PR #15.)*
