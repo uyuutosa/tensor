@@ -30,6 +30,7 @@ workspace "tensor" "Header-only C++20/23 named-axis differentiable tensor librar
             eigenBackend = container "tensor::core::backend::eigen" "Eigen 3.4 SIMD + GEMM adapter for the KernelBackend port; delegates non-trivial ops to reference per ADR-0011's documented scope." "C++20 headers + Eigen" "DrivenAdapter"
             webgpuBackend = container "tensor::core::backend::webgpu" "Dawn-backed WebGPU adapter for the KernelBackend port. As of 2026-05-12, 12 of 15 methods dispatch real GPU compute on float (4 binary + 4 unary + 1 contract + 3 broadcast); the rest delegate to reference. Talks to Dawn directly via webgpu_cpp.h (ADR-0016)." "C++20 headers + WGSL" "DrivenAdapter"
             lyx = container "lyx-export" "LyX module + Python translator that exports tensor-bearing LyX documents to the consteval _tex DSL. CI smoke verifies the golden-file diff." "LyX module + Python 3" "DrivingAdapter"
+            pythonSdk = container "python/ (Phase 6 SDK)" "nanobind-backed Python bindings (ADR-0018). Phase 6.M1 scaffolds the toolchain; M2..M6 add DynamicTensor + arithmetic / contract + NumPy interop / autograd DynamicVariable / tex.Evaluator / runtime backend selection. Wheel ships through PyPI + conda-forge at 0.2.0." "nanobind + scikit-build-core; CPython 3.9+" "DrivingAdapter"
             tutorials = container "tutorials/" "Six Jupyter notebooks (00_intro, 01_formula-is-the-program, 05_autograd-from-scratch, 06_webgpu-acceleration, 07_mlp-on-toy, 08_swappable-backends). Outside the hexagon — demos, not adapters." "Jupyter (xeus-cpp / xeus-cling C++20)" "Tutorial"
             book = container "Jupyter Book site" "Static site generated from book/_toc.yml referencing tutorials/ + arc42 + detailed-design + reports. Deployed to GitHub Pages." "Jupyter Book / HTML" "Site"
         }
@@ -64,6 +65,9 @@ workspace "tensor" "Header-only C++20/23 named-axis differentiable tensor librar
         tensor.tutorials -> tensor.tex "Imports and demos"
         tensor.book -> tensor.tutorials "Renders to static HTML from"
         tensor.lyx -> tensor.tex "Exports LyX content into the DSL of"
+        tensor.pythonSdk -> tensor.core "Re-exports types from"
+        tensor.pythonSdk -> tensor.autograd "Re-exports types from (P6.M4)"
+        tensor.pythonSdk -> tensor.tex "Re-exports the Evaluator from (P6.M5)"
 
         tensor.webgpuBackend -> webgpuRuntime "Issues GPU dispatches via" "WebGPU API (Dawn)"
         tensor.tutorials -> jupyterStack "Are executed by"
