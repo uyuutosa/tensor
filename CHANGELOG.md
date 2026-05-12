@@ -8,7 +8,10 @@ The sequence below reads bottom-up if you want the project's narrative arc; top-
 
 ## [Unreleased]
 
-(nothing yet — next entries land after `0.1.0`)
+### Added
+
+- **ADR-0018 — Phase 6 entry: Python SDK via nanobind, in-tree under `python/`** ([`docs/arc42/09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md`](./docs/arc42/09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md)). Brings Python SDK forward from "Phase 6, 最後で良い" (Axis H, 2026-05-11) to first post-`0.1.0` phase per maintainer 2026-05-12 directive. Six-axis decision: nanobind (vs pybind11) / in-tree `python/` (vs separate repo) / scikit-build-core / individual `uyuutosa` PyPI identity / yes conda-forge / minimum-viable surface (`DynamicTensor` + autograd `DynamicVariable` + `tex.Evaluator` + backend selection; compile-time-NTTP types out of scope because Python is rank-erased). Anchored to the 2026-05-12 landscape report's §A.5 finding: no first-class named-axis tensor exists in production Python ML.
+- **Phase 6 impl-plan** ([`docs/impl-plans/2026-05-12_phase-6-python-sdk.md`](./docs/impl-plans/2026-05-12_phase-6-python-sdk.md)) — six milestones P6.M1–P6.M6, target window 2026-05-13 → 2026-07, exit on `0.2.0` tag with first PyPI publish + conda-forge submission. Per-milestone deliverables, exit criteria, effort estimates, risk register (R-P1 nanobind churn / R-P2 Stable ABI / R-P3 package name collision / R-P4 wheel size with three backends), and CI matrix changes spelled out.
 
 ## [0.1.0] - 2026-05-12
 
