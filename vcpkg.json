@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "tensor",
   "version-string": "0.0.1-alpha",
-  "description": "Header-only C++20/23 library — the canonical reference for differentiable named-axis tensor computation in modern C++ (ADR-0013).",
+  "description": "Header-only C++20/23 named-axis differentiable tensor library aspiring to canonical-reference quality (ADR-0015, superseding ADR-0013).",
   "homepage": "https://github.com/uyuutosa/tensor",
   "license": "MIT",
   "supports": "(linux | osx | windows) & (x64 | arm64)",
@@ -15,7 +15,7 @@
   ],
   "features": {
     "webgpu": {
-      "description": "Enables the WebGPU KernelBackend adapter. Pulls in Dawn via vcpkg (ADR-0014). Requires opting into a baseline that includes dawn@20260410.140140+ — the project's default builtin-baseline does not. Activate via `vcpkg install --x-feature=webgpu` after overriding the baseline, e.g. `--x-manifest-root=. --x-builtin-ports-root-dir=<vcpkg>/ports`. The actual gpu.cpp + Dawn dispatch wiring lands in P3.M3.2 / P3.M4.2 (see docs/detailed-design/webgpu-element-wise-kernels.md and docs/detailed-design/webgpu-gemm-kernel.md); until then this feature exists as a forward-declaration of the intent captured in ADR-0014 so downstream tooling can discover the dependency shape.",
+      "description": "Enables the WebGPU KernelBackend adapter (ADR-0006 / ADR-0011 / ADR-0012 / ADR-0014 §1 / ADR-0016). As of 2026-05-12, 12 of 15 KernelBackend methods dispatch real Dawn compute on float (verified on RTX 3090); the rest delegate to reference. Requires Dawn — the simplest path is `vcpkg install 'dawn[core,vulkan]'` locally (the maintainer's verification path), or override builtin-baseline to one that includes dawn@20260410.140140+ and consume this manifest feature directly. Talks to Dawn through Dawn's own webgpu_cpp.h (ADR-0016 superseded the gpu.cpp wrapper choice from ADR-0014 §Decision Outcome point 2). Detailed designs: docs/detailed-design/webgpu-element-wise-kernels.md, docs/detailed-design/webgpu-gemm-kernel.md, docs/detailed-design/webgpu-broadcast-kernels.md, docs/detailed-design/kernel-backend-port.md.",
       "dependencies": ["dawn"]
     }
   }
