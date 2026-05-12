@@ -23,10 +23,15 @@ NB_MODULE(_tensor_native, m) {
     // pyproject.toml `version` and this constant move in lockstep — at
     // which point a TENSOR_VERSION macro in tensor/version.hpp lets us
     // drop the duplication.
-    m.attr("__version__") = std::string{"0.1.0+dev"};
+    //
+    // Pass a const char* literal rather than a std::string here: nanobind's
+    // `m.attr() = ...` expects something it can wrap as a nb::object
+    // directly; std::string is not automatically convertible at module
+    // init time and throws `std::bad_cast` on import.
+    m.attr("__version__") = "0.1.0+dev";
 
     m.def("hello",
-          []() -> std::string { return std::string{"hello from tensor::core"}; },
+          []() -> const char* { return "hello from tensor::core"; },
           "Smoke binding: returns a fixed greeting from the C++ side. "
           "Proves that the nanobind extension loaded and a function call "
           "round-trips Python → C++ → Python.");
