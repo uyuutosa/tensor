@@ -42,15 +42,17 @@ def test_public_surface_is_at_or_above_m2_baseline():
     updates this set.
     """
     public = {name for name in dir(tensor) if not name.startswith("_")}
-    expected_m2 = {
+    expected_m3 = {
         "hello",
         "Axis",
         "DynamicShape",
         "DynamicTensor",
         "DynamicTensorF32",
+        "contract",
+        "from_numpy",
     }
-    assert expected_m2.issubset(public), (
-        f"missing P6.M2 baseline symbols: {sorted(expected_m2 - public)}"
+    assert expected_m3.issubset(public), (
+        f"missing P6.M3 baseline symbols: {sorted(expected_m3 - public)}"
     )
     # `__version__` is exposed but lives under the dunder filter; check
     # it separately to make sure the import binding succeeded.

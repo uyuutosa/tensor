@@ -13,6 +13,7 @@ on:
       - "python/**"
       - "include/tensor/**"
       - ".github/workflows/python-wheel-smoke.yml"
+      - "LICENSE"
   pull_request:
     branches: [develop]
     paths:
@@ -20,6 +21,7 @@ on:
       - "python/**"
       - "include/tensor/**"
       - ".github/workflows/python-wheel-smoke.yml"
+      - "LICENSE"
   workflow_dispatch:
 
 permissions:
@@ -46,10 +48,23 @@ jobs:
             'scikit-build-core>=0.10' \
             'nanobind>=2.0,<3' \
             'numpy>=1.20' \
-            'pytest>=7'
+            'pytest>=7' \
+            'jupyter>=1.0' \
+            'nbconvert>=7' \
+            'ipykernel>=6'
 
       - name: Editable install
         run: python -m pip install -e . -v
 
       - name: Run smoke tests
         run: pytest python/tests -v
+
+      - name: Execute Python SDK tour notebook
+        # Run the Python-side tutorial notebook end-to-end. Distinct from
+        # tutorials/*.ipynb (those are xcpp20 and live in notebook-ci.yml);
+        # this one is python3 + the tensor module we just built.
+        run: |
+          jupyter nbconvert --to notebook --execute \
+              --inplace python/notebooks/00_python-sdk-tour.ipynb \
+              --ExecutePreprocessor.timeout=120 \
+              --ExecutePreprocessor.kernel_name=python3
