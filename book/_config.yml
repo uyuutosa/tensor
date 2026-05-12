@@ -16,8 +16,12 @@ execute:
   execute_notebooks: "off"
   timeout: 180
 
-# Bibliography file (none yet).
-bibtex_bibfiles: []
+# Bibliography file. sphinxcontrib-bibtex (pulled in transitively by
+# Jupyter Book) requires a non-empty list, so we point at references.bib
+# which is intentionally empty (the project's bibliography lives in the
+# ADR sequence per ADR-0015, not here).
+bibtex_bibfiles:
+  - references.bib
 
 # Repository link integration.
 repository:
