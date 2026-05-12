@@ -7,7 +7,8 @@
 | [`docs/arc42/01-introduction-and-goals/overview.md`](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/01-introduction-and-goals/overview.md) | Goals (G-1..G-7), quality goals, success criteria. |
 | [`docs/arc42/04-solution-strategy/strategy.md`](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/04-solution-strategy/strategy.md) | Top-7 design decisions and how they hang together. |
 | [`docs/arc42/05-building-blocks/overview.md`](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/05-building-blocks/overview.md) | Container decomposition with Hexagonal classification. |
-| [`docs/arc42/09-decisions/`](https://github.com/uyuutosa/tensor/tree/develop/docs/arc42/09-decisions) | All eleven foundational ADRs. |
+| [`docs/arc42/09-decisions/`](https://github.com/uyuutosa/tensor/tree/develop/docs/arc42/09-decisions) | All sixteen foundational ADRs (ADR-0013 superseded by ADR-0015; ADR-0014 §Decision Outcome point 2 refined by ADR-0016). |
+| [`docs/detailed-design/`](https://github.com/uyuutosa/tensor/tree/develop/docs/detailed-design) | Seven Template-3 detailed designs — `tensor::core`, `tensor::autograd`, `tensor::tex`, the WebGPU adapter trio (element-wise / GEMM / broadcast), and the `KernelBackend` port surface. |
 
 ## The Hexagonal "lite" layering
 
@@ -24,7 +25,7 @@ Per [ADR-0009](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-dec
 
 - **Domain** (`tensor::core`, `tensor::autograd`) — named-axis algebra, expression graphs, autograd rules. No third-party dependencies; pure C++20.
 - **Driving adapters** (`tensor::tex` with `_tex` UDL; planned LyX module; future Python bindings) — produce expression graphs the Domain consumes.
-- **Driven adapters** (`tensor::core::backend::reference`, `tensor::core::backend::eigen`; planned `tensor::core::backend::webgpu`) — execute the Domain's lowered operations.
+- **Driven adapters** (`tensor::core::backend::reference`, `tensor::core::backend::eigen`, `tensor::core::backend::webgpu`) — execute the Domain's lowered operations. As of 2026-05-12 the WebGPU adapter dispatches real Dawn compute on 12 of 15 `KernelBackend` methods (4 binary + 4 unary + 1 contract + 3 broadcast) for `float`, verified on RTX 3090; the remaining 3 delegate to reference.
 
 ## The `KernelBackend` port
 
@@ -33,7 +34,7 @@ Per [ADR-0011](https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-dec
 ```bash
 cmake --preset=default                                     # reference (default)
 cmake --preset=default -DTENSOR_KERNEL_BACKEND=eigen       # Eigen SIMD + GEMM
-cmake --preset=default -DTENSOR_KERNEL_BACKEND=webgpu      # WebGPU (Phase 3, planned)
+cmake --preset=default -DTENSOR_KERNEL_BACKEND=webgpu      # WebGPU via Dawn (Phase 3, shipped)
 ```
 
 The same Domain code, the same tests, the same notebooks — different runtime characteristics. See `08_swappable-backends.ipynb` for the live demonstration.
