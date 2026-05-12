@@ -1,4 +1,4 @@
-workspace "tensor" "Header-only C++20/23 educational library for named-axis tensor algebra." {
+workspace "tensor" "Header-only C++20/23 named-axis differentiable tensor library aspiring to canonical-reference quality (ADR-0015)." {
 
     !identifiers hierarchical
 
@@ -10,23 +10,28 @@ workspace "tensor" "Header-only C++20/23 educational library for named-axis tens
 
         # ─── External systems ────────────────────────────────────────────────
         toolchain = softwareSystem "Host C++ Toolchain" "GCC 11+ / Clang 13+ / MSVC 19.30+ + CMake 3.25+ + vcpkg." "External"
-        jupyterStack = softwareSystem "Jupyter + xeus-cling" "Jupyter Lab/Notebook with xeus-cling C++20 kernel." "External"
-        webgpuRuntime = softwareSystem "WebGPU Runtime" "Dawn (desktop) or wgpu-native — system-installed GPU driver, no proprietary toolchain." "External"
+        jupyterStack = softwareSystem "Jupyter + xeus-cpp" "Jupyter Lab/Notebook with xeus-cpp 0.10+ C++20 kernel (ADR-0014 §3; xeus-cling kept as legacy smoke for 00_intro)." "External"
+        webgpuRuntime = softwareSystem "WebGPU Runtime (Dawn)" "Google's Dawn implementation of the WebGPU spec, installed via vcpkg port 20260410.140140 (ADR-0014 §1 + ADR-0016). System Vulkan / Metal / D3D12 driver underneath." "External"
         browser = softwareSystem "Web Browser" "Chrome / Firefox / Safari with WebGPU support; renders Jupyter Book and (later) browser-side demos." "External"
         ghPages = softwareSystem "GitHub Pages" "Hosts the Jupyter Book site rendered from tutorials/." "External"
         upstreamPentaglyph = softwareSystem "pentaglyph-docs (upstream)" "Documentation kit vendored as git subtree under libs/pentaglyph-docs." "External"
 
         # ─── The system under design ─────────────────────────────────────────
-        tensor = softwareSystem "tensor" "Header-only C++20/23 named-axis tensor algebra library + bundled tutorials." {
+        tensor = softwareSystem "tensor" "Header-only C++20/23 named-axis differentiable tensor library + bundled tutorials." {
 
             # Hexagonal classification per ADR-0009: Domain / DrivingAdapter / DrivenAdapter.
-            core = container "tensor::core" "Named-axis tensor types, expression templates, mdspan interop. Owns concepts.hpp declaring ports." "C++20 headers" "Domain"
+            # The KernelBackend port (ADR-0011) admits three concrete adapters
+            # — reference (canonical), eigen (SIMD + GEMM), webgpu (Dawn) —
+            # selected at CMake configure time via TENSOR_KERNEL_BACKEND.
+            core = container "tensor::core" "Named-axis tensor types, expression templates, mdspan interop. Owns concepts.hpp declaring the KernelBackend port (ADR-0011)." "C++20 headers" "Domain"
             autograd = container "tensor::autograd" "Tape-based reverse-mode automatic differentiation typed against named-axis tensors. Extends the Domain hexagon." "C++20 headers" "Domain"
-            tex = container "tensor::tex" "consteval LaTeX-subset parser (Einstein notation) + LaTeX output renderer. Implements ExpressionSource / ExpressionSink ports." "C++20 headers" "DrivingAdapter"
-            gpu = container "tensor::gpu" "WebGPU codegen + runtime adapter; emits WGSL kernels from named-axis expressions. Implements KernelBackend port." "C++20 headers + WGSL" "DrivenAdapter"
-            lyx = container "lyx-export (Phase 3+)" "LyX module that exports tensor-bearing documents to the consteval _tex DSL." "LyX module" "DrivingAdapter"
-            tutorials = container "tutorials/" "Jupyter notebooks demonstrating the library, executed in CI per release. Outside the hexagon — demos, not adapters." "Jupyter (xeus-cling C++20)" "Tutorial"
-            book = container "Jupyter Book site" "Static site generated from tutorials/, deployed to GitHub Pages." "Jupyter Book / HTML" "Site"
+            tex = container "tensor::tex" "consteval LaTeX-subset parser (Einstein notation) + LaTeX output renderer + Evaluator. Implements ExpressionSource / ExpressionSink ports." "C++20 headers" "DrivingAdapter"
+            referenceBackend = container "tensor::core::backend::reference" "Canonical CPU implementation of the KernelBackend port; the reference against which every other adapter cross-validates." "C++20 headers" "DrivenAdapter"
+            eigenBackend = container "tensor::core::backend::eigen" "Eigen 3.4 SIMD + GEMM adapter for the KernelBackend port; delegates non-trivial ops to reference per ADR-0011's documented scope." "C++20 headers + Eigen" "DrivenAdapter"
+            webgpuBackend = container "tensor::core::backend::webgpu" "Dawn-backed WebGPU adapter for the KernelBackend port. As of 2026-05-12, 12 of 15 methods dispatch real GPU compute on float (4 binary + 4 unary + 1 contract + 3 broadcast); the rest delegate to reference. Talks to Dawn directly via webgpu_cpp.h (ADR-0016)." "C++20 headers + WGSL" "DrivenAdapter"
+            lyx = container "lyx-export" "LyX module + Python translator that exports tensor-bearing LyX documents to the consteval _tex DSL. CI smoke verifies the golden-file diff." "LyX module + Python 3" "DrivingAdapter"
+            tutorials = container "tutorials/" "Five Jupyter notebooks (00_intro, 05_autograd-from-scratch, 06_webgpu-acceleration, 07_mlp-on-toy, 08_swappable-backends). Outside the hexagon — demos, not adapters." "Jupyter (xeus-cpp / xeus-cling C++20)" "Tutorial"
+            book = container "Jupyter Book site" "Static site generated from book/_toc.yml referencing tutorials/ + arc42 + detailed-design + reports. Deployed to GitHub Pages." "Jupyter Book / HTML" "Site"
         }
 
         # ─── L1 (System Context) relations ───────────────────────────────────
@@ -34,8 +39,8 @@ workspace "tensor" "Header-only C++20/23 educational library for named-axis tens
         instructor -> tensor "Assigns tutorials and exercises from"
 
         tensor -> toolchain "Is consumed by — header-only, built into the learner's project via" "CMake + vcpkg"
-        tensor -> jupyterStack "Tutorials run inside" "xeus-cling kernel"
-        tensor -> webgpuRuntime "Dispatches GPU kernels through" "Dawn / wgpu-native (Phase 3+)"
+        tensor -> jupyterStack "Tutorials run inside" "xeus-cpp / xeus-cling kernel"
+        tensor -> webgpuRuntime "Dispatches GPU kernels through" "Dawn (webgpu_cpp.h)"
         tensor -> ghPages "Jupyter Book site is published to" "GitHub Pages"
         tensor -> upstreamPentaglyph "Vendored documentation kit pulled from" "git subtree pull"
 
@@ -45,16 +50,22 @@ workspace "tensor" "Header-only C++20/23 educational library for named-axis tens
 
         # ─── L2 (Container) relations ────────────────────────────────────────
         tensor.autograd -> tensor.core "Wraps tensors and operations from"
-        tensor.gpu -> tensor.core "Lowers expressions from" "WGSL codegen"
         tensor.tex -> tensor.core "Produces expression graphs consumed by"
+        # The three KernelBackend adapters implement the port declared in core.
+        tensor.referenceBackend -> tensor.core "Implements the KernelBackend port declared by"
+        tensor.eigenBackend -> tensor.core "Implements the KernelBackend port declared by"
+        tensor.webgpuBackend -> tensor.core "Implements the KernelBackend port declared by"
+        tensor.eigenBackend -> tensor.referenceBackend "Delegates out-of-scope methods to" "private ref_ member"
+        tensor.webgpuBackend -> tensor.referenceBackend "Delegates non-float / non-simple-GEMM / reduce / unbroadcast to" "private ref_ member"
         tensor.tutorials -> tensor.core "Imports and demos"
-        tensor.tutorials -> tensor.autograd "Imports and demos (Phase 2+)"
-        tensor.tutorials -> tensor.gpu "Imports and demos (Phase 3+)"
+        tensor.tutorials -> tensor.autograd "Imports and demos"
+        tensor.tutorials -> tensor.webgpuBackend "Imports and demos (tutorial 06 design walkthrough)"
+        tensor.tutorials -> tensor.eigenBackend "Imports and demos (tutorial 08 Hexagonal payoff)"
         tensor.tutorials -> tensor.tex "Imports and demos"
         tensor.book -> tensor.tutorials "Renders to static HTML from"
-        tensor.lyx -> tensor.tex "Exports LyX content into the DSL of (Phase 3+)"
+        tensor.lyx -> tensor.tex "Exports LyX content into the DSL of"
 
-        tensor.gpu -> webgpuRuntime "Issues GPU dispatches via" "WebGPU API (Dawn / wgpu-native)"
+        tensor.webgpuBackend -> webgpuRuntime "Issues GPU dispatches via" "WebGPU API (Dawn)"
         tensor.tutorials -> jupyterStack "Are executed by"
         tensor.book -> ghPages "Is deployed to"
     }
