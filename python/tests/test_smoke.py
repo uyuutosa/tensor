@@ -27,8 +27,16 @@ def test_hello_returns_expected_greeting():
 def test_public_surface_is_minimal():
     """P6.M1 keeps the public surface deliberately small. The set grows
     in P6.M2 onward; this test catches accidental leakage from the
-    nanobind extension module's namespace."""
+    nanobind extension module's namespace.
+
+    `__version__` is a dunder attribute and is correctly filtered by the
+    underscore rule; the visible non-dunder public surface at P6.M1 is
+    just `hello`.
+    """
     public = {name for name in dir(tensor) if not name.startswith("_")}
-    assert public == {"__version__", "hello"}, (
-        f"unexpected public symbols at P6.M1: {sorted(public)}"
+    assert public == {"hello"}, (
+        f"unexpected non-dunder public symbols at P6.M1: {sorted(public)}"
     )
+    # `__version__` is exposed but lives under the dunder filter; check
+    # it separately to make sure the import binding succeeded.
+    assert hasattr(tensor, "__version__")
