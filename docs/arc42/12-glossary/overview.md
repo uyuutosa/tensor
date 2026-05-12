@@ -1,7 +1,7 @@
 ---
 status: Draft
 owner: tensor
-last-reviewed: 2026-05-11
+last-reviewed: 2026-05-12
 ---
 
 # `tensor` — Glossary (arc42 §12)
@@ -11,7 +11,7 @@ last-reviewed: 2026-05-11
 | Status        | Draft                                                          |
 | Type          | arc42 §12 (Glossary)                                           |
 | Owner         | uyuutosa                                                       |
-| Last Updated  | 2026-05-11                                                     |
+| Last Updated  | 2026-05-12                                                     |
 
 > Per arc42 §12 and the [G-8 ubiquitous-language discipline](../01-introduction-and-goals/overview.md): every public name in this project must trace to a recognised source. This glossary is the **bibliography for that vocabulary**. Each entry names the project term, gives a one-paragraph definition, and points at the mathematical-literature / ADR / paper source the term descends from.
 >
@@ -137,10 +137,10 @@ A header outside the Domain that either *drives* the Domain (e.g. `tensor::tex` 
 
 ### `KernelBackend` (the port)
 
-The 15-method C++20 concept that every kernel-execution adapter must satisfy. Currently three concrete adapters: `reference`, `eigen`, `webgpu` (stub, dispatch wiring deferred).
+The 15-method C++20 concept that every kernel-execution adapter must satisfy. Three concrete adapters ship as of 2026-05-12: `reference` (canonical CPU implementation), `eigen` (Eigen 3.4 SIMD + GEMM, delegates out-of-scope methods to `reference`), `webgpu` (Dawn via `webgpu_cpp.h` per [ADR-0016](../09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md); 12 of 15 methods dispatch real GPU compute on `float` on RTX 3090, the remaining 3 — `reduce_sum`, `unbroadcast`, non-simple-GEMM `contract` — delegate to `reference`, matching the Eigen adapter's scope).
 
 - Code: `tensor::core::KernelBackend` (in `concepts.hpp`)
-- Source: [ADR-0011](../09-decisions/0011-kernel-backend-port-api.md).
+- Source: [ADR-0011](../09-decisions/0011-kernel-backend-port-api.md); per-method semantics doc: [`docs/detailed-design/kernel-backend-port.md`](../../detailed-design/kernel-backend-port.md).
 
 ### Canonical reference (positioning)
 
@@ -158,7 +158,7 @@ The project **aspires to canonical-reference quality** — a deliberately aspira
 
 ### Dawn
 
-[Google Dawn](https://dawn.googlesource.com/dawn): the WebGPU implementation behind Chrome's WebGPU. The project's planned WebGPU build path is `find_package(dawn CONFIG REQUIRED)` after a vcpkg baseline bump (deferred to P3.M3.2 / P3.M4.2).
+[Google Dawn](https://dawn.googlesource.com/dawn): the WebGPU implementation behind Chrome's WebGPU. The project's WebGPU build path is `find_package(Dawn CONFIG REQUIRED)` + `target_link_libraries(... dawn::webgpu_dawn)`, gated on `TENSOR_KERNEL_BACKEND=webgpu`. PRs #60 / #61 / #62 shipped this against the maintainer's local `vcpkg install 'dawn[core,vulkan]'` on RTX 3090. A future vcpkg baseline bump remains a tracked option for users who want Dawn without the separate `vcpkg install` step ([ADR-0014 §1](../09-decisions/0014-external-substrate-strategy.md)); the project's `vcpkg.json` already declares a `webgpu` manifest feature that depends on `dawn`. The project talks to Dawn directly via Dawn's own `webgpu_cpp.h` per [ADR-0016](../09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md) (the [`2026-05-12 gpu.cpp vs Dawn ABI drift report`](../../reports/2026-05-12_gpu-cpp-dawn-abi-drift-and-raw-dawn-smoke.md) records the discovery).
 
 ### WGSL
 
