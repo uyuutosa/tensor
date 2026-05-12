@@ -33,6 +33,20 @@ A pair of (label, extent). The **label** is a `std::string_view` (runtime) or a 
 - Compile-time form: `tensor::core::LabelTag<S>` via the `_ax` UDL ([ADR-0004](../09-decisions/0004-adopt-hybrid-named-axis-api.md))
 - Source: Original Einstein-notation usage; modern named-tensor literature ([Maclaurin et al., "Dex" and "named tensor" papers]).
 
+### `FixedString<N>`
+
+A fixed-length compile-time string type usable as a C++20 non-type template parameter (NTTP). The storage class backing axis labels in the compile-time fast path: `template <FixedString S> struct LabelTag` makes `LabelTag<"i">` a distinct type per label. Without `FixedString`, the project could not have NTTP-based axis labels under C++20 — strings are not valid NTTPs by default. See [ADR-0004](../09-decisions/0004-adopt-hybrid-named-axis-api.md).
+
+- Code: `tensor::core::FixedString<N>` (in `label_tag.hpp`)
+- Source: standard C++20 NTTP idiom; the project's own implementation per ADR-0004.
+
+### `LabelTag<S>`
+
+The compile-time twin of `Axis`. A type template parameterised on a `FixedString` NTTP that gives each axis label a distinct type, enabling the compiler to catch mismatched-axis errors at compile time (e.g. `Tensor<T, LabelTag<"i">> + Tensor<T, LabelTag<"j">>` is a compile-time error for non-broadcasting ops). Constructed via the `_ax` UDL — `"i"_ax` evaluates to `LabelTag<"i">{}`. Both `Axis` (runtime) and `LabelTag<S>` (compile-time) satisfy the `AxisLike` concept; the hybrid API in [ADR-0004](../09-decisions/0004-adopt-hybrid-named-axis-api.md) admits both paths.
+
+- Code: `tensor::core::LabelTag<S>` (in `label_tag.hpp`); `tensor::core::operator""_ax` (in `label_tag.hpp`)
+- Source: project's own — the C++20 NTTP-string idiom applied to named-axis labels per ADR-0004.
+
 ### Shape
 
 An ordered sequence of `Axis` values. Static-rank form `Shape<N>` (where `N` is `std::size_t`) and runtime-rank form `DynamicShape`.
@@ -54,12 +68,26 @@ The named-axis project's interpretation of broadcasting: two tensors `a_i` and `
 - Code: `tensor::core::broadcast_shapes`, `BroadcastPlan`, `project_index`, `unbroadcast`
 - Source: Einstein-notation convention; the project's API descends from the 2016 named-axis design.
 
+### `BroadcastPlan`
+
+A metadata struct produced by the Domain layer that records, for a binary operation with broadcast: the result `Shape`, the per-source-tensor index-projection maps (`Axis` → result-axis position, with `0xFF` sentinel for "this axis is not present in this source"), and the per-axis extents. The plan is `constexpr`-friendly for static-rank tensors and runtime-built for `DynamicTensor`. A `KernelBackend` adapter consumes the plan; it does not re-derive the broadcast geometry. The plan is what makes "Einstein-style broadcast" portable across the three adapters without duplicating the algebra in each.
+
+- Code: `tensor::core::BroadcastPlan` (in `broadcast.hpp`)
+- Source: project's own — the dispatch decoupling pattern that lets reference / Eigen / WebGPU share one broadcast definition.
+
 ### Contraction (Einstein-style)
 
 The Einstein-convention inner product: summation over shared axis labels. With a single shared label, contraction is matrix-vector or matrix-matrix product depending on the rank pair. With multiple shared labels, full multi-index summation.
 
 - Code: `tensor::core::contract`, `contract_with_plan`, `ContractPlan`, `tensor::autograd::dot`
 - Source: standard Einstein-notation summation; ([ADR-0011](../09-decisions/0011-kernel-backend-port-api.md) names this op as one of the 15 in the `KernelBackend` port).
+
+### `ContractPlan`
+
+Same role as `BroadcastPlan`, for contraction: pre-computed metadata (output `Shape`, per-input axis-projection maps, contracted-axis extents, accumulator type) that the Domain layer hands the `KernelBackend` adapter. The adapter dispatches the actual GEMM / inner-product / multi-index summation kernel; the plan decides *what* the contraction is. The simple-GEMM detection in the WebGPU adapter (one shared axis, A rank 2 with shared = last, B rank 1 or 2 with shared = first) is implemented as a `ContractPlan` predicate.
+
+- Code: `tensor::core::ContractPlan` (in `contract.hpp`)
+- Source: project's own — same decoupling pattern as `BroadcastPlan`.
 
 ### `mdspan` interop
 
@@ -126,8 +154,22 @@ The set of headers under `include/tensor/{core,autograd,tex}/` that may not depe
 
 A C++20 `concept` declared in one of the Domain containers' `concepts.hpp` headers. Defines an interface that DrivenAdapters (e.g. `KernelBackend`) must satisfy. The Domain depends only on its ports, never on a specific adapter.
 
-- Code: `tensor::core::KernelBackend`, `TensorLike`, etc.
+- Code: `tensor::core::KernelBackend`, `TensorLike`, `AxisLike`, `ShapeLike`, etc.
 - Source: Hexagonal Architecture terminology; the project's [ADR-0009](../09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md) + [ADR-0011](../09-decisions/0011-kernel-backend-port-api.md).
+
+### `AxisLike` (concept)
+
+The compile-time constraint on axis-template arguments. A type `A` satisfies `AxisLike` when `a.label` is convertible to `std::string_view` and `a.extent` is convertible to `std::size_t`. Both runtime `Axis` and the NTTP `LabelTag<S>` satisfy it (the latter by exposing the same two members as compile-time constants), which is what makes the hybrid named-axis API of [ADR-0004](../09-decisions/0004-adopt-hybrid-named-axis-api.md) work — the Domain templates accept either path.
+
+- Code: `tensor::core::AxisLike` (in `concepts.hpp`)
+- Source: the project's own concept; the cross-runtime/compile-time fit is the discipline ADR-0004 named.
+
+### `ShapeLike` (concept)
+
+The compile-time constraint on shape-template arguments. A type `S` satisfies `ShapeLike` when `s.rank()` is convertible to `std::size_t` and `s[i]` is well-formed for axis access. Both static-rank `Shape<N>` and runtime-rank `DynamicShape` satisfy it; the concept abstracts over the rank-static-or-dynamic axis.
+
+- Code: `tensor::core::ShapeLike` (in `concepts.hpp`)
+- Source: parallel to `AxisLike`; the project's own.
 
 ### Adapter (Driving / Driven)
 
