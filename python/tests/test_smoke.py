@@ -24,18 +24,33 @@ def test_hello_returns_expected_greeting():
     assert tensor.hello() == "hello from tensor::core"
 
 
-def test_public_surface_is_minimal():
-    """P6.M1 keeps the public surface deliberately small. The set grows
-    in P6.M2 onward; this test catches accidental leakage from the
-    nanobind extension module's namespace.
+def test_public_surface_is_at_or_above_m2_baseline():
+    """The public surface grows milestone by milestone. This test pins the
+    P6.M2 baseline so accidental removals are caught; subsequent
+    milestones extend the expected set.
 
-    `__version__` is a dunder attribute and is correctly filtered by the
-    underscore rule; the visible non-dunder public surface at P6.M1 is
-    just `hello`.
+    P6.M2 baseline (non-dunder public symbols):
+
+    - ``hello``               — P6.M1 smoke binding, kept as diagnostic.
+    - ``Axis``                — named-axis primitive.
+    - ``DynamicShape``        — ordered list of axes.
+    - ``DynamicTensor``       — float64 tensor (the educational default).
+    - ``DynamicTensorF32``    — float32 tensor (for the WebGPU-bound path).
+
+    P6.M3 will add ``contract`` and NumPy interop helpers; P6.M4 will add
+    ``autograd``; P6.M5 will add the ``tex`` submodule. Each milestone
+    updates this set.
     """
     public = {name for name in dir(tensor) if not name.startswith("_")}
-    assert public == {"hello"}, (
-        f"unexpected non-dunder public symbols at P6.M1: {sorted(public)}"
+    expected_m2 = {
+        "hello",
+        "Axis",
+        "DynamicShape",
+        "DynamicTensor",
+        "DynamicTensorF32",
+    }
+    assert expected_m2.issubset(public), (
+        f"missing P6.M2 baseline symbols: {sorted(expected_m2 - public)}"
     )
     # `__version__` is exposed but lives under the dunder filter; check
     # it separately to make sure the import binding succeeded.
