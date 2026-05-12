@@ -31,6 +31,34 @@ The five shipped notebooks cover the pedagogical arc end-to-end:
 - **08** demonstrates the Hexagonal-lite architectural payoff (same Domain code on reference / Eigen).
 - **06** narrates the WGSL kernels + Dawn dispatch design (and now references real-GPU-verified shipped kernels via PRs #60 / #61 / #62).
 
+## Suggested reading order
+
+The corpus is intentionally **non-linear** — the numbering reflects topical grouping more than strict prerequisites. The dependency graph:
+
+```
+              00 (named-axis fundamentals)
+                       │
+            ┌──────────┼──────────┐
+            ▼          ▼          ▼
+           05         06         08
+        (autograd) (WebGPU,   (Hexagonal-lite
+                    forward-     payoff: ref + Eigen)
+                    only)
+            │
+            ▼
+           07
+        (MLP on toy data, requires 00 + 05)
+```
+
+| Reader profile | Suggested path |
+| -------------- | -------------- |
+| **First-time visitor** | 00 → 05 → 07 (the headline arc: fundamentals → autograd → training). |
+| **Architecture curious** | 00 → 08 → docs/arc42/05-building-blocks/overview.md (the Hexagonal-lite argument for swappable backends). |
+| **GPU / WebGPU curious** | 00 → 06 (forward execution only — autograd in 05 is optional for this path). |
+| **Library implementer** | 00 → 05 → 06 → 08 + docs/arc42/09-decisions/0011-kernel-backend-port-api.md + docs/detailed-design/kernel-backend-port.md (port-level surface). |
+
+**What does not work**: 05 / 06 / 07 / 08 standalone. Each of them assumes the named-axis vocabulary from 00 (`Axis`, `Shape`, `Tensor<T, N>`, broadcast and contraction in Einstein form). The 2016 Qiita post's content lives inside 00 §1–§3 and is treated as the project's primer.
+
 Earlier planning material referenced slots `01_named-axis-fundamentals`, `02_function-and-reference-tensors`, `03_convolutions`, and `04_tex-bridge` as "scaffolded". Those numbers are **explicitly out of scope** per the Phase 4 release rehearsal (PR #48 §2 + #63): notebook 00 already absorbs the 2016 Qiita post's named-axis fundamentals + function/reference tensors + convolutions material, and notebook 06's WGSL walkthrough plus the `tensor::tex` Evaluator (with the [`lyx-export/`](../lyx-export/) plugin) cover the `_tex` bridge end-to-end. Adding scaffolded notebooks under those numbers would duplicate material that is already legible elsewhere.
 
 ## Editing rules
