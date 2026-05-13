@@ -68,6 +68,37 @@ Notebooks under [`tutorials/`](../../../tutorials/) get two CI surfaces ([`.gith
 - **Execute (xeus-cpp)** (weekly Monday 03:00 UTC cron + workflow_dispatch): installs miniconda + xeus-cpp 0.10+ via conda-forge and runs `jupyter nbconvert --execute` against every notebook with the `xcpp20` kernel. Best-effort; `continue-on-error: true`.
 - **Execute (xeus-cling legacy)** (same trigger): runs only `tutorials/00_intro.ipynb` against the xeus-cling kernel as a C++17-subset smoke for users on older conda-forge channels.
 
+## 4b. Python SDK wheel deployment (added in Phase 6)
+
+The Python SDK (`tensor-named-axis` on PyPI) ships via [`.github/workflows/cibuildwheel.yml`](../../../.github/workflows/cibuildwheel.yml). The workflow is triggered by:
+
+- `workflow_dispatch` — manual smoke before tag-cut. Builds wheels + sdist; does NOT publish.
+- `push` of a tag matching `v*` or `[0-9]*.[0-9]*.[0-9]*` — builds + publishes.
+
+**Matrix at `0.2.0`** (one backend per wheel, reference):
+- Linux x86_64 / manylinux2014 / CPython 3.9–3.13 = 5 wheels
+- macOS x86_64 / macos-13 / CPython 3.9–3.13 = 5
+- macOS arm64 / macos-14 / CPython 3.9–3.13 = 5
+- Windows x86_64 / windows-latest / CPython 3.9–3.13 = 5
+= **20 wheels + 1 sdist** per release.
+
+**Matrix at `0.3.0` (Phase 6.5)** per [ADR-0019](../09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md): triples to ~52 wheels by adding `tensor-named-axis-eigen` and `tensor-named-axis-webgpu` companion distributions (Windows WebGPU is M3-scoped out pending Dawn vcpkg port verification).
+
+**Authentication**: PyPA trusted publishing via OIDC (no API tokens in repo secrets). The maintainer's one-time setup is PyPI project Settings → Publishing → Add → GitHub publisher with workflow `cibuildwheel.yml` + environment `pypi`.
+
+**Smoke**: each per-platform build runs `python -c "import tensor; assert tensor.hello() == 'hello from tensor::core'"` post-build before uploading.
+
+## 4c. HuggingFace Space deployment (added in Phase 6)
+
+The Gradio-SDK Space sourced from [`huggingface/space/`](../../../huggingface/space/) is the project's free hosted demo. Topology: the in-tree directory is the source of truth; the canonical deploy target is a separate `huggingface.co/spaces/<user>/tensor-named-axis-demo` Git remote. The maintainer-side deploy is one command:
+
+```bash
+hf auth login                                       # one-time
+./huggingface/space/deploy.sh <hf-username>         # creates Space, syncs, pushes
+```
+
+Cold-start on HuggingFace's free CPU runner is ~3–5 min while nanobind builds the C++ extension from `git+https://github.com/uyuutosa/tensor.git@develop`. Will collapse to seconds once the `requirements.txt` switches to `tensor-named-axis>=0.2.0` from PyPI after the first wheel publish.
+
 ## 5. Citation discovery
 
 The project's "deployment" as a *citable work* (per [ADR-0015](../09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md), superseding [ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)) goes through:
@@ -81,7 +112,7 @@ When the maintainer cuts `0.1.0` (Phase 4 close per [#48](https://github.com/uyu
 ## 6. What this section does *not* cover
 
 - The compiled artifacts users of *adapters* depend on (Eigen via vcpkg `eigen3`; Dawn via vcpkg `dawn[core,vulkan]` per [ADR-0014 §1](../09-decisions/0014-external-substrate-strategy.md)) — these come from their own deployment pipelines.
-- The Hugging Face / PyPI / Conda distribution paths — `tensor` is not distributed via those channels and has no plan to be.
+- Conda-forge distribution — planned as a Phase 6.5 follow-up; the `tensor-feedstock` recipe scaffold is the next deliverable after the maintainer's PyPI trusted-publisher setup.
 
 ## 7. Cross-references
 

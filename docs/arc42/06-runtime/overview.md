@@ -107,14 +107,51 @@ last-reviewed: 2026-05-11
 
 **Why this is interesting.** Step 5 — `static_assert(KernelBackend<eigen::Backend>)` — is the compile-time guarantee that the swap is safe. If a future contributor adds a `Backend` that fails to implement one of the 15 methods, the build fails with the constraint that was violated; the cross-validation test then catches numerical disagreements within tolerance.
 
-## Why these four scenarios
+## Scenario 5 — Python `import tensor` initialisation
 
-The §1 §G-1..§G-6 goals each show up here:
+**Trigger.** A user runs `import tensor` in a Python REPL or notebook after `pip install tensor-named-axis`.
+
+**Walk-through.**
+
+```text
+1. Python's import system locates the `tensor/` directory inside the installed wheel.
+2. `tensor/__init__.py` executes:
+   - `from ._tensor_native import __version__, autograd, tex, Axis, DynamicShape,
+      DynamicTensor, DynamicTensorF32, contract, from_numpy`
+     → CPython loads the nanobind extension module `_tensor_native.so`.
+   - nanobind runs the module init code in `python/src/_tensor_native.cpp`:
+     * Registers `Axis` (`nb::class_` + placement-new `__init__` form per the
+       ADR-0018 R-P3-style boundary papercut workaround).
+     * Registers `DynamicShape` / `DynamicTensor<double>` / `DynamicTensorF32`
+       (`DynamicTensor<float>`) — same surface, two type-erased Python classes.
+     * Registers `contract` / `from_numpy` free functions.
+     * Builds the `autograd` submodule (DynamicVariable + ops + activations).
+     * Builds the `tex` submodule (parse / to_latex / Evaluator).
+3. `tensor/__init__.py` runs two `sys.modules` registrations:
+     sys.modules[__name__ + ".autograd"] = autograd
+     sys.modules[__name__ + ".tex"] = tex
+   — needed because nanobind submodules are exposed as attributes of the parent
+   module, not as Python submodules. Without this, `import tensor.autograd as ag`
+   would raise `ModuleNotFoundError` (caught the hard way in PR #104).
+4. The user can now write:
+     >>> import tensor
+     >>> import tensor.autograd as ag    # works thanks to step 3
+     >>> import tensor.tex as tex        # works thanks to step 3
+```
+
+**Phase 6.5 extension.** Once `set_backend()` ships per [ADR-0019](../09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md), step 2 becomes a probe: `tensor/__init__.py` imports whichever of `_tensor_native_{reference,eigen,webgpu}` are present (PEP-420 namespace package), the first successful import wins as default, and `tensor.set_backend(name)` rebinds the top-level exports against the matching module. Missing backends raise on `set_backend()`-call, not on `import tensor`.
+
+**Why this is interesting.** Step 3 (sys.modules registration) is the nanobind ↔ Python-import-system boundary papercut that the [Phase 6 retrospective](../../reports/2026-05-13_phase-6-python-sdk-retrospective.md) flags as one of four conventions worth recording. Documenting it in §6 keeps it discoverable for the next nanobind binding work.
+
+## Why these five scenarios
+
+The §1 §G-1..§G-9 goals each show up here:
 
 - Scenario 1 → G-1 (named axes), G-2 (modern C++).
 - Scenario 2 → G-3 (*the formula is the program*).
 - Scenario 3 → G-4 (end-to-end teaching arc), G-2.
 - Scenario 4 → G-1 (Hexagonal payoff), G-5 (zero-friction install / configure).
+- Scenario 5 → G-9 (Python is a first-class entry to the same Domain).
 
 ## Cross-references
 

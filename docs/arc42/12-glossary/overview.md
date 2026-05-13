@@ -252,6 +252,56 @@ The [Diátaxis framework](https://diataxis.fr/) for documentation: tutorials, ho
 
 [Citation File Format](https://citation-file-format.github.io/) v1.2.0. The format of [`CITATION.cff`](../../../CITATION.cff). Powers GitHub's "Cite this repository" UI.
 
+## Phase 6 / Phase 6.5 vocabulary (Python SDK)
+
+### nanobind
+
+C++ → Python binding generator that the Phase 6 SDK uses to expose `tensor::core` + `tensor::autograd` + `tensor::tex` to CPython. Successor to pybind11 from the same author (Wenzel Jakob); smaller binary, lower overhead, narrower API. Pinned at `>= 2.0, < 3` in [`pyproject.toml`](../../../pyproject.toml). See [ADR-0018](../09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md) §A for the choice rationale and [`../../detailed-design/python-sdk-binding-surface.md`](../../detailed-design/python-sdk-binding-surface.md) §3 for the four boundary conventions learned during implementation.
+
+### scikit-build-core
+
+Modern Python build backend (PEP-517 compliant) that drives a CMake build from `pyproject.toml`. Replaces the older `scikit-build`. The `[tool.scikit-build]` table in [`pyproject.toml`](../../../pyproject.toml) points at `python/CMakeLists.txt` for the per-wheel C++ build. See [ADR-0018](../09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md) §B.
+
+### `tensor-named-axis`
+
+The PyPI distribution name for the project's Python SDK (the *import* name stays `tensor`). Chosen because the bare `tensor` PyPI slot was likely taken; the `-named-axis` suffix anchors the project's identity per [ADR-0018](../09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md) R-P3. Phase 6.5 introduces two companion distributions, `tensor-named-axis-eigen` and `tensor-named-axis-webgpu`, that share the same `tensor/` PEP-420 namespace package.
+
+### PEP-420 namespace package
+
+Python's implicit namespace package mechanism: multiple distributions can install files under the same top-level package name (`tensor/`) without an `__init__.py` in the shared directory. Phase 6.5 uses this so `tensor-named-axis-eigen` and `tensor-named-axis-webgpu` can ship their `_tensor_native_<backend>.so` into the same `tensor/` package the base wheel populates. See [ADR-0019](../09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md) R-P6.5.2.
+
+### PEP-508 extras
+
+The `package-name[extra1,extra2]` install syntax. `tensor-named-axis[eigen]` resolves to `tensor-named-axis-eigen` (the companion project) plus the base. Chosen over a fat wheel per [ADR-0019](../09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md) — the default install stays ~5 MB; GPU adopters opt in to the ~50 MB Dawn runtime.
+
+### `set_backend()`
+
+The Phase 6.5 runtime selector: `tensor.set_backend("reference" | "eigen" | "webgpu")` switches the active `KernelBackend` adapter from Python. Only between *installed* backends; requesting an uninstalled one raises `RuntimeError` with the matching `pip install` command. See [`../../user-manual/how-to/use-set-backend.md`](../../user-manual/how-to/use-set-backend.md).
+
+### `DynamicVariable` (Python) / `DynamicVariable<T>` (C++)
+
+The Phase 6 autograd surface: a `DynamicVariable` wraps a `DynamicTensor` with optional gradient tracking. Mirrors the C++ `tensor::autograd::DynamicVariable<T>`. Arithmetic operators (`+ - * /`) register backward closures on the Tape; `backward(loss)` walks the Tape to populate `.grad`. Python surface adds `sin` / `cos` / `sqrt` / `__truediv__` / `reduce_along_label` from Bundle B (PR #109).
+
+### `reduce_along_label`
+
+Single-axis sum reduction with autograd: `reduce_along_label(v, "i")` produces a tensor with axis `i` collapsed. The gradient is broadcast back along `i` per [`../../detailed-design/tensor-autograd.md`](../../detailed-design/tensor-autograd.md). Added in Bundle B (PR #109) to unblock the perspective bundle adjustment notebook.
+
+### cibuildwheel
+
+Multi-platform Python wheel builder. The project's [`cibuildwheel.yml`](../../../.github/workflows/cibuildwheel.yml) runs it across Linux x86_64 / macOS x86_64 / macOS arm64 / Windows x86_64 × CPython 3.9–3.13 = 20 wheels per release (post Phase 6 M6). Phase 6.5 triples this matrix when the companion projects ship.
+
+### Trusted publishing (OIDC)
+
+[PyPA trusted publishing](https://docs.pypi.org/trusted-publishers/) — GitHub Actions authenticates to PyPI via OIDC ID tokens, no API keys stored in repo secrets. The maintainer's one-time setup configures the trust on the PyPI project page. See [`../../design-guide/release-ceremony.md`](../../design-guide/release-ceremony.md) §3.
+
+### Notebook output gate
+
+The PR #118 CI step that fails the `validate` job if any `python/notebooks/*.ipynb` is committed with `execution_count: None` or zero output cells. Prevents the "source-only render" bug class that PR #117 caught. C++ tutorials are not gated because xeus-cpp execution requires conda. See [`../../design-guide/python-notebook-authoring.md`](../../design-guide/python-notebook-authoring.md).
+
+### Plotly MathJax v2 trap
+
+Plotly's `notebook_connected` renderer hard-codes `include_mathjax="cdn"`, which injects MathJax v2 alongside Jupyter Book's MathJax v3 page-level loader. The v2 script clobbers v3's typesetting; `$…$` math renders as raw `\(…\)` text. Workaround: monkey-patch `pio.to_html` to force `include_mathjax=False` (see [`../../design-guide/python-notebook-authoring.md`](../../design-guide/python-notebook-authoring.md) §2). Caught in PR #120.
+
 ## Cross-references
 
 - §1 §G-8 (citability discipline) where this glossary plays a role: [`../01-introduction-and-goals/overview.md`](../01-introduction-and-goals/overview.md)
