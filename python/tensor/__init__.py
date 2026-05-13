@@ -15,7 +15,8 @@ Phase 6 status (2026-05-12):
 - P6.M4 ✅ — `tensor.autograd` submodule: `DynamicVariable`, arithmetic +
   activations (`exp` / `log` / `relu` / `neg`), `dot`, `sum_all`,
   `backward`, `sgd_update`.
-- P6.M5 — `tex.parse` + `Evaluator` (the `_tex` UDL equivalent).
+- P6.M5 ✅ — `tensor.tex` submodule: `parse(s) -> Expression`, `to_latex(expr)`,
+  `Evaluator` / `EvaluatorF32` (bind tensors to AST leaves and evaluate).
 - P6.M6 — runtime backend selection; `0.2.0` release with first PyPI
   publish + conda-forge submission.
 
@@ -44,7 +45,7 @@ Example
 import sys as _sys
 
 from ._tensor_native import __version__
-from ._tensor_native import autograd
+from ._tensor_native import autograd, tex
 from ._tensor_native import hello as _native_hello
 from ._tensor_native import (
     Axis,
@@ -55,11 +56,13 @@ from ._tensor_native import (
     from_numpy,
 )
 
-# nanobind submodule (`autograd`) is exposed as an attribute of this
-# package by default. Register it under the canonical dotted name so
-# `import tensor.autograd as ag` works as users expect — without this
-# the only access path is `from tensor import autograd`.
+# nanobind submodules are exposed as attributes of this package by
+# default. Register them under their canonical dotted names so
+# `import tensor.autograd as ag` / `import tensor.tex` works as
+# users expect — without this the only access path is
+# `from tensor import autograd, tex`.
 _sys.modules[__name__ + ".autograd"] = autograd
+_sys.modules[__name__ + ".tex"] = tex
 
 __all__ = [
     "__version__",
@@ -71,6 +74,7 @@ __all__ = [
     "contract",
     "from_numpy",
     "autograd",
+    "tex",
 ]
 
 
