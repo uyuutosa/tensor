@@ -21,8 +21,12 @@ Phase 6 status (2026-05-12):
   activations, `__truediv__` on `DynamicVariable`, `reduce_along_label`
   (single-axis sum with autograd). Unblocks perspective bundle adjustment
   with Rodrigues-style trigonometric rotation parameterisation.
-- P6.M6 — runtime backend selection; `0.2.0` release with first PyPI
-  publish + conda-forge submission.
+- P6.M6 ✅ — release-prep: cibuildwheel matrix (Linux x86_64 / macOS
+  x86_64 / macOS arm64 / Windows x86_64 × CPython 3.9–3.13) + PyPI
+  publish workflow via trusted publishing (OIDC). Awaits the maintainer's
+  `0.2.0` tag cut + PyPI project registration; runtime backend selection
+  via `set_backend()` deferred to a Phase 6.5 follow-up since it requires
+  bundling all three pre-built kernel backends per wheel.
 
 See ``docs/impl-plans/2026-05-12_phase-6-python-sdk.md`` for the full
 milestone breakdown and ``docs/arc42/09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md``

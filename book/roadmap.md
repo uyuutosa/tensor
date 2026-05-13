@@ -21,7 +21,7 @@ A dated, append-only sequence of phases. Each phase has an [`impl-plan`](https:/
 ## Planned (post-`0.1.0`)
 
 - **Phase 5 — `tensor::linalg` shim over `kokkos/stdBLAS`** (ADR-0014 §Decision Outcome point 4). Pre-empted: the `__cpp_lib_linalg` feature-test path lets the project switch transparently when `std::linalg` ships in libc++ / libstdc++ / MSVC STL (currently 2028+).
-- **Phase 6 — Python SDK** (Axis H, deferred per maintainer's "あとで"). Provisional recommendation: nanobind, after Phase 5 ships. Preconditions: PyPI publishing identity, conda-forge wheels strategy, repo layout (in-tree `python/` vs separate).
+- **Phase 6 — Python SDK** (ADR-0018, brought forward from "あとで" by the maintainer's 2026-05-12 directive). M1–M5 shipped 2026-05-12/13 (`Axis` / `DynamicShape` / `DynamicTensor` + arithmetic + `contract` + NumPy interop + autograd + `tex.Evaluator`). Bundle B + MVG demo polish 2026-05-13 (autograd extensions: `sin` / `cos` / `sqrt` / `__truediv__` / `reduce_along_label`; new tutorial notebooks for multi-focal tensors and perspective bundle adjustment with interactive 3D plotly visualisation; Binder + Colab badges across all five Python notebooks). M6 release-prep 2026-05-13 (cibuildwheel multi-platform matrix + tag-triggered PyPI publish via trusted publishing). **Remaining for `0.2.0`**: maintainer registers the PyPI project + configures the trusted-publisher policy, then cuts the `0.2.0` release branch and tag.
 - **Bibliography audit** (ADR-0015 §Compliance): half-yearly, first audit due 2026-11-11. Checks ADR cross-refs resolve, §12 glossary covers every public name, clean clone → build + bench + notebook in under 30 minutes, no user-facing string asserts declarative "is the canonical reference" form.
 
 ## How to follow along
