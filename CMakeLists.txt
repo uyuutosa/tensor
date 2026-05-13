@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(tensor
-    VERSION 0.1.0
+    VERSION 0.2.0
     DESCRIPTION "Header-only C++20/23 named-axis differentiable tensor library aspiring to canonical-reference quality (ADR-0015)"
     HOMEPAGE_URL "https://github.com/uyuutosa/tensor"
     LANGUAGES CXX

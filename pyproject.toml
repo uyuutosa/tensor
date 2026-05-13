@@ -19,7 +19,7 @@ build-backend = "scikit_build_core.build"
 # wheel.packages below). The bare "tensor" PyPI slot is likely taken;
 # "tensor-named-axis" is the post-collision-safe choice from ADR-0018 R-P3.
 name = "tensor-named-axis"
-version = "0.1.0+dev"
+version = "0.2.0"
 description = "Header-only C++20/23 named-axis differentiable tensor library — Python bindings (Phase 6 scaffold; see ADR-0018)."
 authors = [
     { name = "uyuutosa" },
