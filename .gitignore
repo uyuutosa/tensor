@@ -271,3 +271,11 @@ build/*/.ninja_*
 build/*/bench/
 build/*/tests/
 !build/gpu-smoke/
+
+# Jupyter Book build output + staging symlinks created by book/stage.sh
+# (the symlinks point at ../tutorials, ../python, ../docs and exist only
+# to satisfy Sphinx's source-tree-rooted-at-book/ assumption).
+book/_build/
+book/tutorials
+book/python
+book/docs
