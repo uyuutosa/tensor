@@ -63,12 +63,17 @@ jobs:
         # Run every Python-side tutorial notebook end-to-end. Distinct
         # from tutorials/*.ipynb (those are xcpp20 and live in
         # notebook-ci.yml); these are python3 + the tensor module we
-        # just built.
+        # just built. Cell timeout is generous (600s) because the
+        # multifocal-tensors notebook trains three tensors with
+        # Python-loop autograd; the slow path is bounded by the loop's
+        # constant factor not the algorithm. A `reduce_along_labels`
+        # binding (Phase 6 follow-up) would let those collapse into
+        # batched contractions.
         run: |
           for nb in python/notebooks/*.ipynb; do
               echo "::group::${nb}"
               jupyter nbconvert --to notebook --execute --inplace "${nb}" \
-                  --ExecutePreprocessor.timeout=180 \
+                  --ExecutePreprocessor.timeout=600 \
                   --ExecutePreprocessor.kernel_name=python3
               echo "::endgroup::"
           done
