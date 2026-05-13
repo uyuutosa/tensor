@@ -61,6 +61,11 @@ def test_public_surface_is_at_or_above_m2_baseline():
     assert hasattr(tensor.autograd, "backward")
     assert hasattr(tensor.autograd, "sum_all")
     assert hasattr(tensor.autograd, "sgd_update")
+    # Phase 6 follow-up extensions: trig + sqrt activations + reduce.
+    assert hasattr(tensor.autograd, "sin")
+    assert hasattr(tensor.autograd, "cos")
+    assert hasattr(tensor.autograd, "sqrt")
+    assert hasattr(tensor.autograd, "reduce_along_label")
     # The tex submodule exposes the LaTeX-subset DSL surface.
     assert hasattr(tensor.tex, "parse")
     assert hasattr(tensor.tex, "to_latex")

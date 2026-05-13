@@ -15,6 +15,16 @@ See [`docs/arc42/01-introduction-and-goals/overview.md`](./docs/arc42/01-introdu
 
 The previous 2016 implementation has been retired to [`archive/legacy-2016/`](./archive/legacy-2016/) for reference; the rewrite under [`include/tensor/`](./include/tensor/) is *not* a port — see [ADR-0001](./docs/arc42/09-decisions/0001-pivot-to-educational-named-axis-dsl.md) and [ADR-0002](./docs/arc42/09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md).
 
+## Try it without installing
+
+[![Open the multifocal-tensors demo in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/03_multifocal-tensors.ipynb) — fundamental / trifocal / quadrifocal tensors learned via autograd, paper-style.
+
+[![Open the perspective-BA demo in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/04_python-bundle-adjustment-perspective.ipynb) — perspective bundle adjustment with interactive 3D plotly camera + point-cloud visualisation.
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/uyuutosa/tensor/main?labpath=python%2Fnotebooks) — full Python-notebook environment via Binder (builds the nanobind extension on first launch, takes ~5 min).
+
+The Colab badges drop you onto a Colab page with the notebook loaded; cell 0 in each notebook installs the SDK from the live repository (`!pip install git+https://github.com/uyuutosa/tensor.git`). Colab gives you a free CPython 3.11 + a couple of GB of RAM — plenty for the small synthetic scenes the demos use.
+
 ## Quickstart
 
 Requires CMake ≥ 3.25, a C++20 compiler (GCC ≥ 11 / Clang ≥ 13 / MSVC 19.30+), and [vcpkg](https://vcpkg.io) (set `VCPKG_ROOT` to your clone).

@@ -132,6 +132,88 @@ template <class T, std::size_t N>
     return neg(x);
 }
 
+// ─── sin ──────────────────────────────────────────────────────────────────────
+// y = sin(x); dy/dx = cos(x). Capture x for the backward closure (we
+// re-evaluate cos at backward time to avoid a second forward buffer).
+template <class T, std::size_t N>
+[[nodiscard]] Variable<T, N> sin(Variable<T, N> const& x) {
+    using core_tensor = tensor::core::Tensor<T, N>;
+    core_tensor out_v(x.value().shape());
+    for (std::size_t i = 0; i < out_v.size(); ++i) {
+        out_v[i] = std::sin(x.value()[i]);
+    }
+    bool req = x.requires_grad();
+    Variable<T, N> out(std::move(out_v), req);
+    if (req) {
+        auto x_acc = x.accum();
+        auto out_acc = out.accum();
+        auto x_val_copy = x.value();
+        Tape::current().record([x_acc, out_acc, x_val_copy]() {
+            core_tensor dx(x_val_copy.shape());
+            for (std::size_t i = 0; i < dx.size(); ++i) {
+                dx[i] = out_acc->grad[i] * std::cos(x_val_copy[i]);
+            }
+            if (x_acc) x_acc->contribute(dx);
+        });
+    }
+    return out;
+}
+
+// ─── cos ──────────────────────────────────────────────────────────────────────
+// y = cos(x); dy/dx = -sin(x).
+template <class T, std::size_t N>
+[[nodiscard]] Variable<T, N> cos(Variable<T, N> const& x) {
+    using core_tensor = tensor::core::Tensor<T, N>;
+    core_tensor out_v(x.value().shape());
+    for (std::size_t i = 0; i < out_v.size(); ++i) {
+        out_v[i] = std::cos(x.value()[i]);
+    }
+    bool req = x.requires_grad();
+    Variable<T, N> out(std::move(out_v), req);
+    if (req) {
+        auto x_acc = x.accum();
+        auto out_acc = out.accum();
+        auto x_val_copy = x.value();
+        Tape::current().record([x_acc, out_acc, x_val_copy]() {
+            core_tensor dx(x_val_copy.shape());
+            for (std::size_t i = 0; i < dx.size(); ++i) {
+                dx[i] = -out_acc->grad[i] * std::sin(x_val_copy[i]);
+            }
+            if (x_acc) x_acc->contribute(dx);
+        });
+    }
+    return out;
+}
+
+// ─── sqrt ─────────────────────────────────────────────────────────────────────
+// y = sqrt(x); dy/dx = 1 / (2 sqrt(x)) = 1 / (2 y). Capture the output
+// value (cheaper backward than re-deriving from x). Precondition: x > 0
+// element-wise (not enforced; std::sqrt of negative returns NaN).
+template <class T, std::size_t N>
+[[nodiscard]] Variable<T, N> sqrt(Variable<T, N> const& x) {
+    using core_tensor = tensor::core::Tensor<T, N>;
+    core_tensor out_v(x.value().shape());
+    for (std::size_t i = 0; i < out_v.size(); ++i) {
+        out_v[i] = std::sqrt(x.value()[i]);
+    }
+    bool req = x.requires_grad();
+    Variable<T, N> out(std::move(out_v), req);
+    if (req) {
+        auto x_acc = x.accum();
+        auto out_acc = out.accum();
+        auto out_val_copy = out.value();
+        Tape::current().record([x_acc, out_acc, out_val_copy]() {
+            core_tensor dx(out_val_copy.shape());
+            T const half = T{1} / T{2};
+            for (std::size_t i = 0; i < dx.size(); ++i) {
+                dx[i] = out_acc->grad[i] * half / out_val_copy[i];
+            }
+            if (x_acc) x_acc->contribute(dx);
+        });
+    }
+    return out;
+}
+
 // ─── DynamicVariable variants ─────────────────────────────────────────────────
 //
 // The dynamic-rank counterparts of the four primitives above. Same forward
@@ -246,6 +328,81 @@ template <class T>
 template <class T>
 [[nodiscard]] DynamicVariable<T> operator-(DynamicVariable<T> const& x) {
     return neg(x);
+}
+
+// ─── sin / cos / sqrt — DynamicVariable variants ─────────────────────────────
+
+template <class T>
+[[nodiscard]] DynamicVariable<T> sin(DynamicVariable<T> const& x) {
+    using core_tensor = tensor::core::DynamicTensor<T>;
+    core_tensor out_v(x.value().shape());
+    for (std::size_t i = 0; i < out_v.size(); ++i) {
+        out_v[i] = std::sin(x.value()[i]);
+    }
+    bool req = x.requires_grad();
+    DynamicVariable<T> out(std::move(out_v), req);
+    if (req) {
+        auto x_acc = x.accum();
+        auto out_acc = out.accum();
+        auto x_val_copy = x.value();
+        Tape::current().record([x_acc, out_acc, x_val_copy]() {
+            core_tensor dx(x_val_copy.shape());
+            for (std::size_t i = 0; i < dx.size(); ++i) {
+                dx[i] = out_acc->grad[i] * std::cos(x_val_copy[i]);
+            }
+            if (x_acc) x_acc->contribute(dx);
+        });
+    }
+    return out;
+}
+
+template <class T>
+[[nodiscard]] DynamicVariable<T> cos(DynamicVariable<T> const& x) {
+    using core_tensor = tensor::core::DynamicTensor<T>;
+    core_tensor out_v(x.value().shape());
+    for (std::size_t i = 0; i < out_v.size(); ++i) {
+        out_v[i] = std::cos(x.value()[i]);
+    }
+    bool req = x.requires_grad();
+    DynamicVariable<T> out(std::move(out_v), req);
+    if (req) {
+        auto x_acc = x.accum();
+        auto out_acc = out.accum();
+        auto x_val_copy = x.value();
+        Tape::current().record([x_acc, out_acc, x_val_copy]() {
+            core_tensor dx(x_val_copy.shape());
+            for (std::size_t i = 0; i < dx.size(); ++i) {
+                dx[i] = -out_acc->grad[i] * std::sin(x_val_copy[i]);
+            }
+            if (x_acc) x_acc->contribute(dx);
+        });
+    }
+    return out;
+}
+
+template <class T>
+[[nodiscard]] DynamicVariable<T> sqrt(DynamicVariable<T> const& x) {
+    using core_tensor = tensor::core::DynamicTensor<T>;
+    core_tensor out_v(x.value().shape());
+    for (std::size_t i = 0; i < out_v.size(); ++i) {
+        out_v[i] = std::sqrt(x.value()[i]);
+    }
+    bool req = x.requires_grad();
+    DynamicVariable<T> out(std::move(out_v), req);
+    if (req) {
+        auto x_acc = x.accum();
+        auto out_acc = out.accum();
+        auto out_val_copy = out.value();
+        Tape::current().record([x_acc, out_acc, out_val_copy]() {
+            core_tensor dx(out_val_copy.shape());
+            T const half = T{1} / T{2};
+            for (std::size_t i = 0; i < dx.size(); ++i) {
+                dx[i] = out_acc->grad[i] * half / out_val_copy[i];
+            }
+            if (x_acc) x_acc->contribute(dx);
+        });
+    }
+    return out;
 }
 
 }  // namespace tensor::autograd

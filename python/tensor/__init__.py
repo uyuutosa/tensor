@@ -17,6 +17,10 @@ Phase 6 status (2026-05-12):
   `backward`, `sgd_update`.
 - P6.M5 ✅ — `tensor.tex` submodule: `parse(s) -> Expression`, `to_latex(expr)`,
   `Evaluator` / `EvaluatorF32` (bind tensors to AST leaves and evaluate).
+- Phase 6 follow-up ✅ — autograd surface extensions: `sin` / `cos` / `sqrt`
+  activations, `__truediv__` on `DynamicVariable`, `reduce_along_label`
+  (single-axis sum with autograd). Unblocks perspective bundle adjustment
+  with Rodrigues-style trigonometric rotation parameterisation.
 - P6.M6 — runtime backend selection; `0.2.0` release with first PyPI
   publish + conda-forge submission.
 

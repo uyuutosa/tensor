@@ -167,6 +167,54 @@ template <class T>
     return out;
 }
 
+template <class T>
+[[nodiscard]] DynamicVariable<T> operator/(DynamicVariable<T> const& a,
+                                           DynamicVariable<T> const& b) {
+    using namespace tensor::core;
+    auto plan = broadcast_shapes(a.value().shape(), b.value().shape());
+    auto out_v = detail::forward_apply(a.value(), b.value(), plan,
+                                       [](T x, T y) { return x / y; });
+    bool req = a.requires_grad() || b.requires_grad();
+    DynamicVariable<T> out(std::move(out_v), req);
+    if (req) {
+        auto a_acc = a.accum();
+        auto b_acc = b.accum();
+        auto out_acc = out.accum();
+        auto a_shape = a.value().shape();
+        auto b_shape = b.value().shape();
+        auto a_source = plan.a_source;
+        auto b_source = plan.b_source;
+        auto a_val = a.value();
+        auto b_val = b.value();
+        Tape::current().record(
+            [a_acc, b_acc, out_acc, a_shape, b_shape, a_source, b_source, a_val, b_val]() {
+                // d(a/b)/da = 1/b   → dL/da = unbroadcast(dL/dout / b_broadcast).
+                // d(a/b)/db = -a/b² → dL/db = unbroadcast(-dL/dout * a_broadcast / b_broadcast²).
+                DynamicTensor<T> da_full(out_acc->grad.shape());
+                DynamicTensor<T> db_full(out_acc->grad.shape());
+                std::vector<std::size_t> idx(out_acc->grad.shape().rank(), 0);
+                std::size_t flat = 0;
+                do {
+                    auto ai = project_index(idx, a_source, a_val.shape().rank());
+                    auto bi = project_index(idx, b_source, b_val.shape().rank());
+                    T const dout = out_acc->grad[flat];
+                    T const a_v = a_val.at_index(ai);
+                    T const b_v = b_val.at_index(bi);
+                    da_full[flat] = dout / b_v;
+                    db_full[flat] = -dout * a_v / (b_v * b_v);
+                    ++flat;
+                } while (increment_index(idx, out_acc->grad.shape()));
+                if (a_acc) {
+                    a_acc->contribute(tensor::core::unbroadcast(da_full, a_source, a_shape));
+                }
+                if (b_acc) {
+                    b_acc->contribute(tensor::core::unbroadcast(db_full, b_source, b_shape));
+                }
+            });
+    }
+    return out;
+}
+
 // ─── sum_all on DynamicVariable ──────────────────────────────────────────────
 template <class T>
 [[nodiscard]] Variable<T, 0> sum_all(DynamicVariable<T> const& x) {
