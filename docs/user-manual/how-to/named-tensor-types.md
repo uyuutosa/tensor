@@ -142,3 +142,6 @@ Use `DynamicTensor` / `DynamicVariable`. It's the most permissive type, and the 
 - [`include/tensor/core/typed_tensor.hpp`](../../../include/tensor/core/typed_tensor.hpp): `TypedTensor` source.
 - [`include/tensor/core/label_tag.hpp`](../../../include/tensor/core/label_tag.hpp): NTTP `FixedString` and `_ax` UDL primitives.
 - [`tutorials/05_autograd-from-scratch.ipynb`](../../../tutorials/05_autograd-from-scratch.ipynb): the `_ax` UDL in action through the autograd tape.
+- [`../explanation/why-named-axes.md`](../explanation/why-named-axes.md): the *why* behind named axes — useful when the picker feels arbitrary.
+- [`../explanation/hexagonal-lite-rationale.md`](../explanation/hexagonal-lite-rationale.md): the architecture that lets the three types coexist over one Domain.
+- [`../tutorials/cpp-named-axis-basics.md`](../tutorials/cpp-named-axis-basics.md): hands-on C++ walkthrough that exercises both `DynamicTensor` and `TypedTensor`.
