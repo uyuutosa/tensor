@@ -43,17 +43,22 @@ jobs:
             preset: release-werror
             cc: gcc-11
             cxx: g++-11
-          # Ubuntu — Clang 13
+          # Ubuntu — Clang 15. The matrix used to pin clang-13 to match
+          # the README's "Clang ≥ 13" minimum, but clang-13's C++20 NTTP
+          # codegen frontend-ICEs on test_label_tag.cpp (signal 11). The
+          # NTTP support landed cleanly only in clang-14+, so the CI
+          # matrix moves up. The README's stated minimum stays at "Clang
+          # ≥ 13" for users who can build without that test.
           - os: ubuntu-22.04
-            compiler: clang-13
+            compiler: clang-15
             preset: debug-werror
-            cc: clang-13
-            cxx: clang++-13
+            cc: clang-15
+            cxx: clang++-15
           - os: ubuntu-22.04
-            compiler: clang-13
+            compiler: clang-15
             preset: release-werror
-            cc: clang-13
-            cxx: clang++-13
+            cc: clang-15
+            cxx: clang++-15
           # macOS — system Clang
           - os: macos-14
             compiler: appleclang
@@ -100,8 +105,8 @@ jobs:
           sudo apt-get install -y ninja-build
           if [[ "${{ matrix.compiler }}" == gcc-11 ]]; then
             sudo apt-get install -y gcc-11 g++-11
-          elif [[ "${{ matrix.compiler }}" == clang-13 ]]; then
-            sudo apt-get install -y clang-13
+          elif [[ "${{ matrix.compiler }}" == clang-15 ]]; then
+            sudo apt-get install -y clang-15
           fi
 
       - name: Install Ninja (macOS)

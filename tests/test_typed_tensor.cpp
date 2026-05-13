@@ -5,11 +5,17 @@
 
 #include <doctest/doctest.h>
 
+#include <string>
 #include <string_view>
 #include <type_traits>
 
 #include <tensor/core/dynamic_tensor.hpp>
 #include <tensor/core/typed_tensor.hpp>
+
+// See `tests/test_label_tag.cpp` header comment: `CHECK(string_view ==
+// "literal")` patterns are wrapped in `std::string(...)` to dodge the
+// MSVC 14.44 `__msvc_string_view.hpp` parse bug when doctest
+// instantiates `Expression_lhs<const std::string_view &&>::operator==`.
 
 using tensor::core::DynamicTensor;
 using tensor::core::SameLabels;
@@ -34,8 +40,8 @@ TEST_CASE("Label introspection: label_at<I>() returns the i-th compile-time labe
     constexpr auto l1 = TT::label_at<1>();
     static_assert(l0 == std::string_view{"alpha"});
     static_assert(l1 == std::string_view{"beta"});
-    CHECK(l0 == "alpha");
-    CHECK(l1 == "beta");
+    CHECK(std::string(l0) == "alpha");
+    CHECK(std::string(l1) == "beta");
 }
 
 TEST_CASE("Same-label TypedTensor + works (compile-time accepted)") {
@@ -68,8 +74,8 @@ TEST_CASE("to_dynamic produces a DynamicTensor whose shape carries the labels") 
     TypedTensor<double, "i", "j"> a({2, 3}, {1, 2, 3, 4, 5, 6});
     DynamicTensor<double> d = a.to_dynamic();
     REQUIRE(d.shape().rank() == 2);
-    CHECK(d.shape()[0].label == "i");
-    CHECK(d.shape()[1].label == "j");
+    CHECK(std::string(d.shape()[0].label) == "i");
+    CHECK(std::string(d.shape()[1].label) == "j");
     CHECK(d.shape()[0].extent == 2);
     CHECK(d.shape()[1].extent == 3);
     CHECK(d[0] == 1.0);

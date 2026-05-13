@@ -4,10 +4,18 @@
 
 #include <doctest/doctest.h>
 
+#include <string>
 #include <type_traits>
 
 #include <tensor/core/axis.hpp>
 #include <tensor/core/label_tag.hpp>
+
+// CHECK(rvalue_string_view == "literal") triggers a MSVC 14.44 parse bug
+// inside <__msvc_string_view.hpp> when doctest instantiates
+// Expression_lhs<const std::string_view &&>::operator==<const char(&)[N]>.
+// Workaround: route the LHS through std::string so doctest sees the
+// std::string overload (well-exercised, no template gymnastics). Drop
+// once doctest / MSVC ship a fix and the CI matrix moves past the bug.
 
 using namespace tensor::core::literals;
 using tensor::core::Axis;
@@ -18,7 +26,7 @@ using tensor::core::SameLabel;
 TEST_CASE("FixedString reflects literal length and content") {
     constexpr FixedString fs("hello");
     static_assert(fs.length() == 5);
-    CHECK(fs.view() == "hello");
+    CHECK(std::string(fs.view()) == "hello");
 }
 
 TEST_CASE("_ax UDL produces stable LabelTag types per label") {
@@ -32,12 +40,12 @@ TEST_CASE("_ax UDL produces stable LabelTag types per label") {
 TEST_CASE("LabelTag::label() yields the compile-time label as string_view") {
     constexpr auto lbl = decltype("k"_ax)::label();
     static_assert(lbl == "k");
-    CHECK(lbl == "k");
+    CHECK(std::string(lbl) == "k");
 }
 
 TEST_CASE("LabelTag is callable: forms a runtime Axis with the compile-time label") {
     Axis a = "i"_ax(5);
-    CHECK(a.label == "i");
+    CHECK(std::string(a.label) == "i");
     CHECK(a.extent == 5);
 }
 
