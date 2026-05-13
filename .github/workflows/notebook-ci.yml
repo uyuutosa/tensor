@@ -23,6 +23,7 @@ on:
       - 'tutorials/**'
       - 'book/**'
       - 'include/**'
+      - 'python/notebooks/**'
       - '.github/workflows/notebook-ci.yml'
   pull_request:
     branches: [develop, main]
@@ -30,6 +31,7 @@ on:
       - 'tutorials/**'
       - 'book/**'
       - 'include/**'
+      - 'python/notebooks/**'
       - '.github/workflows/notebook-ci.yml'
   schedule:
     # Weekly Monday 03:00 UTC. The xeus-cling execute job runs against the
@@ -54,11 +56,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Validate every .ipynb under tutorials/ and book/
+      - name: Validate every .ipynb under tutorials/, book/, python/notebooks/
         run: |
           set -euo pipefail
           fail=0
-          for nb in $(find tutorials book -name '*.ipynb' 2>/dev/null); do
+          for nb in $(find tutorials book python/notebooks -name '*.ipynb' 2>/dev/null); do
             echo "validating ${nb}"
             if ! python -c "import json,sys; json.load(open('${nb}'))" ; then
               echo "FAIL: ${nb} is not valid JSON"
@@ -66,6 +68,49 @@ jobs:
             fi
           done
           exit "$fail"
+
+      - name: Python notebooks must be committed executed
+        # `_config.yml` has `execute_notebooks: "off"` so the deployed
+        # Jupyter Book serves exactly the outputs that are committed
+        # in JSON. A notebook committed unexecuted renders source-only
+        # on the published site — plotly figures, training-loop
+        # printouts, all gone. Caught the hard way in PR #117 when
+        # the MVG 3D scenes were invisible.
+        #
+        # This gate enforces: every `python/notebooks/*.ipynb` must
+        # have at least one code cell with a non-null execution_count
+        # AND at least one output across the notebook. Either signals
+        # the committer ran the notebook before staging.
+        #
+        # C++ tutorials under `tutorials/` are NOT gated — executing
+        # them requires xeus-cpp install (the `execute` job below
+        # covers that on the weekly cron), so requiring contributors
+        # to pre-execute would push installation toil onto every PR.
+        run: |
+          python - <<'PY'
+          import json, sys, glob
+          fail = []
+          for path in sorted(glob.glob('python/notebooks/*.ipynb')):
+              nb = json.load(open(path))
+              code = [c for c in nb['cells'] if c.get('cell_type') == 'code']
+              executed = any(c.get('execution_count') is not None for c in code)
+              has_outputs = any(c.get('outputs') for c in code)
+              if not executed or not has_outputs:
+                  fail.append(
+                      f"{path}: executed={executed} has_outputs={has_outputs}"
+                  )
+          if fail:
+              print("FAIL: Python notebooks committed without execution:")
+              for line in fail:
+                  print("  " + line)
+              print()
+              print("Fix: re-run the notebook locally before committing:")
+              print("  jupyter nbconvert --to notebook --inplace --execute "
+                    "<path>.ipynb")
+              sys.exit(1)
+          print(f"OK: all {len(glob.glob('python/notebooks/*.ipynb'))} "
+                f"Python notebooks are committed executed.")
+          PY
 
   execute:
     name: xeus-cpp notebook smoke (best-effort, weekly)
