@@ -42,6 +42,12 @@ The `/diagram-render` skill ([`.claude/skills/diagram-render/SKILL.md`](../../..
 2. **`exports/` is committed.** Regenerate via `/diagram-render`; CI may enforce `--check` to block drift. The historical "exports/ gitignored" rule is replaced because CodeCommit / corporate Git web UIs do not render Mermaid in markdown — committed SVGs are the only way to make architecture browseable from the repo UI without local tooling.
 3. **Element names** in `workspace.dsl` must match exactly the names used in `arc42/05-building-blocks/` and `detailed-design/`.
 
+## Project status (2026-05-14)
+
+- **`workspace.dsl`** is committed and reflects the Phase 6 expansion (the `pythonSdk` container, the PyPI / HF Space externals from arc42 §3, the eighth detailed-design instance).
+- **`exports/`** is NOT yet populated. SVG regeneration requires `structurizr-cli` + the docs-style hooks; tracked as a docs-system soft-blocker (rendered Pages still serves the prose; only the diagram view is missing). Re-render priority is **medium** — a clear visual aid for new contributors.
+- **Naming sync** with [`../../arc42/05-building-blocks/overview.md`](../../arc42/05-building-blocks/overview.md) and [`../../detailed-design/README.md`](../../detailed-design/README.md): verified consistent at the 100-cycle PDCA audit on 2026-05-14.
+
 ## References
 
 - C4 Model — <https://c4model.com>

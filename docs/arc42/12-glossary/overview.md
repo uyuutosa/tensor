@@ -349,6 +349,27 @@ These appear in QO-1, QO-4, every cross-backend test, and every Python ↔ C++ p
 
 GitHub Pages deployment of the Jupyter Book at <https://uyuutosa.github.io/tensor/>. Built by [`.github/workflows/deploy-book.yml`](../../../.github/workflows/deploy-book.yml) on every push to `develop` or `main`. The system's runtime per §6 Scenario 7.
 
+## Python-side name mirror
+
+The Python SDK's public symbols mirror the C++ concepts above. Where the Python name differs from the C++ name (because Python is rank-erased + lacks template-parameter notation), the table below resolves the mirror:
+
+| Python name                | C++ concept(s) it wraps                       | Where to read                                                                                            |
+| -------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `tensor.Axis`              | `tensor::core::Axis`                          | §`Axis` above; [`../../api-contract/python-public-surface.md` §2](../../api-contract/python-public-surface.md). |
+| `tensor.DynamicShape`      | `tensor::core::DynamicShape`                  | §`Shape` above; same.                                                                                    |
+| `tensor.DynamicTensor`     | `tensor::core::DynamicTensor<double>`         | §`Tensor` above; same.                                                                                   |
+| `tensor.DynamicTensorF32`  | `tensor::core::DynamicTensor<float>`          | Python-specific naming; F32 suffix indicates the C++ template parameter.                                |
+| `tensor.contract`          | `tensor::core::contract`                      | §`Contraction (Einstein-style)` above.                                                                   |
+| `tensor.from_numpy`        | (Python-only entry point; copies NumPy → `DynamicTensor`) | [`../../api-contract/python-public-surface.md` §2](../../api-contract/python-public-surface.md); [`../../detailed-design/python-sdk-binding-surface.md` §4](../../detailed-design/python-sdk-binding-surface.md). |
+| `tensor.autograd.DynamicVariable` | `tensor::autograd::DynamicVariable<double>` | §`Variable` above.                                                                                       |
+| `tensor.autograd.DynamicVariableF32` | `tensor::autograd::DynamicVariable<float>` | Same naming convention as `DynamicTensorF32`.                                                            |
+| `tensor.tex.parse`          | `tensor::tex::parse(s)`                       | §`_tex` UDL + §`Expression`.                                                                             |
+| `tensor.tex.Expression`     | `tensor::tex::Expression`                     | §`Expression`.                                                                                            |
+| `tensor.tex.Evaluator`      | `tensor::tex::Evaluator<double>`              | §`Evaluator`.                                                                                             |
+| `tensor.tex.EvaluatorF32`   | `tensor::tex::Evaluator<float>`               | Same F32 convention.                                                                                      |
+
+Phase 6.5 (planned) adds `tensor.set_backend`, `tensor.current_backend`, `tensor.list_available_backends` — see §`set_backend()` in the Phase 6 / Phase 6.5 section.
+
 ## Cross-references
 
 - §1 §G-8 (citability discipline) where this glossary plays a role: [`../01-introduction-and-goals/overview.md`](../01-introduction-and-goals/overview.md)

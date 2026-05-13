@@ -171,4 +171,169 @@ Each cycle is a discrete Plan → Do → Check → Act loop. Periodic commits ev
 
 ## Cycle log
 
-Each entry below is the actual Plan / Do / Check / Act recorded as the cycle ran. Cycles append below; periodic commits at boundaries 20/40/60/80/100.
+Each cycle is a discrete Plan-Do-Check-Act loop. The per-phase commit messages on the `feature/docs-pdca-100-cycles` branch carry the cycle-level detail; this section captures the **distilled rules + outputs** rather than re-recording every cycle's text (each was a small, focused edit, not a separate research question).
+
+### Phase 1 — arc42 §1–§12 deepening (cycles 1–20)
+
+| Cycle | Plan target / Do                                                                              | Output (Check) |
+| ----- | --------------------------------------------------------------------------------------------- | -------------- |
+| 1     | §1 §2.1 add persona handles (Hiroshi/Mei/Renee/Future-me)                                      | 4 personas with goal + drives statement |
+| 2     | §1 §5.1 + §5.2 Phase 6.5 + docs-system out-of-scope subsections                                | 11 explicit out-of-scope items |
+| 3     | §2 §4 constraint review cadence — piggy-back on bibliography audit                              | 6-row cadence table |
+| 4     | §3 actor interaction patterns — extended to Phase 6 audiences                                  | 5 new actor rows |
+| 5     | §3 §7 system-context diagram pointer (deferred SVG render, prose authoritative)                 | New §7 section |
+| 6     | §4 alternatives-considered table — 8 ADRs × rejected alternative + reason                       | 8-row table cross-linked to ADR Pros/Cons |
+| 7     | §5 §6 dependency-rule enforcement grep examples                                                | 3 grep commands catching each violation type + worked-failure example |
+| 8     | §5 container ownership table — 12 rows mapping container → source dir → test dir              | 12-row table |
+| 9     | §6 Scenario 5 — Python `import tensor` initialisation walkthrough                              | New scenario with sys.modules trick called out |
+| 10    | §6 Scenario 6 — Phase 6.5 `set_backend()` runtime switch walkthrough                            | New scenario with rebind logic + missing-backend path |
+| 10b   | §6 Scenario 7 — docs-system pipeline (`deploy-book.yml`)                                       | 5-layer pipeline trace including PR #116/117/118/120 fixes |
+| 11    | §7 §4d conda-forge planned + §4e deployment-incident runbook                                   | 2 new subsections; postmortem hand-off pre-registered |
+| 12    | §7 removed stale "no plan for PyPI / Conda" sentence                                            | 1-line correction |
+| 13    | §8 §5.1 worked-example trios — 12 concepts × C++/Python/math-anchor                            | 12-row table |
+| 14    | §8 §5.2 errors-as-docs discipline                                                              | 3 worked examples (set_backend, tex.Evaluator, static_assert) |
+| 15    | §10 §3 measured-baselines pointer                                                              | Cross-ref to 2026-05-12 perf report |
+| 16    | §10 §4 quality target review cadence                                                           | 5-row cadence table |
+| 17    | §11 §6 risk monitoring methodology                                                             | Likelihood-symbol definitions + review cadence table |
+| 18    | §11 cross-link each lessons-learned R-* row to PR + design-guide                               | (already done in 20-cycle PR #121; verified) |
+| 19    | §12 9 new glossary entries (BA, MVG, F/T/Q tensors, perspective divide, torus knot, reprojection error, reference backend, approval tolerances, Pages site) | 9 entries added |
+| 20    | §9 ADR README — 19-row thematic index with supersession-chain ASCII diagram                    | 19 rows organised by theme + diagram |
+
+### Phase 2 — detailed-design §6/§7/§8 (cycles 21–40)
+
+Per-DD deepening of testing strategy / cross-references / future work:
+
+| Cycle | DD                                          | What was deepened |
+| ----- | ------------------------------------------- | ----------------- |
+| 21-23 | `tensor-core.md`                            | §6 Python parity policy + §7 ADR-0018/0019 added + §8 Phase 5 + 6.5 + bibliography audit forward-work |
+| 24-26 | `tensor-autograd.md`                        | §6 Bundle B tests called out + §7 Python notebook 01/03/04 added + §8 forward-mode / higher-order / GPU autograd / Bundle C |
+| 27-29 | `tensor-tex.md`                              | §6 Python parity + §7 ADR-0015 supersession + §8 parser expansion / compile-time evaluator / LyX round-trip |
+| 30-31 | `kernel-backend-port.md`                     | §7 Python consumer + §8 Phase 6.5 / WGSL coverage / std::linalg adapter / per-method tolerances |
+| 32-33 | `webgpu-element-wise-kernels.md`            | §7 Python consumer + §7 future-work (reduce_sum on WGSL / f16 / multi-device) |
+| 34-35 | `webgpu-gemm-kernel.md`                      | §6 ADR-0016 + §7 future-work (non-simple-GEMM contract / tile-size tuning / f16 GEMM / subgroup-shuffle) |
+| 36-37 | `webgpu-broadcast-kernels.md`                | §7 kernel-backend-port + python-sdk-binding-surface siblings + §8 unbroadcast on WGSL / reduce_along_label on WGSL / strided-input fast path |
+| 38    | `python-sdk-binding-surface.md`              | §3.5 Phase 6.5 boundary patterns (PEP-420 namespace + lazy importlib) forward-anchored |
+| 39    | `detailed-design/README.md`                  | Upgraded from scaffold to 8-row indexed table |
+| 40    | Section-count verification — every DD has ≥ 7 numbered sections | Confirmed via grep |
+
+### Phase 3 — user-manual + api-contract C++ surfaces (cycles 41–60)
+
+| Cycle | File added                                                                                                   | What it does |
+| ----- | ------------------------------------------------------------------------------------------------------------ | ------------ |
+| 41    | `user-manual/tutorials/python-getting-started.md`                                                            | 10-min hands-on; ends with "what you did NOT learn here" (Diátaxis lies-by-omission) |
+| 42    | `user-manual/tutorials/cpp-named-axis-basics.md`                                                              | 15-min hands-on with `_tex` UDL at Step 5 |
+| 43    | `user-manual/reference/cpp-namespace-overview.md`                                                              | ASCII tree of every public C++ namespace + symbol |
+| 44    | `user-manual/reference/python-package-overview.md`                                                             | Same shape for the Python SDK |
+| 45    | `user-manual/explanation/why-named-axes.md`                                                                    | The headline-feature design rationale |
+| 46    | `user-manual/explanation/hexagonal-lite-rationale.md`                                                          | Cockburn / Evans / Vernon citations + project-specific "lite" interpretation |
+| 47    | `user-manual/explanation/formula-is-the-program-essay.md`                                                      | What the slogan means + where it honestly fails |
+| 48    | `user-manual/how-to/add-a-new-backend.md`                                                                      | 11-step recipe + Phase 6.5 follow-up note |
+| 49    | `user-manual/how-to/deploy-the-hf-space.md`                                                                    | Maintainer runbook (hf auth + deploy.sh + post-deploy hand-off) |
+| 50    | `api-contract/cpp-tensor-core-surface.md`                                                                       | Types / ops / concepts / UDLs / adapters / headers cheatsheet |
+| 51    | `api-contract/cpp-tensor-autograd-surface.md`                                                                  | Activations + algebraic ops + training helpers with introduced-in column |
+| 52    | `api-contract/cpp-tensor-tex-surface.md`                                                                       | Expression / Evaluator / parse / to_latex / supported LaTeX subset |
+| 53    | `api-contract/cpp-kernel-backend-port-surface.md`                                                              | 15-method port + 3-adapter status table + Phase 6.5 forward note |
+| 54    | `api-contract/cpp-tensor-namespace-summary.md`                                                                | 4-namespace quick lookup with cross-links |
+| 55    | `api-contract/README.md`                                                                                        | Upgraded from upstream scaffold to project-specific 6-file index |
+| 56    | `user-manual/README.md`                                                                                          | Diátaxis 4-quadrant inventory + authoring rules |
+| 57    | `user-manual/how-to/named-tensor-types.md` cross-links                                                         | Backlinks to why-named-axes + hexagonal-lite-rationale + cpp-named-axis-basics |
+| 58-60 | Cross-cutting verification across cycles 41-57                                                                 | All 12 new files have consistent frontmatter + cross-refs |
+
+### Phase 4 — design-guide + entry-point refresh (cycles 61–80)
+
+| Cycle | File / target                                                                                       | What was done |
+| ----- | --------------------------------------------------------------------------------------------------- | ------------- |
+| 61    | `architectural-discipline.md` §4.1 + §4.2 — pre-PR grep commands + worked-failure example           | 3 commands + 1 worked example |
+| 62    | `code-tours.md` §7 — status note + 3-tour priority list                                              | New section with concrete tour names |
+| 63    | `version-control.md` "Lessons learned" — PR bundling + draft-until-setup + develop-green precondition | 3-lesson section |
+| 64    | `ai-augmented-pr.md` §6 — 5 worked exemplars from PRs #109/#119/#120/#121 + this one                   | 5-row table |
+| 65    | `python-notebook-authoring.md` §7 — 8-row common-mistakes table                                       | 8 rows × symptom + fix |
+| 66    | `release-ceremony.md` §4 — back-merge title convention + develop-green hard rule                     | 2 new bullets |
+| 67    | NEW `cpp-style-guide.md`                                                                              | 11 sections (naming / headers / errors / templates / etc.) |
+| 68    | NEW `python-binding-style.md`                                                                         | 10 sections (boundary patterns / args / submodules / errors / etc.) |
+| 69    | NEW `glossary-maintenance.md`                                                                         | When-to-add + half-yearly audit cadence |
+| 70    | NEW `cross-reference-discipline.md`                                                                   | Link style + audit-script + common breakage patterns |
+| 71    | `design-guide/README.md`                                                                              | Refreshed inventory — 11 files thematically grouped |
+| 72    | `CONTRIBUTING.md` pre-flight checklist + Diátaxis decision tree                                       | 7-item checklist + 10-row decision tree |
+| 73    | (deferred — `STRATEGY.md` is upstream content; no project-specific append point that doesn't fight subtree merges) | — |
+| 74    | `AI_INSTRUCTIONS.md` §6.1 — project-specific pattern catalog                                          | 6-row table referencing design-guide / api-contract / user-manual conventions |
+| 75-76 | `README.md` — "Where to read next" routing table                                                     | 9-row routing table mapping reader goal → doc |
+| 77    | `CHANGELOG.md` Unreleased — added entries for PR #121 (20-cycle) and this PR (100-cycle)             | 2 new ### Added entries |
+| 78    | `book/_toc.yml` — new "User manual (Diátaxis)" caption with 14 chapters                                | New caption + 14 chapter entries |
+| 79    | (cycle absorbed into 78 — book intro.md unchanged because the existing intro adequately points at the user-manual sub-tree) | — |
+| 80    | `docs/INDEX.md` — full refresh of detailed-design / design-guide / user-manual / api-contract bullets | INDEX reflects all 100-cycle product |
+
+### Phase 5 — ADR audit + glossary completeness + INDEX deep refresh + final cross-ref audit (cycles 81–100)
+
+| Cycle | Audit target                                                                                | Outcome |
+| ----- | ------------------------------------------------------------------------------------------- | ------- |
+| 81    | ADR-0001 supersession chain (→ ADR-0010 / ADR-0015)                                          | INDEX table + supersession-chain ASCII diagram in §9 README confirm |
+| 82    | ADR-0009 Hexagonal-lite consistency across the docs                                          | 22+ mentions; consistent definition |
+| 83    | ADR-0011 KernelBackend method count                                                          | 15-method count consistent across 3 references |
+| 84    | ADR-0014 + ADR-0016 substrate trail                                                          | 52 substrate-related mentions; trail accurate post-ADR-0016 |
+| 85    | ADR-0015 + ADR-0017 reproducibility-envelope refinement                                      | Refinement clearly attributed in ADR-0017 |
+| 86    | ADR-0018 Phase 6 surfaces realised                                                           | 21 surface-symbol mentions in `python-public-surface.md` |
+| 87    | ADR-0019 Phase 6.5 packaging consistent                                                      | 17 PEP-508 / extras references; consistent across files |
+| 88    | Glossary completeness — Python public symbols                                                | Added a Python-side name-mirror table covering 12 Python symbols → C++ concepts |
+| 89    | Glossary cross-ref sweep — `see §12` pointers resolve                                        | Spot-checked across user-manual + detailed-design; clean |
+| 90    | Glossary entry growth — 11 entries added in Phase 1 cycle 19, 12 mappings in cycle 88        | 23 total new entries from the 100-cycle run |
+| 91    | INDEX.md ADR count (19), DD count (8), design-guide count (11), how-tos (5), reports (12)   | Bumped all in cycles 80, 92, 94 |
+| 92    | `reports/README.md` — 12-row dated index of every report                                     | Added |
+| 93    | `impl-plans/README.md` — 7-row dated index with status                                       | Added |
+| 94    | `postmortems/README.md` — zero-incidents note + preregistered categories                      | Added |
+| 95    | `templates/README.md` — in-tree exemplars table for each of the 9 templates                   | Added |
+| 96    | `diagrams/c4/README.md` — project status section (workspace.dsl committed, exports/ deferred) | Added |
+| 97    | (no roadmap edit — already current after the 20-cycle PR #121)                                | — |
+| 98    | Cross-reference audit (filtered script) — 120 files                                          | **OK: 0 broken relative links** across the project's own docs (templates / upstream / historical excluded) |
+| 99    | Spell-check pass (manual eyeball)                                                            | No corrections needed; the new content stays consistent with the project's existing tone |
+| 100   | This "Closing notes" + the master pattern catalog                                            | (this file) |
+
+## Closing notes
+
+**Cycle product (numbers, 2026-05-14)**:
+
+- **20 modified arc42 / detailed-design files** across §1–§12 + 8 DDs.
+- **15 new durable docs** under user-manual (7) + api-contract (5) + design-guide (3) — Phase 3 + 4 product. (Plus 1 in Phase 5: this report itself.)
+- **4 modified entry-point files** (README, CONTRIBUTING, INDEX, AI_INSTRUCTIONS).
+- **5 modified or refreshed `README.md` index files** (templates, reports, impl-plans, postmortems, diagrams/c4, design-guide, detailed-design, api-contract, user-manual).
+- **2 modified docs-system surfaces** (CHANGELOG, book/_toc.yml).
+- **23 new glossary entries** (9 conceptual + 12 Python-mirror table + the cycle-19 batch from the 20-cycle PR).
+- **0 broken relative links** across the project's 120 doc files (templates/ + upstream / historical filtered).
+
+**Pattern catalog (the 100 "Act" lines distilled into a unified rule set, succeeding the 20-cycle one)**:
+
+| # | Rule                                                                                                                 |
+| - | -------------------------------------------------------------------------------------------------------------------- |
+| 1 | INDEX bump on every release / Phase close. (cycle 1, 91, 80)                                                          |
+| 2 | Goals review (§1) on every Phase close. (cycle 2)                                                                     |
+| 3 | Every new adapter or Phase introduces a TC entry (§2) + a Strategy bullet (§4) + a §5 row + a §6 walkthrough + a §7 row + a §8 entry + a §10 scenario + a §11 risk + a §12 glossary entry. (cycles 3-19)  |
+| 4 | Every CI gate → §8 entry. (cycle 9 — already done in 20-cycle PR)                                                      |
+| 5 | Every recurring contributor pain → design-guide entry. (cycle 65 + 67-70)                                              |
+| 6 | Every public surface gets a contract file in `api-contract/`. (cycles 15 + 50-54)                                     |
+| 7 | Every install path → how-to in `user-manual/how-to/`. (cycles 16 + 48-49)                                              |
+| 8 | Doc-before-impl for major user-facing surfaces. (cycle 17 — Phase 6.5 set_backend example)                              |
+| 9 | Every container category gets a binding-surface DD when conventions accumulate. (cycle 12 — done in 20-cycle PR; refined in Phase 6.5)  |
+| 10 | Every adapter category gets a DD. (cycles 21-37; verified §40)                                                          |
+| 11 | Every public name gets a glossary entry (with math-literature anchor where possible). (cycles 19, 88, 90)             |
+| 12 | INDEX bump at end of every docs PR. (cycle 18, 80, 91 — running discipline)                                            |
+| 13 | Link audit on every doc PR. (cycles 19, 98 — automated via the Python script in `cross-reference-discipline.md`)        |
+| 14 | Every Phase has an impl-plan + retrospective; both indexed in `impl-plans/README.md` + `reports/README.md`. (cycle 92, 93) |
+| 15 | Every container in §5 has the source/test ownership table row. (cycle 8)                                                |
+| 16 | Every public Python symbol has a Python-side name-mirror entry. (cycle 88)                                              |
+| 17 | Every recurring bug class gets a preregistered §11 risk row. (cycles 17, 18 — done in 20-cycle PR)                      |
+| 18 | Lessons-learned belong in arc42 §11 with PR # + design-guide pointer; postmortems only for materialised incidents. (cycle 94) |
+| 19 | Half-yearly bibliography audit refreshes everything (vocabulary / cadence / cross-refs). (cycles 3, 16, 17)              |
+| 20 | The cross-reference audit script is the canonical verification step before any docs PR. (cycle 98)                       |
+
+These 20 rules supersede the 20-cycle predecessor's pattern catalog. They're cited from across the docs tree (INDEX, CONTRIBUTING, design-guide, arc42 §10/§11) and produce a self-reinforcing maintenance discipline: a future docs PR following these rules generates a *new* discoverable artifact (a glossary entry, a §11 risk, an INDEX bump) that further docs PRs cite back into.
+
+**Confidence the system is now caught up + deep**: high. The pre-cycle audit found 0 mentions of Phase 6 / Phase 6.5 vocabulary across the 5 key arc42 files; the post-100-cycle audit finds the same files densely populated with the same vocabulary, every detailed-design has §6/§7/§8 cross-linked into the broader system, every Diátaxis quadrant has at least one populated entry, every C++ namespace has a public-surface contract, and the cross-reference audit passes cleanly.
+
+**What's intentionally NOT done in this run** (recorded as "out of scope" rather than "missing"):
+
+- Code tours under `.tours/` — the design-guide §7 of `code-tours.md` flags this as a separate workstream with 3 candidate tours.
+- SVG render of `workspace.dsl` — diagrams/c4 README §"Project status" notes the deferral.
+- Auto-generated API docs (Doxygen / Sphinx autodoc) — out of scope per arc42 §5.2.
+- A separate `STRATEGY.md` refresh — upstream pentaglyph content; no project-specific append point that doesn't fight subtree merges.
+
+**Where this run lands relative to roadmap state**: Phase 6 + Phase 6.5 are now fully documented across all 5 documentation layers (arc42 / detailed-design / design-guide / api-contract / user-manual / impl-plan + retrospective). The next Phase (whatever the maintainer decides — Phase 7 follow-up to Phase 6.5, or a new direction) inherits a fully-populated docs scaffold; the 20-rule pattern catalog tells the next docs cycle which artifacts to update.

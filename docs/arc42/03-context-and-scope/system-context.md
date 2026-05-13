@@ -90,7 +90,7 @@ L2 (container-level) relationships are documented in [`../05-building-blocks/ove
 
 ## 7. System-context diagram
 
-The C4 Level-1 (context) view is rendered from [`../../diagrams/c4/workspace.dsl`](../../diagrams/c4/workspace.dsl) by the [`/diagram-render`](../../skills/diagram-render/SKILL.md) skill. As of 2026-05-14 the `docs/diagrams/c4/exports/` directory does not yet contain a committed SVG — generation has been deferred to a future cycle (regenerating requires `structurizr-cli` + the docs-style hooks). The DSL itself is the source of truth for the boxes-and-arrows; this `§3 system-context.md` table is the canonical text.
+The C4 Level-1 (context) view is rendered from [`../../diagrams/c4/workspace.dsl`](../../diagrams/c4/workspace.dsl) by the `/diagram-render` skill (lives under `.claude/skills/diagram-render/` at the repo root). As of 2026-05-14 the `docs/diagrams/c4/exports/` directory does not yet contain a committed SVG — generation has been deferred to a future cycle (regenerating requires `structurizr-cli` + the docs-style hooks). The DSL itself is the source of truth for the boxes-and-arrows; this `§3 system-context.md` table is the canonical text.
 
 When the SVG lands, it will be linked here as `exports/c4-l1-context.svg` and the deploy-book pipeline will surface it in the rendered Pages site.
 

@@ -104,6 +104,22 @@ Legend: M = Mandatory / O = Optional (recommended) / — = N/A
 3. Grep existing documents for references that may need updating.
 4. Record the change in an implementation note under `../impl-plans/` or in an ADR under `../arc42/09-decisions/`.
 
+## In-tree exemplars (2026-05-14)
+
+Each template's worked exemplar in this repo, so contributors can copy from a real instance rather than a blank scaffold:
+
+| # | Template                          | Concrete in-tree example                                                                                                            |
+| - | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 0 | Default                           | [`../api-contract/python-public-surface.md`](../api-contract/python-public-surface.md) — tabular contract scaffold.            |
+| 1 | Architecture Overview             | [`../arc42/01-introduction-and-goals/overview.md`](../arc42/01-introduction-and-goals/overview.md) — §1+§3+§4+§5 surface in one file. |
+| 2 | PRD                               | (no PRDs yet — `tensor` is maintainer-driven; phase impl-plans serve the same purpose.)                                            |
+| 3 | Module Detailed Design            | [`../detailed-design/tensor-core.md`](../detailed-design/tensor-core.md) — 8 sections all populated; reference example.            |
+| 4 | Use Case                          | (no separate use-case files yet; §6 Runtime View carries the use-case-like scenarios — see [`../arc42/06-runtime/overview.md`](../arc42/06-runtime/overview.md).) |
+| 5 | ADR (MADR v3.0)                   | [`../arc42/09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md`](../arc42/09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md) — most recent + complete Y-statement form. |
+| 6 | Persona                           | (not used as separate file — `tensor`'s persona handles live in [`../arc42/01-introduction-and-goals/overview.md` §2.1](../arc42/01-introduction-and-goals/overview.md).) |
+| 7 | Journey Map                       | (not used — `tensor` is a technical-audience library; reader journeys live in the user-manual tutorials.) |
+| 8 | Service Blueprint                 | (not used.)                                                                                                                       |
+
 ## References
 
 - [arc42](https://arc42.org/overview) / [§8 Crosscutting Concepts](https://docs.arc42.org/section-8/)
