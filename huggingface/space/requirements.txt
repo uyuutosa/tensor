@@ -1,0 +1,6 @@
+# Pinned to a recent Gradio with stable Blocks API.
+gradio==4.44.0
+numpy>=1.20
+# Source install — switches to `tensor-named-axis` once Phase 6.M6 publishes
+# the first wheel set to PyPI.
+tensor @ git+https://github.com/uyuutosa/tensor.git@develop

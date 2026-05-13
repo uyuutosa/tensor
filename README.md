@@ -29,6 +29,8 @@ All five Python notebooks open in Colab. Each one's first cell installs the SDK 
 
 Or open the entire corpus in one click with Binder: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/uyuutosa/tensor/main?labpath=python%2Fnotebooks) (builds the nanobind extension once at launch, ~5 min).
 
+For a zero-click Gradio demo of the `tensor.tex` evaluator + named-axis broadcast + autograd, see [`huggingface/space/`](./huggingface/space) — the source for the HuggingFace Space deployed at `huggingface.co/spaces/<maintainer>/tensor-named-axis-demo` (link will be added here once the Space is published; the directory is build-ready today).
+
 ## Quickstart
 
 Requires CMake ≥ 3.25, a C++20 compiler (GCC ≥ 11 / Clang ≥ 13 / MSVC 19.30+), and [vcpkg](https://vcpkg.io) (set `VCPKG_ROOT` to your clone).
