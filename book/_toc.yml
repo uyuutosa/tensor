@@ -1,58 +1,65 @@
 format: jb-book
 root: intro
+# Notebook + report chapter paths live one directory up from book/ in
+# the actual repo tree. `book/stage.sh` creates symlinks
+# `book/{tutorials,python,docs} -> ../<same>` before each build so
+# Sphinx — whose source root is book/ — can resolve them. Without the
+# symlinks every notebook chapter below would emit an
+# `etoc.ref nonexisting document` warning and silently disappear from
+# the deployed site (see PR #116).
 parts:
   - caption: Getting started
     chapters:
-      - file: ../tutorials/00_intro.ipynb
+      - file: tutorials/00_intro.ipynb
         title: "Intro — named-axis tensors"
-      - file: ../tutorials/01_formula-is-the-program.ipynb
+      - file: tutorials/01_formula-is-the-program.ipynb
         title: "The formula is the program — _tex UDL end-to-end"
 
   - caption: Autograd
     chapters:
-      - file: ../tutorials/05_autograd-from-scratch.ipynb
+      - file: tutorials/05_autograd-from-scratch.ipynb
         title: "Build your own autograd"
-      - file: ../tutorials/07_mlp-on-toy.ipynb
+      - file: tutorials/07_mlp-on-toy.ipynb
         title: "A small model trained on toy data"
 
   - caption: Architecture and backends
     chapters:
-      - file: ../tutorials/08_swappable-backends.ipynb
+      - file: tutorials/08_swappable-backends.ipynb
         title: "Swappable backends — Hexagonal payoff (reference vs Eigen)"
-      - file: ../tutorials/06_webgpu-acceleration.ipynb
+      - file: tutorials/06_webgpu-acceleration.ipynb
         title: "WebGPU acceleration (design walkthrough)"
 
   - caption: Performance and verification
     chapters:
-      - file: ../docs/reports/2026-05-11_backend-performance-comparison.md
+      - file: docs/reports/2026-05-11_backend-performance-comparison.md
         title: "Backend perf comparison — reference vs Eigen vs WebGPU"
-      - file: ../docs/reports/2026-05-12_gpu-cpp-dawn-abi-drift-and-raw-dawn-smoke.md
+      - file: docs/reports/2026-05-12_gpu-cpp-dawn-abi-drift-and-raw-dawn-smoke.md
         title: "gpu.cpp vs Dawn ABI drift + raw-Dawn smoke (RTX 3090)"
 
   - caption: Python SDK
     chapters:
-      - file: ../python/notebooks/00_python-sdk-tour.ipynb
+      - file: python/notebooks/00_python-sdk-tour.ipynb
         title: "Python SDK tour — DynamicTensor / contract / NumPy interop"
-      - file: ../python/notebooks/01_python-autograd.ipynb
+      - file: python/notebooks/01_python-autograd.ipynb
         title: "Python autograd — DynamicVariable / backward / SGD"
-      - file: ../python/notebooks/02_python-tex.ipynb
+      - file: python/notebooks/02_python-tex.ipynb
         title: "Python _tex DSL — parse / Evaluator / outer product"
-      - file: ../python/notebooks/03_multifocal-tensors.ipynb
+      - file: python/notebooks/03_multifocal-tensors.ipynb
         title: "Multi-focal tensors — F, T, Q learned via autograd"
-      - file: ../python/notebooks/04_python-bundle-adjustment-perspective.ipynb
+      - file: python/notebooks/04_python-bundle-adjustment-perspective.ipynb
         title: "Bundle adjustment under perspective projection"
 
   - caption: Reference
     chapters:
       - file: architecture
       - file: roadmap
-      - file: ../docs/arc42/01-introduction-and-goals/overview.md
+      - file: docs/arc42/01-introduction-and-goals/overview.md
         title: "arc42 §1 — Introduction and Goals"
-      - file: ../docs/arc42/05-building-blocks/overview.md
+      - file: docs/arc42/05-building-blocks/overview.md
         title: "arc42 §5 — Building Blocks"
-      - file: ../docs/arc42/09-decisions/README.md
+      - file: docs/arc42/09-decisions/README.md
         title: "arc42 §9 — ADR index"
-      - file: ../docs/arc42/12-glossary/overview.md
+      - file: docs/arc42/12-glossary/overview.md
         title: "arc42 §12 — Glossary"
-      - file: ../docs/detailed-design/kernel-backend-port.md
+      - file: docs/detailed-design/kernel-backend-port.md
         title: "Detailed design — KernelBackend port"

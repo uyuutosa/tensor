@@ -39,9 +39,18 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install 'jupyter-book>=0.15,<1'
 
+      - name: Stage external content under book/
+        # Creates symlinks book/{tutorials,python,docs} -> ../<same>
+        # so Sphinx (source root = book/) can resolve _toc.yml chapter
+        # paths into the project's actual notebook + report locations.
+        # Without this, every chapter outside book/ silently 404s on
+        # the deployed site (etoc.ref "nonexisting document" warning).
+        run: bash book/stage.sh
+
       - name: Build the book
-        # Use the repository root so the TOC's `../tutorials/...` paths
-        # resolve. Jupyter Book writes _build/html under the supplied path.
+        # Source root is book/; with the symlinks above, the TOC's
+        # tutorials/, python/notebooks/, docs/reports/ paths all
+        # resolve. Jupyter Book writes _build/html under book/.
         run: jupyter-book build book
 
       - name: Upload Pages artifact

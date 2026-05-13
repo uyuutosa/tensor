@@ -60,7 +60,17 @@ Live plan: see [`docs/impl-plans/`](./docs/impl-plans/) (one dated file per phas
 
 ## Documentation
 
-The bundled Jupyter Book is published from [`book/`](./book/) to GitHub Pages on every push to `develop` (see [`.github/workflows/deploy-book.yml`](./.github/workflows/deploy-book.yml)). Enable Pages in the repository settings (Source: *GitHub Actions*) the first time you want it live.
+The bundled Jupyter Book is published from [`book/`](./book/) to GitHub Pages on every push to `develop` (see [`.github/workflows/deploy-book.yml`](./.github/workflows/deploy-book.yml)). The live site is at <https://uyuutosa.github.io/tensor/> — all C++ tutorials (`tutorials/`) plus all five Python notebooks (`python/notebooks/`) render with full output.
+
+To build locally:
+
+```bash
+bash book/stage.sh           # one-off — symlinks ../{tutorials,python,docs} into book/
+pip install 'jupyter-book>=0.15,<1'
+jupyter-book build book      # output under book/_build/html
+```
+
+The `stage.sh` step is what lets Sphinx (whose source root is `book/`) resolve the `_toc.yml` chapter paths that point at notebooks living one level up.
 
 ## Contributing
 
