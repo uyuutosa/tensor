@@ -99,6 +99,16 @@ Tutorial notebooks live under [`tutorials/`](./tutorials/). When you ship a new 
 - Output cells are committed (the Jupyter Book site renders them). [`notebook-ci.yml`](./.github/workflows/notebook-ci.yml) re-executes every notebook weekly against xeus-cpp 0.10+ per [ADR-0014 §3](./docs/arc42/09-decisions/0014-external-substrate-strategy.md), with a parallel `legacy-xeus-cling` smoke job that runs only `00_intro.ipynb` to keep older conda-forge channels green.
 - Cross-link to the relevant ADR or `docs/` section so learners can fall through to the architecture surface.
 
+### Python notebooks (`python/notebooks/`)
+
+The Phase 6 Python SDK notebooks are gated by `notebook-ci.yml`'s **validate** job: every `python/notebooks/*.ipynb` must have at least one code cell with a non-null `execution_count` AND at least one output. Re-run the notebook before committing:
+
+```bash
+jupyter nbconvert --to notebook --inplace --execute python/notebooks/<file>.ipynb
+```
+
+For notebooks that embed Plotly figures (`03_multifocal-tensors.ipynb`, `04_python-bundle-adjustment-perspective.ipynb`), the first plotly-importing cell sets `pio.renderers.default = "notebook_connected"` so the rendered HTML references plotly.js from CDN instead of inlining 3.7 MB of plotly.min.js per output — keep that setup line if you add new plotly content.
+
 ## Reporting issues
 
 Currently there's no issue template. When opening an issue, please include:
