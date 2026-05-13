@@ -128,6 +128,16 @@ These hold across every branching model, not just Git Flow:
 - Body explains *why*, not *what*. The diff already shows what.
 - Co-authors are credited via `Co-Authored-By:` trailers when relevant.
 
+## Lessons learned (2026-05-14, post-`0.2.0` prep)
+
+After the first cluster of releases (`0.1.0` 2026-05-12, `0.2.0` draft 2026-05-13), the maintainer accumulated three lessons that didn't make it into the original Git Flow spec:
+
+1. **PR bundling reduces CI rate-limit pressure.** Five small PRs each waiting on a 7-minute CI matrix is a 35-minute serial chain; one bundled PR is 7 minutes. The maintainer's 2026-05-13 feedback ("ある程度複数タスクをまとめて一つのPRにした方が良いかも") landed as a working convention: when work is conceptually independent but small, bundle into 1 PR with multiple commits inside. See [`./ai-augmented-pr.md`](./ai-augmented-pr.md) for how this interacts with AI-augmented work.
+2. **Release PRs stay draft until PyPI prerequisites land.** [PR #115](https://github.com/uyuutosa/tensor/pull/115) (`release/0.2.0`) was opened as a draft on 2026-05-13 because the trusted-publisher policy on PyPI hadn't been configured yet. Opening as ready would risk an accidental merge → tag push → workflow failure. The convention is **draft until maintainer-only steps are complete**.
+3. **Develop-side CI must be green before opening a release PR.** PR #113 (the flakiness fix) was the precondition; without it, the release PR's CI would inherit failures unrelated to the release content. The convention is **`develop` is 100% green at release-cut time** — if it isn't, the prerequisite is one or more `feature/fix-*` PRs that get develop to green first.
+
+These three lessons are codified in the project-specific release-ceremony doc: [`./release-ceremony.md`](./release-ceremony.md).
+
 ## Related
 
 - [`.claude/rules/version-control.md`](../../.claude/rules/version-control.md)
@@ -136,3 +146,5 @@ These hold across every branching model, not just Git Flow:
   from the five-standard kit overview.
 - [`docs/WORKFLOW.md`](../WORKFLOW.md) — documentation lifecycle (separate
   from code lifecycle).
+- [`./release-ceremony.md`](./release-ceremony.md) — project-specific
+  release ceremony built on top of this Git Flow base.

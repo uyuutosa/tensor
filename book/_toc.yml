@@ -49,7 +49,36 @@ parts:
       - file: python/notebooks/04_python-bundle-adjustment-perspective.ipynb
         title: "Bundle adjustment under perspective projection"
 
-  - caption: Reference
+  - caption: User manual (Diátaxis)
+    chapters:
+      - file: docs/user-manual/README.md
+        title: "Diátaxis 4-quadrant overview"
+      - file: docs/user-manual/tutorials/python-getting-started.md
+        title: "Tutorial — first named-axis tensor in Python"
+      - file: docs/user-manual/tutorials/cpp-named-axis-basics.md
+        title: "Tutorial — first DynamicTensor in C++"
+      - file: docs/user-manual/how-to/named-tensor-types.md
+        title: "How-to — pick Tensor / DynamicTensor / TypedTensor"
+      - file: docs/user-manual/how-to/run-notebooks-locally.md
+        title: "How-to — run the Python notebooks locally"
+      - file: docs/user-manual/how-to/use-set-backend.md
+        title: "How-to — pick a backend (Phase 6.5 forward-doc)"
+      - file: docs/user-manual/how-to/add-a-new-backend.md
+        title: "How-to — implement a new KernelBackend adapter"
+      - file: docs/user-manual/how-to/deploy-the-hf-space.md
+        title: "How-to — deploy the HuggingFace Space"
+      - file: docs/user-manual/reference/cpp-namespace-overview.md
+        title: "Reference — C++ namespace overview"
+      - file: docs/user-manual/reference/python-package-overview.md
+        title: "Reference — Python package overview"
+      - file: docs/user-manual/explanation/why-named-axes.md
+        title: "Explanation — why named axes?"
+      - file: docs/user-manual/explanation/hexagonal-lite-rationale.md
+        title: "Explanation — why Hexagonal lite?"
+      - file: docs/user-manual/explanation/formula-is-the-program-essay.md
+        title: "Explanation — the formula is the program"
+
+  - caption: Reference (architecture)
     chapters:
       - file: architecture
       - file: roadmap
@@ -63,3 +92,5 @@ parts:
         title: "arc42 §12 — Glossary"
       - file: docs/detailed-design/kernel-backend-port.md
         title: "Detailed design — KernelBackend port"
+      - file: docs/detailed-design/python-sdk-binding-surface.md
+        title: "Detailed design — Python SDK binding surface"

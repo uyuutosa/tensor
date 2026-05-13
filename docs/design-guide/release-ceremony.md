@@ -97,6 +97,8 @@ A phase closes (per [`book/roadmap.md`](../../book/roadmap.md)) and the maintain
 - **Tag on `main` only**, never on develop or feature branches (`.claude/rules/version-control.md` §Hard rules #7).
 - **Draft PR until PyPI setup is complete** — opening as ready risks an accidental merge that fires the tag-push workflow against an unconfigured trusted-publisher policy. The publish step will fail loudly but you'll still have a tag on main that has to be deleted.
 - **Don't bump versions on develop directly**. Always cut a `release/<semver>` branch first; the version files belong to the release branch until back-merge.
+- **The back-merge PR title is `release: back-merge <semver> to develop`** — this exact prefix lets `git log --first-parent --grep '^release:'` recover both directions of every release cycle. Variants like `release/0.2.0` → `develop` or `back-merge: 0.2.0` break the grep. The PR #92 (back-merge of `0.1.0`) is the reference implementation.
+- **`develop` must be 100% CI-green at release-cut time.** If it isn't, the prerequisite is one or more `feature/fix-*` PRs that get develop to green first. PR #113 (CI flakiness fix) was the precondition for cutting `release/0.2.0` (PR #115).
 
 ## 5. Soft rules (the maintainer's preferences)
 

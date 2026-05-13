@@ -72,9 +72,25 @@ jupyter-book build book      # output under book/_build/html
 
 The `stage.sh` step is what lets Sphinx (whose source root is `book/`) resolve the `_toc.yml` chapter paths that point at notebooks living one level up.
 
+## Where to read next
+
+Quick pointers into the documentation tree, indexed by what you're trying to do:
+
+| If you want to…                                                          | Read                                                                                                  |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| **Try it in Python** in 10 minutes                                        | [`docs/user-manual/tutorials/python-getting-started.md`](./docs/user-manual/tutorials/python-getting-started.md) |
+| **Try it in C++** in 15 minutes                                           | [`docs/user-manual/tutorials/cpp-named-axis-basics.md`](./docs/user-manual/tutorials/cpp-named-axis-basics.md) |
+| **Pick a tensor type** (Tensor / DynamicTensor / TypedTensor)             | [`docs/user-manual/how-to/named-tensor-types.md`](./docs/user-manual/how-to/named-tensor-types.md)     |
+| **Understand named axes**, why this matters                                | [`docs/user-manual/explanation/why-named-axes.md`](./docs/user-manual/explanation/why-named-axes.md)     |
+| **See the full public C++ surface**                                        | [`docs/user-manual/reference/cpp-namespace-overview.md`](./docs/user-manual/reference/cpp-namespace-overview.md) |
+| **See the full public Python surface**                                     | [`docs/user-manual/reference/python-package-overview.md`](./docs/user-manual/reference/python-package-overview.md) |
+| **Pick which backend** (reference / Eigen / WebGPU)                        | [`docs/user-manual/how-to/use-set-backend.md`](./docs/user-manual/how-to/use-set-backend.md)         |
+| **Read the design** (architecture, ADRs, detailed-design)                  | [`docs/INDEX.md`](./docs/INDEX.md)                                                                  |
+| **Contribute code or docs**                                                 | [`CONTRIBUTING.md`](./CONTRIBUTING.md)                                                              |
+
 ## Contributing
 
-See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the contributor workflow (Git Flow, Conventional Commits, Hexagonal discipline checklist) and [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) for project norms.
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the contributor workflow (Git Flow, Conventional Commits, Hexagonal discipline checklist, the pre-PR checklist + Diátaxis decision tree, and the Python-notebook output gate) and [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) for project norms.
 
 ## What changed when
 

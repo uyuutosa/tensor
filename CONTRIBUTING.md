@@ -118,6 +118,40 @@ Currently there's no issue template. When opening an issue, please include:
 - What you got (output / error message / build log excerpt).
 - Compiler + OS + CMake version (`cmake --version`, `c++ --version`).
 
+## Before opening a PR — pre-flight checklist
+
+A 1-minute mental walkthrough before pushing. Mostly the same questions PR review will ask; running through them yourself avoids review-cycle ping-pong.
+
+- [ ] **Is `develop` 100% CI-green right now?** (Check the latest `gh run list --workflow=ci.yml --branch=develop --limit 1`.) If not, your PR will inherit the failure — wait for the maintainer's flakiness fix.
+- [ ] **Does any new public symbol have**: (a) test coverage, (b) an entry in `docs/api-contract/<surface>.md`, (c) a `docs/arc42/12-glossary/overview.md` entry?
+- [ ] **If the change touches `include/`**: run the three grep commands from `docs/design-guide/architectural-discipline.md` §4.1 locally and verify they produce no output.
+- [ ] **If the change touches `python/notebooks/`**: re-execute the notebook with `jupyter nbconvert --execute --inplace` so the output gate in `notebook-ci.yml` passes.
+- [ ] **If the change introduces a new external system or publish channel**: add a row to `docs/arc42/03-context-and-scope/system-context.md` §2 and (where relevant) `docs/arc42/07-deployment/overview.md`.
+- [ ] **If the change is a release**: follow `docs/design-guide/release-ceremony.md` step-by-step; PR draft until PyPI prerequisites are set.
+- [ ] **Run the link audit** (`docs/design-guide/cross-reference-discipline.md` §2 script) over any docs touched.
+
+If you can't answer "yes" to all that apply, fix locally first. Reviewers are happier to merge a clean PR than to chase down loose ends.
+
+## Diátaxis decision tree — where does my new doc go?
+
+When you're adding documentation, pick the quadrant **before** drafting. Each quadrant has different prose conventions; getting the quadrant right reduces rewrite cost.
+
+```text
+Is the goal to ...
+├── teach a learner the headline-feel of competence?     → docs/user-manual/tutorials/
+├── show how to accomplish a specific task?              → docs/user-manual/how-to/
+├── list exact symbol / API / config information?        → docs/user-manual/reference/
+├── argue for a design choice or explain the why?        → docs/user-manual/explanation/
+├── record a decision (immutable once Accepted)?         → docs/arc42/09-decisions/ (MADR ADR)
+├── describe a module's HOW (data model, kernels)?       → docs/detailed-design/<module>.md
+├── codify a workflow / team convention?                 → docs/design-guide/<topic>.md
+├── pin a public symbol contract?                        → docs/api-contract/<surface>.md
+├── document a phase-of-work plan or retrospective?      → docs/impl-plans/ or docs/reports/
+└── write up an incident with a Sev-Medium-or-above?     → docs/postmortems/
+```
+
+Per [`docs/WORKFLOW.md` §3](./docs/WORKFLOW.md) and the Diátaxis canonical guide at <https://diataxis.fr>.
+
 ## Code of conduct
 
 This project adopts the [Contributor Covenant](./CODE_OF_CONDUCT.md). Be kind, assume good faith, and remember that the project is run on solo bandwidth — fast responses are not guaranteed.

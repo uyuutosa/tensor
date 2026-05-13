@@ -123,6 +123,18 @@ A tour can — and should — link to all four neighbours. It is the navigation 
 
 ---
 
+## 7. Status (2026-05-14)
+
+No `.tours/` directory has been authored yet — the convention is set up, the artifacts haven't been produced. Reasonable first tours to write (priority order):
+
+1. **`phase-6-python-sdk.tour`** — walks a new contributor through PRs #95–#117: nanobind scaffold → arithmetic → contract → autograd → tex → MVG demos → CI flakiness fix. The Phase 6 retrospective is the prose companion; the tour is the in-editor reading order.
+2. **`kernel-backend-port.tour`** — opens `include/tensor/core/concepts.hpp`, walks the 15-method `KernelBackend` concept, then visits the three adapter implementations side-by-side. Good onboarding for "how do I write a fourth adapter?" alongside [`../user-manual/how-to/add-a-new-backend.md`](../user-manual/how-to/add-a-new-backend.md).
+3. **`tex-udl-end-to-end.tour`** — from `R"(c_{ij} = a_i b_j)"_tex` at the call site, through the parser productions, the AST nodes, and the Evaluator's bind / evaluate / round-trip. The "formula is the program" essay ([`../user-manual/explanation/formula-is-the-program-essay.md`](../user-manual/explanation/formula-is-the-program-essay.md)) is the prose companion.
+
+Once authored, each tour lives at `.tours/<slug>.tour` per §3; the index lives at `.tours/README.md`. Tours are added as separate PRs (one tour per PR) so reviewers can read the prose with the in-editor experience open.
+
+---
+
 ## References
 
 - Microsoft CodeTour — <https://github.com/microsoft/codetour>

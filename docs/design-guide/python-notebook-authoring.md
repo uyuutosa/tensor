@@ -107,7 +107,20 @@ A notebook with embedded Plotly figures can balloon to 10+ MB if `include_mathja
 
 If a notebook commits at >500 KB without dense numerical output, suspect a regression on the MathJax monkey-patch.
 
-## 7. Cross-references
+## 7. Common mistakes (the maintainer has hit each at least once)
+
+| # | Mistake                                                                            | Symptom                                                                                                                       | Fix                                                                                                              |
+| - | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 1 | Committing a notebook with `execution_count: None`                                  | CI `validate` step fails with "Python notebooks committed without execution"                                                  | `jupyter nbconvert --to notebook --inplace --execute <file>`                                                      |
+| 2 | Adding plotly without the MathJax monkey-patch                                      | Site renders `$…$` math as literal `\(…\)` text                                                                              | Copy the setup cell from `03_*.ipynb` or `04_*.ipynb` verbatim                                                  |
+| 3 | Importing plotly *before* setting `pio.renderers.default = "notebook_connected"`    | First plotly cell embeds 3.7 MB of plotly.min.js inline; subsequent cells are fine                                            | Move the renderer setup to the very first code cell, before any `import plotly.graph_objects`                  |
+| 4 | Using `\(...\)` LaTeX delimiters in notebook source                                 | MyST doesn't preprocess them; the page emits raw `\(...\)` even with MathJax v3 loaded                                       | Use `$...$` inline / `$$...$$` block — the MyST-flavoured Markdown delimiters                                     |
+| 5 | Adding a chapter to `_toc.yml` without running `bash book/stage.sh` locally        | Local `jupyter-book build` succeeds (path resolves via filesystem) but CI emits "nonexisting document" warning                | Always run `bash book/stage.sh` before testing the book build locally                                              |
+| 6 | Committing a `python/notebooks/_build/` or similar Jupyter Book output             | `git status` shows hundreds of generated files                                                                                | Add to `.gitignore`; `book/_build/` is already gitignored — mirror the pattern for any new output dir            |
+| 7 | Setting `pio.renderers.default = "notebook"` instead of `notebook_connected`        | Plotly figures don't render on Pages (offline mode requires plotly.js loaded by JS init that the static page doesn't run)     | Stick with `"notebook_connected"` — CDN-loaded plotly.js works with static Jupyter Book sites                     |
+| 8 | Forgetting to add the Colab fallback cell to a new notebook                         | Reader following the Colab badge gets `ImportError: No module named 'tensor'`                                                 | Copy the try/except cell from `02_python-tex.ipynb` — first code cell of every notebook                          |
+
+## 8. Cross-references
 
 - [`CONTRIBUTING.md` §Python notebooks](../../CONTRIBUTING.md) — the same gate, summarised for contributors.
 - [`docs/detailed-design/python-sdk-binding-surface.md`](../detailed-design/python-sdk-binding-surface.md) — the four nanobind boundary papercuts (sibling-rank conventions).
