@@ -39,6 +39,8 @@ parts:
         title: "Python _tex DSL — parse / Evaluator / outer product"
       - file: ../python/notebooks/03_multifocal-tensors.ipynb
         title: "Multi-focal tensors — F, T, Q learned via autograd"
+      - file: ../python/notebooks/04_python-bundle-adjustment-perspective.ipynb
+        title: "Bundle adjustment under perspective projection"
 
   - caption: Reference
     chapters:

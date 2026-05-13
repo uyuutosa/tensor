@@ -28,6 +28,7 @@
 #include "tensor/autograd/broadcast_ops.hpp"
 #include "tensor/autograd/contract_ops.hpp"
 #include "tensor/autograd/dynamic_variable.hpp"
+#include "tensor/autograd/reduce_ops.hpp"
 #include "tensor/autograd/sgd.hpp"
 #include "tensor/autograd/tape.hpp"
 #include "tensor/autograd/variable.hpp"
@@ -170,6 +171,12 @@ void bind_dynamic_tensor(nb::module_& m, char const* py_name)
 }
 
 // ─── DynamicVariable<T> binding (used by the `tensor.autograd` submodule) ──
+//
+// (the M2-baseline form lived inline; M4 lifted DynamicVariable into its
+// own helper; M5 had no need to touch it; the Phase 6 extensions PR adds
+// __truediv__ now that operator/ exists on the C++ side.)
+
+// ─── DynamicVariable<T> binding (used by the `tensor.autograd` submodule) ──
 
 template <class T>
 void bind_dynamic_variable(nb::module_& m, char const* py_name) {
@@ -214,7 +221,9 @@ void bind_dynamic_variable(nb::module_& m, char const* py_name) {
         .def("__sub__",
              [](DV const& a, DV const& b) -> DV { return a - b; })
         .def("__mul__",
-             [](DV const& a, DV const& b) -> DV { return a * b; });
+             [](DV const& a, DV const& b) -> DV { return a * b; })
+        .def("__truediv__",
+             [](DV const& a, DV const& b) -> DV { return a / b; });
 }
 
 }  // anonymous namespace
@@ -371,6 +380,29 @@ NB_MODULE(_tensor_native, m) {
                  [](ag::DynamicVariable<double> const& x) { return ag::relu(x); });
     autograd.def("neg",
                  [](ag::DynamicVariable<double> const& x) { return ag::neg(x); });
+    autograd.def("sin",
+                 [](ag::DynamicVariable<double> const& x) { return ag::sin(x); },
+                 "x"_a,
+                 "Element-wise sin. Backward: d/dx sin(x) = cos(x).");
+    autograd.def("cos",
+                 [](ag::DynamicVariable<double> const& x) { return ag::cos(x); },
+                 "x"_a,
+                 "Element-wise cos. Backward: d/dx cos(x) = -sin(x).");
+    autograd.def("sqrt",
+                 [](ag::DynamicVariable<double> const& x) { return ag::sqrt(x); },
+                 "x"_a,
+                 "Element-wise sqrt. Backward: d/dx sqrt(x) = 1 / (2 sqrt(x)). "
+                 "Precondition: x > 0 element-wise (not enforced; std::sqrt of "
+                 "a negative returns NaN).");
+    autograd.def("reduce_along_label",
+                 [](ag::DynamicVariable<double> const& x, std::string label) {
+                     return ag::reduce_along_label(x, std::move(label));
+                 },
+                 "x"_a, "label"_a,
+                 "Sum a single named axis out of x. Backward broadcasts the "
+                 "gradient back along the reduced axis. The autograd-aware "
+                 "counterpart of the bare-tensor `reduce_along_label` in "
+                 "`tensor::core::reduce`.");
 
     // Contraction — autograd-aware Einstein-sum (the autograd counterpart
     // of `tensor.contract`).
