@@ -1,0 +1,81 @@
+name: Python wheel smoke (P6.M1)
+
+# P6.M1 deliverable per docs/impl-plans/2026-05-12_phase-6-python-sdk.md:
+# prove the toolchain works on a clean Ubuntu runner. Subsequent milestones
+# expand this into the full cibuildwheel matrix
+# (Linux/macOS/Windows × CPython 3.9-3.13) per P6.M6.
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - "pyproject.toml"
+      - "python/**"
+      - "include/tensor/**"
+      - ".github/workflows/python-wheel-smoke.yml"
+      - "LICENSE"
+  pull_request:
+    branches: [develop]
+    paths:
+      - "pyproject.toml"
+      - "python/**"
+      - "include/tensor/**"
+      - ".github/workflows/python-wheel-smoke.yml"
+      - "LICENSE"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: editable-install + pytest (ubuntu-latest, CPython 3.11)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up CPython 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install build + test dependencies
+        run: |
+          python -m pip install \
+            'scikit-build-core>=0.10' \
+            'nanobind>=2.0,<3' \
+            'numpy>=1.20' \
+            'pytest>=7' \
+            'jupyter>=1.0' \
+            'nbconvert>=7' \
+            'ipykernel>=6' \
+            'plotly>=5' \
+            'matplotlib>=3.7'
+
+      - name: Editable install
+        run: python -m pip install -e . -v
+
+      - name: Run smoke tests
+        run: pytest python/tests -v
+
+      - name: Execute Python SDK notebooks
+        # Run every Python-side tutorial notebook end-to-end. Distinct
+        # from tutorials/*.ipynb (those are xcpp20 and live in
+        # notebook-ci.yml); these are python3 + the tensor module we
+        # just built. Cell timeout is generous (600s) because the
+        # multifocal-tensors notebook trains three tensors with
+        # Python-loop autograd; the slow path is bounded by the loop's
+        # constant factor not the algorithm. A `reduce_along_labels`
+        # binding (Phase 6 follow-up) would let those collapse into
+        # batched contractions.
+        run: |
+          for nb in python/notebooks/*.ipynb; do
+              echo "::group::${nb}"
+              jupyter nbconvert --to notebook --execute --inplace "${nb}" \
+                  --ExecutePreprocessor.timeout=600 \
+                  --ExecutePreprocessor.kernel_name=python3
+              echo "::endgroup::"
+          done

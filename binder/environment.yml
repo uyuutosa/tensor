@@ -1,0 +1,33 @@
+# Binder (mybinder.org) environment for the tensor Python SDK + notebooks.
+# After install, `postBuild` builds the nanobind extension via `pip install -e .`.
+# The Python notebooks under `python/notebooks/` then have `import tensor`
+# available.
+
+name: tensor-binder
+channels:
+  - conda-forge
+dependencies:
+  # Core toolchain — scikit-build-core picks up CMake + a C++20 compiler
+  # from the conda-forge channel.
+  - python=3.11
+  - pip
+  - cmake>=3.25
+  - gcc_linux-64>=12
+  - gxx_linux-64>=12
+
+  # Notebook stack.
+  - jupyterlab>=4
+  - notebook>=7
+  - nbconvert>=7
+  - ipykernel>=6
+
+  # Plotting + numerical.
+  - numpy>=1.20
+  - matplotlib>=3.7
+  - plotly>=5
+
+  # Build/test plumbing.
+  - pip:
+    - scikit-build-core>=0.10
+    - nanobind>=2.0,<3
+    - pytest>=7

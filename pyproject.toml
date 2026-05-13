@@ -1,0 +1,85 @@
+# P6.M1 — Python SDK scaffold for the tensor named-axis differentiable
+# tensor library. See ADR-0018 (docs/arc42/09-decisions/) and the Phase 6
+# impl-plan (docs/impl-plans/2026-05-12_phase-6-python-sdk.md) for context.
+#
+# Build via:
+#   pip install -e . -v
+# Test via:
+#   pytest python/tests
+
+[build-system]
+requires = [
+    "scikit-build-core>=0.10",
+    "nanobind>=2.0,<3",
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+# PyPI package name. The import name is "tensor" (see [tool.scikit-build]
+# wheel.packages below). The bare "tensor" PyPI slot is likely taken;
+# "tensor-named-axis" is the post-collision-safe choice from ADR-0018 R-P3.
+name = "tensor-named-axis"
+version = "0.2.0"
+description = "Header-only C++20/23 named-axis differentiable tensor library — Python bindings (Phase 6 scaffold; see ADR-0018)."
+authors = [
+    { name = "uyuutosa" },
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+dependencies = [
+    "numpy>=1.20",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.urls]
+Homepage = "https://github.com/uyuutosa/tensor"
+Documentation = "https://uyuutosa.github.io/tensor/"
+Repository = "https://github.com/uyuutosa/tensor.git"
+"Bug Tracker" = "https://github.com/uyuutosa/tensor/issues"
+Changelog = "https://github.com/uyuutosa/tensor/blob/main/CHANGELOG.md"
+
+# scikit-build-core ↔ CMake configuration. The C++ extension's CMakeLists
+# lives under python/; that path is independent of the repo-root CMakeLists
+# (which builds the C++ library / tests / bench / xeus-cpp notebook target).
+[tool.scikit-build]
+cmake.source-dir = "python"
+cmake.version = ">=3.25"
+cmake.build-type = "Release"
+wheel.packages = ["python/tensor"]
+# pytest discovery happens via the editable install + python/tests is its
+# only test path; conftest.py is not required for P6.M1.
+
+# cibuildwheel configuration for the M6 multi-platform wheel matrix.
+# The matrix + per-platform skips are also specified in
+# `.github/workflows/cibuildwheel.yml` so a local `cibuildwheel`
+# invocation matches CI; the workflow's env vars take precedence.
+[tool.cibuildwheel]
+build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
+skip = ["*-musllinux_*", "*-win32", "*-manylinux_i686"]
+build-verbosity = 1
+test-command = 'python -c "import tensor; print(tensor.__version__); assert tensor.hello() == \"hello from tensor::core\""'
+
+# Linux: manylinux2014 image is enough for C++20 with devtoolset-11.
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux2014"

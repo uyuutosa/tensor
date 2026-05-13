@@ -71,6 +71,10 @@ Earlier planning material referenced slots `01_named-axis-fundamentals`, `02_fun
 - **CI executes every notebook weekly** via xeus-cpp on a Monday-03:00-UTC cron. The job is best-effort and `continue-on-error: true`. A failure files an implicit signal that the notebooks need updating against the current API surface — file an issue if you notice the badge red. A parallel `legacy-xeus-cling` job runs only `00_intro.ipynb` against xeus-cling to keep the C++17-subset smoke green for users on older conda-forge channels.
 - **No long-form prose lifts** from the architecture documentation. Notebooks are *learning experiences*; reference material lives under `docs/`.
 
+## Python SDK companion notebook
+
+[`../python/notebooks/00_python-sdk-tour.ipynb`](../python/notebooks/00_python-sdk-tour.ipynb) is the Python-side companion to `00_intro` and `01_formula-is-the-program`. It uses the **CPython 3 kernel + the `tensor` Python module** (from `pip install -e .` against this repo, or `pip install tensor-named-axis` once the Phase 6 M6 release lands), not the xcpp20 kernel that the notebooks under this directory use. Phase 6 introduces it; see [ADR-0018](../docs/arc42/09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md) + the [Phase 6 impl-plan](../docs/impl-plans/2026-05-12_phase-6-python-sdk.md). The notebook is executed end-to-end by `python-wheel-smoke.yml` on every PR / push that touches the Python surface.
+
 ## Source for `00_intro`
 
 The intro notebook is a modernized port of the author's [2016 Qiita post on convolutions-as-tensor-inner-products](http://qiita.com/uyuutosa/items/12e87f4695bd151b1d74). The blog post is the spiritual ancestor of the entire project; the notebook makes its narrative runnable.

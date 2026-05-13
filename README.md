@@ -15,6 +15,22 @@ See [`docs/arc42/01-introduction-and-goals/overview.md`](./docs/arc42/01-introdu
 
 The previous 2016 implementation has been retired to [`archive/legacy-2016/`](./archive/legacy-2016/) for reference; the rewrite under [`include/tensor/`](./include/tensor/) is *not* a port — see [ADR-0001](./docs/arc42/09-decisions/0001-pivot-to-educational-named-axis-dsl.md) and [ADR-0002](./docs/arc42/09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md).
 
+## Try it without installing
+
+All five Python notebooks open in Colab. Each one's first cell installs the SDK from the live repository (`!pip install git+https://github.com/uyuutosa/tensor.git`) on first run — the initial cell takes ~3-5 min while the nanobind extension compiles on the Colab runner; subsequent runs are instant.
+
+| Notebook | What it shows |
+| -------- | ------------- |
+| [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/00_python-sdk-tour.ipynb) [`00`](./python/notebooks/00_python-sdk-tour.ipynb) | `Axis` / `DynamicShape` / `DynamicTensor` + NumPy interop tour |
+| [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/01_python-autograd.ipynb) [`01`](./python/notebooks/01_python-autograd.ipynb) | Tape-based autograd + linear-regression training loop |
+| [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/02_python-tex.ipynb) [`02`](./python/notebooks/02_python-tex.ipynb) | `_tex` UDL Python equivalent — `tex.parse` + `Evaluator` |
+| [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/03_multifocal-tensors.ipynb) [`03`](./python/notebooks/03_multifocal-tensors.ipynb) | **Bifocal / trifocal / quadrifocal tensors** learned via autograd from a torus-knot point cloud; paper-style with Hartley–Zisserman references |
+| [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/04_python-bundle-adjustment-perspective.ipynb) [`04`](./python/notebooks/04_python-bundle-adjustment-perspective.ipynb) | **Perspective bundle adjustment** with `sin` / `cos` rotation + `__truediv__` perspective divide; interactive 3D plotly camera + point-cloud overlay |
+
+Or open the entire corpus in one click with Binder: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/uyuutosa/tensor/main?labpath=python%2Fnotebooks) (builds the nanobind extension once at launch, ~5 min).
+
+For a zero-click Gradio demo of the `tensor.tex` evaluator + named-axis broadcast + autograd, see [`huggingface/space/`](./huggingface/space) — the source for the HuggingFace Space deployed at `huggingface.co/spaces/<maintainer>/tensor-named-axis-demo` (link will be added here once the Space is published; the directory is build-ready today).
+
 ## Quickstart
 
 Requires CMake ≥ 3.25, a C++20 compiler (GCC ≥ 11 / Clang ≥ 13 / MSVC 19.30+), and [vcpkg](https://vcpkg.io) (set `VCPKG_ROOT` to your clone).
