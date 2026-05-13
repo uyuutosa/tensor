@@ -59,12 +59,16 @@ jobs:
       - name: Run smoke tests
         run: pytest python/tests -v
 
-      - name: Execute Python SDK tour notebook
-        # Run the Python-side tutorial notebook end-to-end. Distinct from
-        # tutorials/*.ipynb (those are xcpp20 and live in notebook-ci.yml);
-        # this one is python3 + the tensor module we just built.
+      - name: Execute Python SDK notebooks
+        # Run every Python-side tutorial notebook end-to-end. Distinct
+        # from tutorials/*.ipynb (those are xcpp20 and live in
+        # notebook-ci.yml); these are python3 + the tensor module we
+        # just built.
         run: |
-          jupyter nbconvert --to notebook --execute \
-              --inplace python/notebooks/00_python-sdk-tour.ipynb \
-              --ExecutePreprocessor.timeout=120 \
-              --ExecutePreprocessor.kernel_name=python3
+          for nb in python/notebooks/*.ipynb; do
+              echo "::group::${nb}"
+              jupyter nbconvert --to notebook --execute --inplace "${nb}" \
+                  --ExecutePreprocessor.timeout=180 \
+                  --ExecutePreprocessor.kernel_name=python3
+              echo "::endgroup::"
+          done

@@ -24,6 +24,14 @@
 #include "tensor/core/format.hpp"
 #include "tensor/core/ops.hpp"
 
+#include "tensor/autograd/activations.hpp"
+#include "tensor/autograd/broadcast_ops.hpp"
+#include "tensor/autograd/contract_ops.hpp"
+#include "tensor/autograd/dynamic_variable.hpp"
+#include "tensor/autograd/sgd.hpp"
+#include "tensor/autograd/tape.hpp"
+#include "tensor/autograd/variable.hpp"
+
 namespace nb = nanobind;
 using namespace nb::literals;
 
@@ -32,6 +40,8 @@ using tensor::core::DynamicShape;
 using tensor::core::DynamicTensor;
 using tensor::core::contract;
 using tensor::core::to_string;
+
+namespace ag = tensor::autograd;
 
 namespace {
 
@@ -153,6 +163,54 @@ void bind_dynamic_tensor(nb::module_& m, char const* py_name)
              [](DT const& a, DT const& b) -> DT { return a / b; });
 }
 
+// ─── DynamicVariable<T> binding (used by the `tensor.autograd` submodule) ──
+
+template <class T>
+void bind_dynamic_variable(nb::module_& m, char const* py_name) {
+    using DV = ag::DynamicVariable<T>;
+    using DT = DynamicTensor<T>;
+
+    nb::class_<DV>(m, py_name)
+        .def(nb::init<>())
+        .def(nb::init<DT, bool>(),
+             "value"_a, "requires_grad"_a = false,
+             "Wrap a DynamicTensor as a tape-tracked Variable. If "
+             "`requires_grad=True`, gradient is accumulated through every "
+             "subsequent op and surfaced via `.grad` after backward().")
+
+        .def_prop_ro("value", &DV::value, nb::rv_policy::reference_internal,
+                     "The forward-pass tensor value.")
+        .def_prop_ro("grad",
+                     [](DV const& v) -> DT const& { return v.grad(); },
+                     nb::rv_policy::reference_internal,
+                     "Accumulated gradient (set by backward()). Throws if "
+                     "the variable does not require_grad.")
+        .def_prop_ro("requires_grad", &DV::requires_grad)
+        .def("zero_grad", &DV::zero_grad,
+             "Reset the accumulated gradient to zero. No-op when "
+             "requires_grad=False.")
+        .def("seed_grad", &DV::seed_grad, "seed"_a,
+             "Manually set the gradient accumulator — used internally "
+             "by `backward()` for the loss-side seed.")
+        .def("__repr__",
+             [py_name](DV const& v) {
+                 std::ostringstream os;
+                 os << py_name << "(value=" << to_string(v.value())
+                    << ", requires_grad=" << (v.requires_grad() ? "True" : "False")
+                    << ")";
+                 return os.str();
+             })
+
+        // Arithmetic — autograd-aware. Each returns a new DV whose
+        // backward closure walks the right derivative back to the input.
+        .def("__add__",
+             [](DV const& a, DV const& b) -> DV { return a + b; })
+        .def("__sub__",
+             [](DV const& a, DV const& b) -> DV { return a - b; })
+        .def("__mul__",
+             [](DV const& a, DV const& b) -> DV { return a * b; });
+}
+
 }  // anonymous namespace
 
 NB_MODULE(_tensor_native, m) {
@@ -271,4 +329,78 @@ NB_MODULE(_tensor_native, m) {
           },
           "arr"_a, "labels"_a,
           "Float32 overload of from_numpy().");
+
+    // ─── tensor.autograd submodule ─────────────────────────────────────
+    //
+    // The autograd subsystem extends the Domain (per ADR-0007 + ADR-0009).
+    // Python sees it as `tensor.autograd`; the C++ side is the
+    // `tensor::autograd::` namespace.
+
+    nb::module_ autograd = m.def_submodule(
+        "autograd",
+        "Tape-based reverse-mode autograd over named-axis tensors. "
+        "See docs/detailed-design/tensor-autograd.md for the design. "
+        "P6.M4 surface — DynamicVariable + arithmetic + activations + "
+        "dot + sum_all + backward + sgd_update.");
+
+    bind_dynamic_variable<double>(autograd, "DynamicVariable");
+    bind_dynamic_variable<float>(autograd, "DynamicVariableF32");
+
+    // Scalar (rank-0) Variable<T, 0>. Surfaced only as the return type
+    // of `sum_all` and the argument type of `backward`; users do not
+    // construct it directly.
+    using ScalarVarD = ag::Variable<double, 0>;
+    nb::class_<ScalarVarD>(autograd, "_ScalarVariable")
+        .def_prop_ro("value",
+                     [](ScalarVarD const& v) -> double { return v.value()[0]; },
+                     "Scalar forward value (the loss).")
+        .def_prop_ro("requires_grad", &ScalarVarD::requires_grad);
+
+    // Activations — autograd-aware.
+    autograd.def("exp",
+                 [](ag::DynamicVariable<double> const& x) { return ag::exp(x); });
+    autograd.def("log",
+                 [](ag::DynamicVariable<double> const& x) { return ag::log(x); });
+    autograd.def("relu",
+                 [](ag::DynamicVariable<double> const& x) { return ag::relu(x); });
+    autograd.def("neg",
+                 [](ag::DynamicVariable<double> const& x) { return ag::neg(x); });
+
+    // Contraction — autograd-aware Einstein-sum (the autograd counterpart
+    // of `tensor.contract`).
+    autograd.def("dot",
+                 [](ag::DynamicVariable<double> const& a,
+                    ag::DynamicVariable<double> const& b) { return ag::dot(a, b); },
+                 "a"_a, "b"_a,
+                 "Autograd-aware contraction. Forward = `tensor.contract`; "
+                 "backward routes gradient as `dL/da = contract(dL/dy, b)` + "
+                 "symmetric.");
+
+    // Sum-all → scalar Variable<T, 0>. The canonical bridge from a
+    // multi-element tensor expression to the scalar loss that backward()
+    // walks from.
+    autograd.def("sum_all",
+                 [](ag::DynamicVariable<double> const& x) { return ag::sum_all(x); },
+                 "x"_a,
+                 "Sum every element of `x` into a scalar Variable (rank 0). "
+                 "Combined with `backward(...)` this is the canonical "
+                 "loss-side seed for reverse-mode propagation.");
+
+    // The reverse-mode entry point.
+    autograd.def("backward",
+                 [](ScalarVarD& loss) { ag::backward(loss); },
+                 "loss"_a,
+                 "Walk the tape backward from `loss` (a rank-0 scalar "
+                 "Variable). Populates `.grad` on every DynamicVariable "
+                 "with `requires_grad=True` reached on the forward path.");
+
+    // SGD update — returns a new DynamicTensor with `v.value - lr * v.grad`.
+    autograd.def("sgd_update",
+                 [](ag::DynamicVariable<double> const& v, double lr) {
+                     return ag::sgd_update(v, lr);
+                 },
+                 "v"_a, "lr"_a,
+                 "Return a new DynamicTensor with one step of vanilla SGD "
+                 "applied: `v.value - lr * v.grad`. Combine with a fresh "
+                 "DynamicVariable wrapping for the next training iter.");
 }

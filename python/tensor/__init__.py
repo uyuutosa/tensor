@@ -12,7 +12,9 @@ Phase 6 status (2026-05-12):
   under Einstein-style label broadcast.
 - P6.M3 ✅ — `contract` (named-axis Einstein-sum) + NumPy interop
   (`from_numpy(arr, labels)` + `t.numpy()`).
-- P6.M4 — autograd (`DynamicVariable`, `backward`, `gradient_check`).
+- P6.M4 ✅ — `tensor.autograd` submodule: `DynamicVariable`, arithmetic +
+  activations (`exp` / `log` / `relu` / `neg`), `dot`, `sum_all`,
+  `backward`, `sgd_update`.
 - P6.M5 — `tex.parse` + `Evaluator` (the `_tex` UDL equivalent).
 - P6.M6 — runtime backend selection; `0.2.0` release with first PyPI
   publish + conda-forge submission.
@@ -40,6 +42,7 @@ Example
 """
 
 from ._tensor_native import __version__
+from ._tensor_native import autograd
 from ._tensor_native import hello as _native_hello
 from ._tensor_native import (
     Axis,
@@ -59,6 +62,7 @@ __all__ = [
     "DynamicTensorF32",
     "contract",
     "from_numpy",
+    "autograd",
 ]
 
 
