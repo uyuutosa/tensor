@@ -51,7 +51,9 @@ jobs:
             'pytest>=7' \
             'jupyter>=1.0' \
             'nbconvert>=7' \
-            'ipykernel>=6'
+            'ipykernel>=6' \
+            'plotly>=5' \
+            'matplotlib>=3.7'
 
       - name: Editable install
         run: python -m pip install -e . -v

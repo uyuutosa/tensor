@@ -8,10 +8,8 @@
 
 #include <cmath>
 
-#include <tensor/autograd/activations.hpp>
-#include <tensor/autograd/dynamic_variable.hpp>
-#include <tensor/autograd/tape.hpp>
-#include <tensor/autograd/variable.hpp>
+#include <tensor/autograd/autograd.hpp>
+#include <tensor/autograd/broadcast_ops.hpp>
 #include <tensor/core/axis.hpp>
 #include <tensor/core/dynamic_shape.hpp>
 #include <tensor/core/dynamic_tensor.hpp>

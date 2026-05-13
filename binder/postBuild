@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Binder post-environment-install hook. Runs after `environment.yml` is
+# resolved; this is where we build the nanobind extension so the
+# notebooks' `import tensor` resolves.
+set -euo pipefail
+
+echo "::group::Build the nanobind extension"
+pip install -e . -v
+echo "::endgroup::"
