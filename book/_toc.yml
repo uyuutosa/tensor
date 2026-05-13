@@ -37,6 +37,8 @@ parts:
         title: "Python autograd — DynamicVariable / backward / SGD"
       - file: ../python/notebooks/02_python-tex.ipynb
         title: "Python _tex DSL — parse / Evaluator / outer product"
+      - file: ../python/notebooks/03_multifocal-tensors.ipynb
+        title: "Multi-focal tensors — F, T, Q learned via autograd"
 
   - caption: Reference
     chapters:
