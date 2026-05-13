@@ -35,6 +35,8 @@ parts:
         title: "Python SDK tour — DynamicTensor / contract / NumPy interop"
       - file: ../python/notebooks/01_python-autograd.ipynb
         title: "Python autograd — DynamicVariable / backward / SGD"
+      - file: ../python/notebooks/02_python-tex.ipynb
+        title: "Python _tex DSL — parse / Evaluator / outer product"
 
   - caption: Reference
     chapters:

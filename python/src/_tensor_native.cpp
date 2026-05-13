@@ -32,6 +32,11 @@
 #include "tensor/autograd/tape.hpp"
 #include "tensor/autograd/variable.hpp"
 
+#include "tensor/tex/evaluate.hpp"
+#include "tensor/tex/expression.hpp"
+#include "tensor/tex/parser.hpp"
+#include "tensor/tex/render.hpp"
+
 namespace nb = nanobind;
 using namespace nb::literals;
 
@@ -42,6 +47,7 @@ using tensor::core::contract;
 using tensor::core::to_string;
 
 namespace ag = tensor::autograd;
+namespace tex = tensor::tex;
 
 namespace {
 
@@ -403,4 +409,97 @@ NB_MODULE(_tensor_native, m) {
                  "Return a new DynamicTensor with one step of vanilla SGD "
                  "applied: `v.value - lr * v.grad`. Combine with a fresh "
                  "DynamicVariable wrapping for the next training iter.");
+
+    // ─── tensor.tex submodule ──────────────────────────────────────────
+    //
+    // The `_tex` UDL surface in Python form. C++ users write
+    // `R"(c_{ij} = a_i + b_j)"_tex`; Python users write
+    // `tensor.tex.parse("c_{ij} = a_i + b_j")` (UDLs do not exist in
+    // Python). The Evaluator + bind / evaluate pattern is identical.
+
+    nb::module_ tex_mod = m.def_submodule(
+        "tex",
+        "LaTeX-subset DSL — \"the formula is the program\" (ADR-0005). "
+        "P6.M5 surface — parse / to_latex / Expression / Evaluator. "
+        "C++ users reach for the `_tex` UDL; Python users call "
+        "`tensor.tex.parse(...)` and the `Evaluator` class.");
+
+    // Expression — opaque AST node holder. The Python side gets repr()
+    // via to_latex but does not introspect the structure. Subsequent
+    // milestones could expose IndexedVar / BinOp / Sum / Equation /
+    // Group node classes if a structural-walk use case appears.
+    nb::class_<tex::Expression>(tex_mod, "Expression")
+        .def(nb::init<>(),
+             "Default-construct an empty Expression (no AST root). "
+             "Users normally obtain Expressions via `parse(...)`; the "
+             "default ctor is exposed for completeness and parity with "
+             "the C++ side.")
+        .def("empty", &tex::Expression::empty,
+             "True when the expression carries no AST nodes.")
+        .def("__repr__",
+             [](tex::Expression const& e) {
+                 std::ostringstream os;
+                 os << "Expression(R\"(";
+                 if (!e.empty()) {
+                     os << tex::to_latex(e);
+                 }
+                 os << ")\")";
+                 return os.str();
+             })
+        .def("__str__",
+             [](tex::Expression const& e) {
+                 return e.empty() ? std::string{} : tex::to_latex(e);
+             });
+
+    tex_mod.def("parse",
+                [](std::string s) {
+                    return tex::parse(std::string_view{s});
+                },
+                "source"_a,
+                "Parse a LaTeX-subset string into an `Expression` AST. "
+                "Equivalent to C++'s `R\"(...)\" _tex` UDL — Python has "
+                "no UDLs, so this is the access path.");
+
+    tex_mod.def("to_latex",
+                [](tex::Expression const& e) { return tex::to_latex(e); },
+                "expression"_a,
+                "Render an Expression back to canonical LaTeX. Round-trip "
+                "property: `parse(to_latex(e)) == e` for every supported "
+                "Expression (see tests/test_tex_parser.cpp).");
+
+    // Evaluator — template-instantiated for double + float. Bind named
+    // tensors to AST IndexedVar leaves, then evaluate.
+    using EvalD = tex::Evaluator<double>;
+    nb::class_<EvalD>(tex_mod, "Evaluator")
+        .def(nb::init<>(),
+             "Default-construct an Evaluator. Bind tensors via `.bind()`, "
+             "then call `.evaluate(expr)` to get a `DynamicTensor`.")
+        .def("bind",
+             [](EvalD& self, std::string name, DynamicTensor<double> value) {
+                 self.bind(std::move(name), std::move(value));
+             },
+             "name"_a, "value"_a,
+             "Bind a runtime tensor to a name. Subsequent `IndexedVar` "
+             "nodes with that name resolve to this tensor at evaluate().")
+        .def("evaluate",
+             [](EvalD const& self, tex::Expression const& expr) {
+                 return self.evaluate(expr);
+             },
+             "expression"_a,
+             "Walk the AST and evaluate against the bound tensors. "
+             "Returns a `DynamicTensor` shaped by the expression structure.");
+
+    using EvalF = tex::Evaluator<float>;
+    nb::class_<EvalF>(tex_mod, "EvaluatorF32")
+        .def(nb::init<>())
+        .def("bind",
+             [](EvalF& self, std::string name, DynamicTensor<float> value) {
+                 self.bind(std::move(name), std::move(value));
+             },
+             "name"_a, "value"_a)
+        .def("evaluate",
+             [](EvalF const& self, tex::Expression const& expr) {
+                 return self.evaluate(expr);
+             },
+             "expression"_a);
 }
