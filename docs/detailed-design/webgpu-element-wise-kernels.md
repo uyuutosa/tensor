@@ -215,3 +215,10 @@ So for **element-wise binary kernels at this scale, GPU loses to CPU on round-tr
 - Phase 3 impl-plan: [`docs/impl-plans/2026-05-11_phase-3-webgpu.md`](../impl-plans/2026-05-11_phase-3-webgpu.md)
 - [ADR-0012 — WebGPU adapter implementation design](../arc42/09-decisions/0012-webgpu-adapter-implementation-design.md)
 - [ADR-0014 — External-substrate strategy](../arc42/09-decisions/0014-external-substrate-strategy.md)
+- Python consumer (Phase 6.5): [`./python-sdk-binding-surface.md`](./python-sdk-binding-surface.md) — `pip install tensor-named-axis[webgpu]` brings this adapter's `_tensor_native_webgpu.so` flavour.
+
+## 7. Future work
+
+- **`reduce_sum` on WGSL** — currently delegated to reference. The subgroup-shuffle pattern from WGSL 1.0+ makes single-axis reduction efficient; add as the 13th method to dispatch on real GPU.
+- **`f16` element-wise variants** — the existing kernel sources are `F32`-suffixed; adding `F16` siblings is mechanical once the Domain `DynamicTensor<half>` (or `_Float16`) lands. Currently out-of-scope per ADR-0012.
+- **Multi-device dispatch** — the current adapter holds one `wgpu::Device` per `Backend` instance. Multi-GPU dispatch (e.g. an instance per GPU) would let `tensor.set_backend("webgpu", device_index=N)` route across GPUs; deferred until a measured signal asks.

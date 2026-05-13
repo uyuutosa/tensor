@@ -221,17 +221,34 @@ The current model is one `KernelBackend` per build (selected via `-DTENSOR_KERNE
 | [`tests/test_webgpu_backend.cpp`](../../tests/test_webgpu_backend.cpp) | WebGPU stub vs reference numerical agreement. |
 | [`tests/test_webgpu_wgsl.cpp`](../../tests/test_webgpu_wgsl.cpp) | WGSL kernel source well-formedness. |
 
-The 10-job CI matrix executes all of these on every PR.
+The 9-job C++ CI matrix executes all of these on every PR (per [`../arc42/08-crosscutting/overview.md` §4](../arc42/08-crosscutting/overview.md) post-PR #113). The Python wheel smoke adds one more job that exercises the same Domain through nanobind via `python/tests/test_arithmetic.py` + `test_contract_numpy.py` (cross-validation against NumPy is the QO-4 envelope per [`../arc42/10-quality/overview.md`](../arc42/10-quality/overview.md)).
+
+Coverage policy: every public symbol in [`../api-contract/python-public-surface.md` §2](../api-contract/python-public-surface.md) routes through one of the above test files. When a new public C++ symbol is added in this module, the contributor adds a matching `tests/test_<symbol>.cpp` AND a Python parity test in `python/tests/` in the same PR.
 
 ---
 
 ## 7. Cross-references
 
 - arc42 §5 (where this container is named): [`../arc42/05-building-blocks/overview.md`](../arc42/05-building-blocks/overview.md)
-- §1 §G-1 / §G-2 / §G-8 (goals this design fulfils): [`../arc42/01-introduction-and-goals/overview.md`](../arc42/01-introduction-and-goals/overview.md)
-- §10 (quality scenarios this design must uphold): [`../arc42/10-quality/overview.md`](../arc42/10-quality/overview.md)
+- §1 §G-1 / §G-2 / §G-8 / §G-9 (goals this design fulfils): [`../arc42/01-introduction-and-goals/overview.md`](../arc42/01-introduction-and-goals/overview.md)
+- §6 Scenario 1 (runtime broadcast walkthrough): [`../arc42/06-runtime/overview.md`](../arc42/06-runtime/overview.md)
+- §10 (quality scenarios this design must uphold): [`../arc42/10-quality/overview.md`](../arc42/10-quality/overview.md) — QO-1 (cross-backend), QO-4 (Python ↔ C++), QC-1 (legibility), QC-2 (diagnostics).
 - §12 (vocabulary): [`../arc42/12-glossary/overview.md`](../arc42/12-glossary/overview.md)
-- ADRs anchored by this module: [ADR-0002](../arc42/09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md), [ADR-0004](../arc42/09-decisions/0004-adopt-hybrid-named-axis-api.md), [ADR-0009](../arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md), [ADR-0011](../arc42/09-decisions/0011-kernel-backend-port-api.md)
-- Sibling detailed designs: [`webgpu-element-wise-kernels.md`](./webgpu-element-wise-kernels.md), [`webgpu-gemm-kernel.md`](./webgpu-gemm-kernel.md). Future siblings (not yet written): `tensor-autograd.md`, `tensor-tex.md`, `kernel-backend-port.md`.
-- Decision guide for users: [`docs/user-manual/how-to/named-tensor-types.md`](../user-manual/how-to/named-tensor-types.md)
+- ADRs anchored by this module: [ADR-0002](../arc42/09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md), [ADR-0004](../arc42/09-decisions/0004-adopt-hybrid-named-axis-api.md), [ADR-0009](../arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md), [ADR-0011](../arc42/09-decisions/0011-kernel-backend-port-api.md), [ADR-0018](../arc42/09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md) (Python side wraps this Domain), [ADR-0019](../arc42/09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md) (Phase 6.5 packaging consumes this Domain via three backend adapters).
+- Sibling detailed designs: [`tensor-autograd.md`](./tensor-autograd.md), [`tensor-tex.md`](./tensor-tex.md), [`kernel-backend-port.md`](./kernel-backend-port.md), [`webgpu-element-wise-kernels.md`](./webgpu-element-wise-kernels.md), [`webgpu-gemm-kernel.md`](./webgpu-gemm-kernel.md), [`webgpu-broadcast-kernels.md`](./webgpu-broadcast-kernels.md), [`python-sdk-binding-surface.md`](./python-sdk-binding-surface.md).
+- Decision guide for users: [`../user-manual/how-to/named-tensor-types.md`](../user-manual/how-to/named-tensor-types.md)
 - Architectural discipline (enforces Domain ↔ adapter rule): [`../design-guide/architectural-discipline.md`](../design-guide/architectural-discipline.md)
+- Python public surface that consumes this module: [`../api-contract/python-public-surface.md`](../api-contract/python-public-surface.md)
+
+## 8. Future work
+
+Tracked by phase:
+
+- **Phase 5 (`tensor::linalg` shim, paused)** — adds linalg primitives over the same `DynamicTensor` / `Tensor<T, N>` types via `kokkos/stdBLAS`'s shim layer (or `std::linalg` if it ships first per `__cpp_lib_linalg` feature detection). No changes to this DD; the new namespace is a sibling under `tensor::` per ADR-0014 §Decision Outcome point 4.
+- **Phase 6.5 (`set_backend()` runtime selection)** — the `python/` adapter that consumes this module gains runtime adapter switching per [ADR-0019](../arc42/09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md). This DD is unaffected — the `KernelBackend` port surface stays the same; only the consumer adapter changes.
+- **Bibliography audit (2026-11-11 next)** — re-validate that every public name in this DD has a §12 glossary entry; bump the linkrot count and refresh any moved arc42 cross-refs.
+
+Open issues at this DD's level (none rising to the level of a separate ADR yet):
+
+- The `DynamicShape` representation (`std::vector<Axis>`) is allocator-friendly but adds a heap allocation per construction. Profiling has not (yet) flagged this as a hot path. Track at the next perf-comparison report cycle.
+- `BroadcastPlan` caching across calls — currently per-op computation. A future "compile the formula once, evaluate many times" path could memoise `BroadcastPlan` instances; deferred until a measured signal demands it.

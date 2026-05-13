@@ -433,4 +433,12 @@ The `static_assert(KernelBackend<Backend>)` line at the bottom of each adapter h
   - reference adapter: PR #19 + #20 (port + first implementation, 2026-05-11)
   - eigen adapter: PR #21 (SIMD + GEMM, 2026-05-11)
   - webgpu adapter: PR #38 (stub) → #60 + #61 + #62 (dispatch wiring, 2026-05-11/12) → #67 (perf measurement)
-- Tutorial that exercises this port end-to-end: [`tutorials/08_swappable-backends.ipynb`](../../tutorials/08_swappable-backends.ipynb) (reference vs eigen at the Domain level); [`tutorials/06_webgpu-acceleration.ipynb`](../../tutorials/06_webgpu-acceleration.ipynb) (WebGPU implementation details).
+- Tutorial that exercises this port end-to-end: [`tutorials/08_swappable-backends.ipynb`](../../tutorials/08_swappable-backends.ipynb) (reference vs eigen at the Domain level); [`tutorials/06_webgpu-acceleration.ipynb`](../../tutorials/06_webgpu-acceleration.ipynb) (WebGPU implementation details). The Python-side mirror is `python/notebooks/05_swappable-backends.ipynb` once Phase 6.5 ships (forward-doc: [`../user-manual/how-to/use-set-backend.md`](../user-manual/how-to/use-set-backend.md)).
+- Python consumer of this port (Phase 6.5): [`./python-sdk-binding-surface.md` §3.4](./python-sdk-binding-surface.md). The runtime selector `tensor.set_backend(name)` chooses which of the three pre-built `_tensor_native_{reference,eigen,webgpu}.so` modules the Python adapter dispatches to.
+
+## 8. Future work
+
+- **Phase 6.5 multi-backend wheel** ([ADR-0019](../arc42/09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md)) — three companion PyPI distributions ship one `.so` each, sharing the `tensor/` PEP-420 namespace package. The port surface is unaffected; only the consumer adapter (`python/tensor/__init__.py`) changes.
+- **Remaining webgpu coverage** — 3 of 15 methods still delegate to reference (`reduce_sum`, `unbroadcast`, non-simple `contract`). Phase 7+ work to lift these onto WGSL; each addition is a new sibling under `webgpu-*.md` per the existing pattern (`webgpu-element-wise-kernels.md`, `webgpu-gemm-kernel.md`, `webgpu-broadcast-kernels.md`).
+- **`std::linalg` adapter** — if `<linalg>` ships before Phase 5 (currently 2028+ per `__cpp_lib_linalg`), a fourth adapter slot under `tensor::core::backend::linalg::` becomes available. Same port, same conformance test pattern; no algorithmic change to this DD.
+- **Numerical-tolerance audit per method** — the current tolerance discipline is uniform (`1e-9` for `double`, `1e-5` for `float`). Per-method-tight tolerances (e.g. `1e-12` for trivially-summable methods like `add`, looser for GEMM with `f32` accumulator) would let the cross-validation catch finer regressions. Defer until a measured drift signal appears.

@@ -108,6 +108,53 @@ nb::class_<tex::Expression>(tex, "Expression")
     .def("empty", &tex::Expression::empty);
 ```
 
+### 3.5 Phase 6.5 `set_backend()` boundary patterns (forward-anchor)
+
+The Phase 6.5 implementation per [ADR-0019](../arc42/09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md) + [Phase 6.5 impl-plan](../impl-plans/2026-05-13_phase-6-5-set-backend.md) introduces two new boundary patterns that will live in this DD's §3 section once the code lands:
+
+#### 3.5.1 PEP-420 namespace package — no `__init__.py` in the shared root
+
+**Convention** (planned, Phase 6.5.M1):
+
+```
+site-packages/
+  tensor/                     # PEP-420 namespace package — NO __init__.py here
+    _tensor_native_reference.so      # from tensor-named-axis
+    _tensor_native_eigen.so          # from tensor-named-axis-eigen  (optional)
+    _tensor_native_webgpu.so         # from tensor-named-axis-webgpu (optional)
+    __init__.py                  # ← this lives in tensor-named-axis only
+```
+
+The `__init__.py` lives in the base distribution. Companion distributions ship `.so` files only; they share the `tensor/` directory via PEP-420.
+
+**WRONG**: putting `__init__.py` in every distribution would shadow the base distribution's setup logic and break `set_backend()` rebinding.
+
+#### 3.5.2 Lazy module loading via `importlib`
+
+**Convention** (planned, Phase 6.5.M2):
+
+```python
+# In tensor/__init__.py — runs on `import tensor`:
+import importlib
+_AVAILABLE = {}
+for _backend in ("reference", "eigen", "webgpu"):
+    try:
+        _mod = importlib.import_module(f"._tensor_native_{_backend}", __name__)
+        _AVAILABLE[_backend] = _mod
+    except ImportError:
+        pass
+
+if not _AVAILABLE:
+    raise ImportError(
+        "No tensor backends installed. "
+        "Install with: pip install tensor-named-axis"
+    )
+```
+
+Loop over the backends, catch `ImportError` per backend, populate `_AVAILABLE`. Missing-backend errors at `set_backend()` time know which backends ARE available because of this dictionary.
+
+**WRONG**: failing fast on the first missing backend would force users to install all three even when they only need reference. The Phase 6.5 forwarding-doc [`../user-manual/how-to/use-set-backend.md`](../user-manual/how-to/use-set-backend.md) documents the expected error message.
+
 ## 4. NumPy interop
 
 `tensor.from_numpy(arr, labels)` and `t.numpy()` both **copy** by design (per [ADR-0018](../arc42/09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md) §F). Buffer-protocol zero-copy is deferred:

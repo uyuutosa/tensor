@@ -201,3 +201,11 @@ When N = 1, a 16-wide workgroup runs 15 idle threads per row. The matvec at M = 
 - [ADR-0011 — KernelBackend port API](../arc42/09-decisions/0011-kernel-backend-port-api.md)
 - [ADR-0012 — WebGPU adapter implementation design](../arc42/09-decisions/0012-webgpu-adapter-implementation-design.md)
 - [ADR-0014 — External-substrate strategy](../arc42/09-decisions/0014-external-substrate-strategy.md)
+- [ADR-0016 — Substrate refinement: drop gpu.cpp, talk to Dawn directly](../arc42/09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md) — the gpu.cpp references above are now historical; Dawn `webgpu_cpp.h` is the in-use API surface.
+
+## 7. Future work
+
+- **Non-simple-GEMM `contract` on WGSL** — current path handles 2D-matmul; multi-axis `contract` (the `tensor::core::contract` with arbitrary shared-label sets) still routes to reference. Once the broadcast kernels stabilise, the same dispatch pattern can lift `contract`'s general case.
+- **Tile-size tuning** — the current tile-size constants (16 × 16) were chosen for RTX 3090 + Vulkan; auto-tuning per device would tighten the QF-2 envelope.
+- **`f16` GEMM** — Mixed-precision GEMM with `f16` inputs and `f32` accumulator is the production-shape ML pattern; reachable from the existing `F32` kernel by parameterising the input type. Defer until `DynamicTensor<half>` lands in the Domain.
+- **Subgroup-shuffle reductions** — modern GPUs support warp-level shuffle; the GEMM kernel's k-loop reduction can use subgroup intrinsics for a measurable speedup on contemporary hardware (Ampere+, RDNA2+). Track at the next perf-comparison report cycle.

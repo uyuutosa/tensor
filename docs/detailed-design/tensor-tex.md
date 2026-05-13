@@ -216,7 +216,9 @@ Could output a `numpy.einsum` invocation. Rejected because: (a) the project is a
 | [`tests/test_function_reference_tensors.cpp`](../../tests/test_function_reference_tensors.cpp) | Indirect: ensures the 2016 README's `a * f` and `r * 3` outputs match — `tex` is the consumer of these tensor types via formula evaluation. |
 | [`lyx-export/example.cpp.expected`](../../lyx-export/example.cpp.expected) | Golden-file LyX → C++ translator round-trip. CI doesn't run this yet (manual gate); a follow-up PR adds it. |
 
-The 10-job CI matrix executes the C++ tests on every PR.
+**Python parity**: `python/tests/test_tex.py` (11 cases) cross-validates the Python `tensor.tex` surface against the C++ canonical answer. The five round-trip property cases are parametrised over the parser corpus; the outer-product / inner-product / equation-form cases cross-validate against `np.outer` / `np.dot`; the guard cases verify that unbound-variable + subscript-count-mismatch errors include the offending name (per the [§8 §5.2 errors-as-docs discipline](../arc42/08-crosscutting/overview.md)).
+
+The 9-job C++ CI matrix executes the C++ tests on every PR, plus the Python wheel smoke for the parity surface.
 
 ---
 
@@ -226,7 +228,16 @@ The 10-job CI matrix executes the C++ tests on every PR.
 - §6 runtime scenario 2 (`_tex` end-to-end walk-through): [`../arc42/06-runtime/overview.md`](../arc42/06-runtime/overview.md)
 - §10 (quality scenario QO-3 — byte-for-byte 2016 README replication is exercised through this module): [`../arc42/10-quality/overview.md`](../arc42/10-quality/overview.md)
 - §12 (vocabulary): [`../arc42/12-glossary/overview.md`](../arc42/12-glossary/overview.md) — `_tex` UDL, Expression, Evaluator
-- ADRs anchored: [ADR-0005](../arc42/09-decisions/0005-adopt-tex-lyx-as-authoring-surface.md), [ADR-0009](../arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md), [ADR-0013](../arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)
-- Sibling detailed designs: [`./tensor-core.md`](./tensor-core.md), [`./tensor-autograd.md`](./tensor-autograd.md), [`./webgpu-element-wise-kernels.md`](./webgpu-element-wise-kernels.md), [`./webgpu-gemm-kernel.md`](./webgpu-gemm-kernel.md). Planned: `./kernel-backend-port.md`.
+- ADRs anchored: [ADR-0005](../arc42/09-decisions/0005-adopt-tex-lyx-as-authoring-surface.md), [ADR-0009](../arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md), [ADR-0015](../arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md) (superseding [ADR-0013](../arc42/09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)), [ADR-0018](../arc42/09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md) (Python `tensor.tex` mirror).
+- Sibling detailed designs: [`./tensor-core.md`](./tensor-core.md), [`./tensor-autograd.md`](./tensor-autograd.md), [`./kernel-backend-port.md`](./kernel-backend-port.md), [`./python-sdk-binding-surface.md`](./python-sdk-binding-surface.md), [`./webgpu-element-wise-kernels.md`](./webgpu-element-wise-kernels.md), [`./webgpu-gemm-kernel.md`](./webgpu-gemm-kernel.md), [`./webgpu-broadcast-kernels.md`](./webgpu-broadcast-kernels.md).
 - LyX integration: [`lyx-export/README.md`](../../lyx-export/README.md), [`lyx-export/LYX_PLUGIN.md`](../../lyx-export/LYX_PLUGIN.md)
+- Tutorial that exercises this module: [`tutorials/01_formula-is-the-program.ipynb`](../../tutorials/01_formula-is-the-program.ipynb) (C++), [`python/notebooks/02_python-tex.ipynb`](../../python/notebooks/02_python-tex.ipynb) (Python mirror).
 - Original maintainer driver: [2016 Qiita blog post on named-axis convolutions](http://qiita.com/uyuutosa/items/12e87f4695bd151b1d74)
+- Python public surface that consumes this module: [`../api-contract/python-public-surface.md` §4](../api-contract/python-public-surface.md).
+
+## 8. Future work
+
+- **Parser expansion** — the current LaTeX subset covers `IndexedVar`, `BinOp` (+ juxtaposition), `Sum`, `Equation`, `Group`. Reachable extensions: `\prod` (named-axis product reduction), `\delta_{ij}` (Kronecker), explicit `\nabla` for autograd-aware formulas. Each extension requires a new AST node + parser production + Evaluator visitor entry. Track as a Phase 7+ enhancement after Phase 6.5 ships.
+- **Compile-time UDL evaluation path** — `R"(c_{ij} = a_i b_j)"_tex` currently parses at compile time but `Evaluator<T>::evaluate` runs at runtime. A `constexpr` Evaluator (where the bound tensors are known at compile time) would let the compiler fuse the formula evaluation. Constrained by C++20 `constexpr` library functions; revisit at C++23+ baseline.
+- **LyX export round-trip in CI** — the `lyx-export/example.cpp.expected` golden file exists but the CI workflow `lyx-export-ci.yml` runs the smoke; full round-trip (`.lyx → .cpp → output`) requires a LyX installation in CI which is a heavier lift. Defer until a measured signal asks for it.
+- **Phase 6.5 multi-backend Evaluator** — the `Evaluator<T>` currently routes through the configure-time-selected `KernelBackend`. Once Phase 6.5 ships runtime backend switching, the Python `tensor.tex.Evaluator` accepts the active backend by reference; no algorithmic change to this DD.
