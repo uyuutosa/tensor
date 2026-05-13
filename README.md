@@ -17,13 +17,17 @@ The previous 2016 implementation has been retired to [`archive/legacy-2016/`](./
 
 ## Try it without installing
 
-[![Open the multifocal-tensors demo in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/03_multifocal-tensors.ipynb) — fundamental / trifocal / quadrifocal tensors learned via autograd, paper-style.
+All five Python notebooks open in Colab. Each one's first cell installs the SDK from the live repository (`!pip install git+https://github.com/uyuutosa/tensor.git`) on first run — the initial cell takes ~3-5 min while the nanobind extension compiles on the Colab runner; subsequent runs are instant.
 
-[![Open the perspective-BA demo in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/04_python-bundle-adjustment-perspective.ipynb) — perspective bundle adjustment with interactive 3D plotly camera + point-cloud visualisation.
+| Notebook | What it shows |
+| -------- | ------------- |
+| [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/00_python-sdk-tour.ipynb) [`00`](./python/notebooks/00_python-sdk-tour.ipynb) | `Axis` / `DynamicShape` / `DynamicTensor` + NumPy interop tour |
+| [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/01_python-autograd.ipynb) [`01`](./python/notebooks/01_python-autograd.ipynb) | Tape-based autograd + linear-regression training loop |
+| [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/02_python-tex.ipynb) [`02`](./python/notebooks/02_python-tex.ipynb) | `_tex` UDL Python equivalent — `tex.parse` + `Evaluator` |
+| [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/03_multifocal-tensors.ipynb) [`03`](./python/notebooks/03_multifocal-tensors.ipynb) | **Bifocal / trifocal / quadrifocal tensors** learned via autograd from a torus-knot point cloud; paper-style with Hartley–Zisserman references |
+| [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/uyuutosa/tensor/blob/main/python/notebooks/04_python-bundle-adjustment-perspective.ipynb) [`04`](./python/notebooks/04_python-bundle-adjustment-perspective.ipynb) | **Perspective bundle adjustment** with `sin` / `cos` rotation + `__truediv__` perspective divide; interactive 3D plotly camera + point-cloud overlay |
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/uyuutosa/tensor/main?labpath=python%2Fnotebooks) — full Python-notebook environment via Binder (builds the nanobind extension on first launch, takes ~5 min).
-
-The Colab badges drop you onto a Colab page with the notebook loaded; cell 0 in each notebook installs the SDK from the live repository (`!pip install git+https://github.com/uyuutosa/tensor.git`). Colab gives you a free CPython 3.11 + a couple of GB of RAM — plenty for the small synthetic scenes the demos use.
+Or open the entire corpus in one click with Binder: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/uyuutosa/tensor/main?labpath=python%2Fnotebooks) (builds the nanobind extension once at launch, ~5 min).
 
 ## Quickstart
 
