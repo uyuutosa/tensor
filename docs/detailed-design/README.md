@@ -37,3 +37,18 @@ Each module file should link out to:
 - The use cases that exercise it (`arc42/03-context-and-scope/use-cases/<file>.md`)
 
 For lifecycle / when to update, see [`../WORKFLOW.md`](../WORKFLOW.md).
+
+## Index — instances in this project (8 as of 2026-05-14)
+
+| File                                                                                 | Module / scope                                                                                                | Hex. classification | Anchor ADR(s)        |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | ------------------- | -------------------- |
+| [`tensor-core.md`](./tensor-core.md)                                                  | `tensor::core` Domain centerpiece — `Axis`, `Shape<N>`, `DynamicShape`, `Tensor<T,N>`, `DynamicTensor<T>`, `TypedTensor`, broadcast / contract Domain functions, the `KernelBackend` port declaration. | Domain               | 0002, 0004, 0009, 0011 |
+| [`tensor-autograd.md`](./tensor-autograd.md)                                          | `tensor::autograd` — `Variable<T,N>`, `DynamicVariable<T>`, Tape, registered backwards, activations, `gradient_check`, Bundle B extensions. | Domain extension     | 0007, 0009            |
+| [`tensor-tex.md`](./tensor-tex.md)                                                    | `tensor::tex` — LaTeX-subset parser, `Expression` AST, `Evaluator<T>`, `to_latex` renderer, the `_tex` UDL. | DrivingAdapter       | 0005, 0009, 0015 (was 0013) |
+| [`kernel-backend-port.md`](./kernel-backend-port.md)                                  | The 15-method `tensor::core::concepts::KernelBackend` port surface itself — the central Hexagonal port. | Port (in Domain)     | 0009, 0010, 0011, 0012, 0016 |
+| [`webgpu-element-wise-kernels.md`](./webgpu-element-wise-kernels.md)                  | WebGPU adapter — 4 binary + 4 unary element-wise WGSL kernels and their dispatch. | DrivenAdapter        | 0006, 0011, 0012, 0014, 0016 |
+| [`webgpu-gemm-kernel.md`](./webgpu-gemm-kernel.md)                                    | WebGPU adapter — tiled GEMM WGSL kernel and its dispatch. | DrivenAdapter        | 0006, 0011, 0012, 0014, 0016 |
+| [`webgpu-broadcast-kernels.md`](./webgpu-broadcast-kernels.md)                        | WebGPU adapter — broadcast WGSL kernels (the `c = a + b` GPU path for shape-mismatched inputs). | DrivenAdapter        | 0006, 0011, 0012, 0016 |
+| [`python-sdk-binding-surface.md`](./python-sdk-binding-surface.md)                    | Python SDK via nanobind — the boundary conventions (the four papercuts + Phase 6.5 forward-anchor for the PEP-420 + lazy-import patterns). | DrivingAdapter       | 0018, 0019            |
+
+Naming verification (per the §"Naming" rule above): every file maps 1:1 to a row in [`../arc42/05-building-blocks/overview.md`](../arc42/05-building-blocks/overview.md) and a container in [`../diagrams/c4/workspace.dsl`](../diagrams/c4/workspace.dsl). Synonyms across these three locations are bugs.

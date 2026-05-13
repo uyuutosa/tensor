@@ -55,6 +55,21 @@ In rough dependency order:
 
 The §1 goals (G-1..G-9) are realised by these eight decisions; the §5 building-block decomposition is a direct projection of them onto code. See [`../01-introduction-and-goals/overview.md`](../01-introduction-and-goals/overview.md) and [`../05-building-blocks/overview.md`](../05-building-blocks/overview.md).
 
+## What was considered and rejected
+
+The eight strategic decisions above each rejected at least one strong-seeming alternative. The full reasoning lives in each ADR's "Pros and Cons of the Options" section; this list is the index so reviewers can find the relevant rejection without re-reading every ADR.
+
+| Decision | Strong alternative considered | Rejected because… | Where to read more |
+| -------- | ----------------------------- | ----------------- | ------------------ |
+| ADR-0001 (educational-first) | "compete with Eigen / xtensor on operator coverage" | sustainable as a solo maintainer + ADR-0010 codifies as-is positioning; coverage parity has near-infinite tail. | [ADR-0001 §Pros and cons](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md), [ADR-0010 §Decision Outcome](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md) |
+| ADR-0002 (C++20 baseline) | "wait for C++23 std::linalg / std::mdspan / std::print" | as of 2026-05, those features aren't shipped widely; feature-test path lets the project pre-empt when they ship. | [ADR-0002](../09-decisions/0002-rewrite-on-cpp20-baseline-with-mdspan-interop.md) |
+| ADR-0004 (hybrid named-axis API) | "compile-time-only" or "runtime-only" | compile-time-only fails the "rank decided at runtime" cases; runtime-only loses the static-assert ergonomics. Hybrid keeps both paths idiomatic. | [ADR-0004](../09-decisions/0004-adopt-hybrid-named-axis-api.md) |
+| ADR-0005 (`_tex` UDL) | "Python-style DSL" or "external mini-language compiler" | UDL is a C++20-native parse path; same operator graph as direct C++ expressions; no separate compiler. The compile-time UDL pivot is the headline feature, not a curiosity. | [ADR-0005 §Decision Outcome](../09-decisions/0005-adopt-tex-lyx-as-authoring-surface.md) |
+| ADR-0006 (WebGPU) | "CUDA-direct" or "OpenCL" | CUDA-direct fails the zero-proprietary-install goal; OpenCL is vendor-fragmented; WebGPU via Dawn is the cross-platform path Google maintains in-tree. | [ADR-0006](../09-decisions/0006-adopt-webgpu-as-gpu-backend.md), [ADR-0014 §1](../09-decisions/0014-external-substrate-strategy.md), [ADR-0016](../09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md) |
+| ADR-0007 (tape-based autograd) | "source-to-source autograd" (clad-style) or "JAX-style transform" | clad couples the codebase to a Clang plugin maintainer track; JAX-style would need a separate IR pass orthogonal to the C++ Domain. Tape is the textbook implementation; matches the teaching frame. | [ADR-0007](../09-decisions/0007-adopt-autograd-as-first-class-subsystem.md) |
+| ADR-0018 (Python SDK via nanobind) | "pybind11", "Cython", "raw CPython C API", "a separate `tensor-py` repo" | pybind11's API churn rate + nanobind's smaller / faster baseline; Cython adds a second build step; CPython C API is too verbose; separate repo loses the "one Domain, one CI" benefit. | [ADR-0018](../09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md) §A–§F |
+| ADR-0019 (extras packaging) | "fat wheel bundling all three backends", "separate distributions per backend without extras", "external PyPI index" | fat wheel bakes in Dawn's ~50 MB even for reference-only users; separate distributions kill runtime switching; external index requires hosting infrastructure for marginal gain over extras. | [ADR-0019 §Pros and Cons](../09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md) |
+
 ## Cross-references
 
 - §1 Introduction and Goals: [`../01-introduction-and-goals/overview.md`](../01-introduction-and-goals/overview.md)

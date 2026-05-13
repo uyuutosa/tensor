@@ -27,12 +27,15 @@ last-reviewed: 2026-05-12
 
 ## 1. Actors
 
-| Identifier   | Role                                | Goal                                                                                       |
-| ------------ | ----------------------------------- | ------------------------------------------------------------------------------------------ |
-| `learner`    | Self-taught C++ programmer or researcher | Understand named-axis tensor algebra, autograd, and modern C++ by reading and running the tutorials. Primary audience. |
-| `instructor` | University / bootcamp instructor    | Assign tutorials and exercises as coursework. Secondary audience.                          |
+| Identifier   | Role                                | Goal                                                                                       | Primary interaction pattern |
+| ------------ | ----------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------- |
+| `learner`    | Self-taught C++ programmer or researcher | Understand named-axis tensor algebra, autograd, and modern C++ by reading and running the tutorials. Primary audience. | Browses the [Pages site](https://uyuutosa.github.io/tensor/); clones repo; runs `cmake --preset=default && jupyter lab tutorials/`; uses [`docs/user-manual/how-to/`](../../user-manual/how-to/) when stuck. |
+| `instructor` | University / bootcamp instructor    | Assign tutorials and exercises as coursework. Secondary audience.                          | Forks the repo to create an exercise variant; cites the ADR sequence in a syllabus; uses tutorial 00–08 as lecture material. |
+| `cv-learner` (Phase 6) | Computer-vision student working through Hartley & Zisserman | Reproduce bifocal / trifocal / quadrifocal tensor results via autograd; read the MVG demos. | Opens the Pages site, follows the Colab badge on `python/notebooks/03_*` or `04_*`, reads the paper-style math + 3D plotly figures. |
+| `py-ml-practitioner` (Phase 6) | Data scientist evaluating named-axis libs for an internal tool | `pip install tensor-named-axis`; run a small Einstein-broadcast computation; measure parity vs NumPy / PyTorch. | `pip install tensor-named-axis[eigen]`; opens `python/notebooks/00_python-sdk-tour.ipynb` on Binder for the 5-min onboarding. |
+| `gradio-visitor` (Phase 6) | Anyone arriving from a social-media link to the HuggingFace Space | Try `tex.Evaluator` / broadcast / autograd interactively without installing anything. | Visits `huggingface.co/spaces/<user>/tensor-named-axis-demo`; types LaTeX into the Gradio textbox; reads the result. |
 
-The library is **not** intended for production engineers picking a tensor lib for a real workload — that audience is redirected to Eigen / xtensor / libtorch / Kokkos / `std::linalg` (see [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) §Stakeholders).
+The library is **not** intended for production engineers picking a tensor lib for a real workload — that audience is redirected to Eigen / xtensor / libtorch / Kokkos / `std::linalg` (see [ADR-0001](../09-decisions/0001-pivot-to-educational-named-axis-dsl.md) §Stakeholders). The Python wedge (Phase 6+) opens a *teaching* surface for production Python users — those who want to *read* idiomatic named-axis code without committing their stack to it.
 
 ## 2. External systems
 
@@ -85,7 +88,15 @@ The system does **not** include the C++ toolchain, the Jupyter stack, or the Web
 
 L2 (container-level) relationships are documented in [`../05-building-blocks/overview.md`](../05-building-blocks/overview.md) to avoid duplicating the DSL.
 
-## 6. What is *not* in scope here
+## 7. System-context diagram
+
+The C4 Level-1 (context) view is rendered from [`../../diagrams/c4/workspace.dsl`](../../diagrams/c4/workspace.dsl) by the `/diagram-render` skill (lives under `.claude/skills/diagram-render/` at the repo root). As of 2026-05-14 the `docs/diagrams/c4/exports/` directory does not yet contain a committed SVG — generation has been deferred to a future cycle (regenerating requires `structurizr-cli` + the docs-style hooks). The DSL itself is the source of truth for the boxes-and-arrows; this `§3 system-context.md` table is the canonical text.
+
+When the SVG lands, it will be linked here as `exports/c4-l1-context.svg` and the deploy-book pipeline will surface it in the rendered Pages site.
+
+The Phase 6 expansion (Python SDK + HuggingFace Space + PyPI / Binder / Colab externals) is reflected in the latest `workspace.dsl` commit (see §5 below for the container-level relationships); render lag is tracked as a docs-system soft-blocker, not a code blocker.
+
+## 8. What is *not* in scope here
 
 - Internal decomposition of the library — see [`../05-building-blocks/`](../05-building-blocks/).
 - Detailed runtime sequences (e.g. autograd backward pass) — see [`../06-runtime/`](../06-runtime/).

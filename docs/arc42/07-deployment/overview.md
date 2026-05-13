@@ -99,6 +99,27 @@ hf auth login                                       # one-time
 
 Cold-start on HuggingFace's free CPU runner is ~3–5 min while nanobind builds the C++ extension from `git+https://github.com/uyuutosa/tensor.git@develop`. Will collapse to seconds once the `requirements.txt` switches to `tensor-named-axis>=0.2.0` from PyPI after the first wheel publish.
 
+## 4d. conda-forge deployment (planned — Phase 6.5 follow-up)
+
+Conda-forge distribution is a Phase 6.5 follow-up (per the [Phase 6.5 impl-plan](../../impl-plans/2026-05-13_phase-6-5-set-backend.md) §"Out of scope"). The intended shape once it ships:
+
+- A separate `tensor-feedstock` repo under the conda-forge GitHub org (standard convention; the maintainer submits a PR to `conda-forge/staged-recipes` to bootstrap).
+- A `recipe/meta.yaml` with three outputs mirroring the PyPI extras structure: `tensor-named-axis` (reference baseline), `tensor-named-axis-eigen`, `tensor-named-axis-webgpu`.
+- conda-forge's CI matrix builds across Linux x86_64 / macOS x86_64 / macOS arm64 / Windows x86_64 × CPython 3.9–3.13, same shape as cibuildwheel.
+- Eigen + Dawn conda-forge ports satisfy the runtime deps; no vendoring change required.
+
+Until this lands, conda users install via `pip install` inside a conda env — same wheels, just bridged through conda's Python.
+
+## 4e. Deployment-incident runbook
+
+When a deployment-channel surface breaks (Pages 404s, PyPI rejects upload, HF Space stuck building, cibuildwheel matrix red on one row), the entry-point doc is [`../../postmortems/`](../../postmortems/) once an incident lands. As of 2026-05-14 the directory contains only the README — no incidents have been severe enough to file a postmortem ([severity threshold: Medium and above](../../postmortems/README.md)).
+
+Anticipated incident patterns (preregistered in the §11 risks table):
+
+- **R-P6 / R-P7 / R-P8 lessons-learned** — these have been classified and mitigated rather than written up as postmortems because they were caught during active development (PRs #116 / #117 / #118 / #120) before any user impact. If a future regression reintroduces one of these patterns *with* user impact, a postmortem entry under `postmortems/YYYY-MM-DD_<title>.md` is the right artifact.
+- **PyPI / OIDC trusted-publishing failure** — most likely scenario is the maintainer's trusted-publisher policy expiring or the workflow file path drifting away from what the policy expects. Postmortem template should call out the exact PyPI Settings → Publishing page state at the time of the failure.
+- **HF Space build timeout** — pip-install-from-Git path is sensitive to network state; first occurrence would get a postmortem only if HF Spaces support can't explain it.
+
 ## 5. Citation discovery
 
 The project's "deployment" as a *citable work* (per [ADR-0015](../09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md), superseding [ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)) goes through:

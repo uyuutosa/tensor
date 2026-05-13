@@ -51,8 +51,21 @@ The 2016 codebase has been retired to `archive/legacy-2016/`. The rewrite target
 | Researchers in tensor-DSL design                           | Want a real working artifact to reference for named-axis API ergonomics in C++, the `_tex` ↔ AST ↔ DynamicTensor round-trip, and the LyX integration story. |
 | Production users (`as-is`)                                 | Adopt the library for niche workloads (named-axis algebra, `_tex`-driven kernels) on top of a fast `KernelBackend` adapter (reference + Eigen + WebGPU all shipped as of 2026-05-12; WebGPU dispatches real Dawn compute on 12 of 15 methods for `float`). **No ABI / coverage / support commitments** — see [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md). |
 | The maintainer (uyuutosa)                                  | Wants to revive a long-dormant idea and produce a public artifact future implementations can cite. |
+| Python ML practitioners (Phase 6+)                         | Want a `named-axis` substrate for production Python ML that fills the wedge identified in the [2026-05-12 landscape recheck §A.5](../../reports/2026-05-12_landscape-recheck-and-adversarial-review.md). `pip install tensor-named-axis` makes adoption a one-command experiment; the C++ Domain underneath gives speed without surrender to PyTorch-shaped ergonomics. Per G-9 ([ADR-0018](../09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md)). |
+| Computer-vision learners (Phase 6 demo audience)           | Want a paper-style walkthrough of bifocal / trifocal / quadrifocal tensors + bundle adjustment that runs end-to-end via autograd. The MVG notebooks (`03_*`, `04_*`) and the upcoming HuggingFace Space (`huggingface/space/`) target this group. |
 
-## 3. Goals (G-1 … G-7)
+### 2.1 Persona handles
+
+The stakeholders above resolve into 4 concrete personas the project tracks at PR-review time. Each persona has a one-page sketch under [`../../user-manual/`](../../user-manual/) (Phase 4 follow-up — sketches deferred to a future doc cycle):
+
+- **"Hiroshi"** — graduate-student textbook author working through Hartley & Zisserman. Cares about the MVG notebooks rendering on the live site with all math + 3D figures; cites the project as a worked example of named-axis MVG. Drives the requirement that `python/notebooks/03_*` + `04_*` ship plotly-rendered on Pages.
+- **"Mei"** — self-taught C++ learner who wants to build her own autograd. Cares that `tutorials/05_autograd-from-scratch.ipynb` reads like a paper and the C++ source under `include/tensor/autograd/` is small enough to read in one sitting. Drives the depth-over-breadth heuristic in `CONTRIBUTING.md`.
+- **"Renee"** — production data scientist evaluating named-axis libraries for an internal tool. Cares about wheel size, install reliability across CPython matrices, and the parity guarantee between Python and C++. Drives the QP-4 + QO-4 quality scenarios.
+- **"Future-me"** — the maintainer in 2027 having forgotten 2026 context. Cares that ADRs / retrospectives / glossary stay current. Drives the half-yearly bibliography audit + the "every recurring pain → design-guide entry" rule.
+
+These handles appear in PR review templates and in design-guide bullets; the maintainer asks "would Hiroshi/Mei/Renee/Future-me find this change accessible?" rather than indirecting through abstract persona descriptions.
+
+## 3. Goals (G-1 … G-9)
 
 Each goal is phrased so success is observable.
 
@@ -88,6 +101,21 @@ Captured here so future reviewers do not litigate them as gaps.
 - **Sparse tensors as a first-class citizen.** Possible later; not in the first release.
 - **CUDA-direct GPU.** Disqualified in [ADR-0006](../09-decisions/0006-adopt-webgpu-as-gpu-backend.md) on educational-cost-of-entry grounds.
 - **Forward-mode and source-to-source autograd.** Reachable as future complementary backends ([ADR-0007](../09-decisions/0007-adopt-autograd-as-first-class-subsystem.md)).
+
+### 5.1 Out of scope as of Phase 6.5 ([ADR-0019](../09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md))
+
+- **JAX-style transformation API** (`vmap` / `pmap` / `jit`). The Python SDK exposes the same surface the C++ tutorials exercise; functorial transformations would require a separate IR pass that doesn't fit the "single C++ Domain as SoT" principle (ADR-0018 §F).
+- **Zero-copy NumPy buffer protocol.** `from_numpy` / `.numpy()` are copy-semantics by design — see [`../../detailed-design/python-sdk-binding-surface.md` §4](../../detailed-design/python-sdk-binding-surface.md). An opt-in `from_numpy_zerocopy()` is a future possibility, not a Phase 6.5 commitment.
+- **Fat-wheel packaging** (bundling all three backends in a single ~100 MB wheel). Decided against in ADR-0019 in favour of PEP-508 extras.
+- **PyPy + GraalPy + IronPython** targets. The cibuildwheel matrix is CPython 3.9–3.13 only.
+- **CUDA wheel variant** (e.g. `tensor-named-axis[cuda]`). The WebGPU adapter via Dawn already covers GPU; CUDA-direct stays disqualified per ADR-0006.
+- **Stable ABI surface across Python minor versions.** The wheel matrix ships per-CPython-minor wheels explicitly; users on a not-yet-shipped Python version (3.14+) wait for the matrix to add it.
+
+### 5.2 Out of scope at the docs-system level
+
+- **Auto-generated API docs.** No Doxygen, no Sphinx-autodoc against `include/tensor/`. Per the citability discipline (G-8 / ADR-0015), public names trace to math-literature names via the §12 glossary; auto-generation would produce docs whose vocabulary drifts from the math.
+- **A separate "tutorials" project repo.** Tutorials stay in this repo (`tutorials/` for C++, `python/notebooks/` for Python). Diátaxis quadrants live under `docs/user-manual/`. One repository, one build, one bibliography.
+- **A wiki.** Mediawiki / Confluence / GitHub Wiki would compete with the pentaglyph-docs framework. All ratified content lives in versioned files under `docs/`.
 
 ## 6. Success criteria (concrete, measurable)
 

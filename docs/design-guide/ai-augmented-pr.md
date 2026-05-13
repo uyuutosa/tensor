@@ -100,6 +100,22 @@ For when to author / supersede / archive design-guide files, see [`../WORKFLOW.m
 
 ---
 
+## 6. Worked exemplars (project-internal)
+
+Each entry below points at an actual PR that exemplifies the principles in §3.
+
+| Exemplar         | PR(s)                                                                                     | What it shows                                                                                                                                                |
+| ---------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **20-cycle PDCA docs run** | [PR #121](https://github.com/uyuutosa/tensor/pull/121) (`feature/docs-pdca-20-cycles`) | One PR bundles 25 file touches across 20 distinct Plan-Do-Check-Act cycles, each logged in `docs/reports/2026-05-13_documentation-pdca-cycles.md` so a reviewer can scan the work as 20 discrete improvements rather than one giant diff. Each cycle's "Check" line proves the change; the "Act" line distills a reusable rule. The pattern is "AI works in discrete loops; human reviews the log; the work itself is verifiable per cycle." |
+| **100-cycle PDCA docs run** | this PR | Five phases × 20 cycles. Each phase commits independently so reviewers can stop after Phase N and resume later. The tracking doc (`docs/reports/2026-05-14_documentation-pdca-100-cycles.md`) carries the per-cycle log; the commit messages summarise the phase. |
+| **Bundle B autograd extensions** | [PR #109](https://github.com/uyuutosa/tensor/pull/109) (`feature/bundle-b-autograd-extensions`) | One PR bundles four small autograd primitives that share their build → test → doc shape (`sin` / `cos` / `sqrt` / `__truediv__` / `reduce_along_label`). Splitting into four PRs would have multiplied CI cost without aiding review. |
+| **Phase 6.5 forward-doc**     | [PR #119](https://github.com/uyuutosa/tensor/pull/119) (`feature/adr-0019-phase-6-5-set-backend`) | The ADR + impl-plan ship in one PR *before* the implementation. The reviewer's stance is "is this the right design?" — the implementation PRs that follow are much smaller and reviewer focus is on "does it match the design?" rather than "is the design right?" |
+| **Plotly MathJax bug fix**    | [PR #120](https://github.com/uyuutosa/tensor/pull/120) (`feature/fix-plotly-mathjax-conflict`)  | A small targeted bug fix that captures the why (plotly's v2 vs Jupyter Book's v3) in the commit message, the workaround in the code, and the design-guide entry (`python-notebook-authoring.md` §2). One PR; one bug class neutralised; the design-guide entry prevents recurrence.            |
+
+The common pattern: every PR's diff has a *peer artifact* — a tracking log, a design-guide entry, a retrospective, a glossary entry — that lets a reviewer verify the work without re-reading every line of code. AI-augmented work without these artifacts is hard to review; with them, it's easier than human-only work because the artifacts are themselves auditable.
+
+---
+
 ## References
 
 ### Peer-reviewed (primary)

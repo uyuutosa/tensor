@@ -65,6 +65,53 @@ Specific conventions:
 - **Tests follow the implementation file name** with `test_` prefix: `axis.hpp` → `tests/test_axis_shape.cpp`. Minor renames over time are caught by CI when the prefix mapping is broken.
 - **WGSL kernel constants** end in `F32` for the floating-point variant, leaving room for future `F16` / `F64` siblings without renaming.
 
+### 5.1 Worked examples (the recurring trios)
+
+| Concept                              | C++ name                                   | Python name (Phase 6+)              | Math-literature anchor                          |
+| ------------------------------------ | ------------------------------------------ | ----------------------------------- | ----------------------------------------------- |
+| Axis (label + extent pair)           | `tensor::core::Axis`                        | `tensor.Axis`                       | A "named dimension" — common in xarray, JAX-style |
+| Ordered shape                        | `tensor::core::DynamicShape`                | `tensor.DynamicShape`               | The ordered list of `Axis`                       |
+| Rank-erased tensor (double)          | `tensor::core::DynamicTensor<double>`       | `tensor.DynamicTensor`              | Educational default                              |
+| Rank-erased tensor (float)           | `tensor::core::DynamicTensor<float>`        | `tensor.DynamicTensorF32`           | WebGPU-bound type                                |
+| Compile-time tensor                  | `tensor::core::Tensor<T, N>`                | (not exposed in Python; out-of-scope per ADR-0018 §F) | The NTTP path                  |
+| Compile-time labelled tensor         | `tensor::core::TypedTensor<T, "i", "j">`   | (not exposed in Python)             | The compile-time-checked path                    |
+| Compile-time label tag               | `tensor::core::LabelTag<S>`                 | —                                   | The `_ax` UDL produces this                      |
+| Autograd variable                    | `tensor::autograd::DynamicVariable<T>`      | `tensor.autograd.DynamicVariable`   | Wraps a `DynamicTensor`                          |
+| Kernel-backend port                  | `tensor::core::concepts::KernelBackend`     | (selected runtime via `set_backend`) | The Hexagonal port                              |
+| Reference adapter                    | `tensor::core::backend::reference::Backend` | (default install)                   | The canonical CPU answer                         |
+| Eigen adapter                        | `tensor::core::backend::eigen::Backend`     | `pip install ...[eigen]`            | Eigen 3.4-backed                                 |
+| WebGPU adapter                       | `tensor::core::backend::webgpu::Backend`    | `pip install ...[webgpu]`           | Dawn-backed                                      |
+| `_tex` UDL (C++) / `tex.parse` (Python) | `R"(...)"_tex` -> `tex::Expression`         | `tensor.tex.parse(s)`               | A LaTeX subset                                   |
+| Expression evaluator                 | `tensor::tex::Evaluator<T>`                 | `tensor.tex.Evaluator` (and `…F32`) | parse-bind-evaluate triple                       |
+
+The naming convention reads top-down: when a C++ class has a Python mirror, the Python name drops the namespace prefix but keeps the type. Float-vs-double splits use the `…F32` suffix on the Python side (because Python doesn't have C++'s template parameter notation).
+
+### 5.2 Error messages as documentation
+
+Error messages users hit are part of the documentation surface. The project's discipline:
+
+- **Every `RuntimeError` / `assert` / `std::invalid_argument` / `static_assert` includes the fix instruction**, not just the failure. Example from the Phase 6.5 `set_backend()` surface:
+
+  ```
+  RuntimeError: webgpu backend is not installed.
+  Install with:  pip install tensor-named-axis[webgpu]
+  Or install all backends:  pip install tensor-named-axis[all]
+  Currently available: ['reference', 'eigen']
+  ```
+
+  The user sees the install command in the error — no need to dig through docs.
+
+- **Subscript-count mismatches in `tex.Evaluator` include the offending name**:
+
+  ```python
+  >>> ev.evaluate(tex.parse(r"a_i"))    # a is rank-2 bound
+  RuntimeError: subscript count mismatch for 'a': expected 2, got 1
+  ```
+
+- **`static_assert(KernelBackend<MyBackend>)` failures cite the violated concept clause**. `tensor::core::concepts::KernelBackend` is structured with named sub-concepts (`has_add`, `has_contract`, etc.) so the compiler's diagnostic points at the missing method, not the umbrella concept.
+
+PR review obligation: every new `throw` / `static_assert` / `assert` includes the fix in the message. This is a §G-2 (modern C++) plus §G-8 (citability discipline) crossover — diagnostics that read like the math AND tell the user how to proceed.
+
 ## 6. Architectural discipline (single hard rule)
 
 From [ADR-0009](../09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md), inherited by every PR:

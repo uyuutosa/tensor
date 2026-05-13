@@ -251,15 +251,36 @@ A simpler ownership model than `shared_ptr`. Rejected because backward closures 
 | [`tests/test_autograd_dot.cpp`](../../tests/test_autograd_dot.cpp) | `dot` matvec + matmul autograd; both directions reuse `contract_with_plan`. |
 | [`tests/test_autograd_zero_grad_sgd.cpp`](../../tests/test_autograd_zero_grad_sgd.cpp) | `zero_grad` + `sgd_update`; toy `y = 2x + 1` regression converges to W ≈ 2, b ≈ 1 after 300 epochs. |
 
-The 10-job CI matrix executes all of these on every PR.
+Bundle B (PR #109) added three new test files for the trig / division / reduce extensions:
+
+| Test file (added Bundle B) | Surface |
+| --------- | ------- |
+| [`tests/test_autograd_trig_sqrt.cpp`](../../tests/test_autograd_trig_sqrt.cpp) | `sin`, `cos`, `sqrt` forward + closed-form backward against `Approx` tolerances. |
+| [`tests/test_autograd_div.cpp`](../../tests/test_autograd_div.cpp) | `operator/` on `DynamicVariable` — quotient-rule backward + broadcast-aware `unbroadcast`. |
+| [`tests/test_autograd_reduce.cpp`](../../tests/test_autograd_reduce.cpp) | `reduce_along_label` — single-axis sum + gradient broadcast back along the reduced axis. |
+
+**Python parity**: `python/tests/test_autograd.py` + `python/tests/test_autograd_extensions.py` cross-validate every Python entry point against the same C++ canonical answer within `1e-12` for `double` / `1e-5` for `float` (the QO-4 envelope per [`../arc42/10-quality/overview.md`](../arc42/10-quality/overview.md)). When new autograd primitives are added, the contributor adds both the C++ doctest case AND the Python pytest case in the same PR.
+
+The 9-job C++ CI matrix executes all of these on every PR plus the Python wheel smoke for the parity tests.
 
 ---
 
 ## 7. Cross-references
 
 - arc42 §5 (where this container is named): [`../arc42/05-building-blocks/overview.md`](../arc42/05-building-blocks/overview.md)
-- §10 (quality scenarios this design must uphold): [QO-2 gradient_check is the primary witness](../arc42/10-quality/overview.md)
-- §12 (vocabulary): [`../arc42/12-glossary/overview.md`](../arc42/12-glossary/overview.md) — `Variable`, `Tape`, `Gradient check`
-- ADRs anchored: [ADR-0007](../arc42/09-decisions/0007-adopt-autograd-as-first-class-subsystem.md), [ADR-0009](../arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md)
-- Sibling detailed designs: [`./tensor-core.md`](./tensor-core.md), [`./webgpu-element-wise-kernels.md`](./webgpu-element-wise-kernels.md), [`./webgpu-gemm-kernel.md`](./webgpu-gemm-kernel.md). Planned: `./tensor-tex.md`, `./kernel-backend-port.md`.
+- §6 Scenario 3 (autograd backward pass walkthrough): [`../arc42/06-runtime/overview.md`](../arc42/06-runtime/overview.md)
+- §10 (quality scenarios this design must uphold): QO-2 (gradient_check is the primary witness), QO-4 (Python ↔ C++ parity), QC-1 + QC-2 (legibility + diagnostics) per [`../arc42/10-quality/overview.md`](../arc42/10-quality/overview.md)
+- §12 (vocabulary): [`../arc42/12-glossary/overview.md`](../arc42/12-glossary/overview.md) — `Variable`, `Tape`, `Gradient check`, `DynamicVariable (Python)`, `reduce_along_label`.
+- ADRs anchored: [ADR-0007](../arc42/09-decisions/0007-adopt-autograd-as-first-class-subsystem.md), [ADR-0009](../arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md), [ADR-0018](../arc42/09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md) (Python mirror surface).
+- Sibling detailed designs: [`./tensor-core.md`](./tensor-core.md), [`./tensor-tex.md`](./tensor-tex.md), [`./kernel-backend-port.md`](./kernel-backend-port.md), [`./python-sdk-binding-surface.md`](./python-sdk-binding-surface.md), [`./webgpu-element-wise-kernels.md`](./webgpu-element-wise-kernels.md), [`./webgpu-gemm-kernel.md`](./webgpu-gemm-kernel.md), [`./webgpu-broadcast-kernels.md`](./webgpu-broadcast-kernels.md).
 - Tutorial that exercises this module end-to-end: [`tutorials/05_autograd-from-scratch.ipynb`](../../tutorials/05_autograd-from-scratch.ipynb), [`tutorials/07_mlp-on-toy.ipynb`](../../tutorials/07_mlp-on-toy.ipynb).
+- Python notebooks: [`python/notebooks/01_python-autograd.ipynb`](../../python/notebooks/01_python-autograd.ipynb) (autograd tour), [`python/notebooks/03_multifocal-tensors.ipynb`](../../python/notebooks/03_multifocal-tensors.ipynb) (MVG via autograd), [`python/notebooks/04_python-bundle-adjustment-perspective.ipynb`](../../python/notebooks/04_python-bundle-adjustment-perspective.ipynb) (BA with `sin`/`cos`/`__truediv__`).
+- Python public surface that consumes this module: [`../api-contract/python-public-surface.md` §3](../api-contract/python-public-surface.md).
+
+## 8. Future work
+
+- **Forward-mode autograd** (JVP / dual-number style) — explicitly out of scope per ADR-0007's "tape-based reverse-mode" choice. Would require a second tape implementation and double the test surface.
+- **Higher-order gradients** — `backward(backward(loss))` is currently undefined; the tape clears after one walk. A "double backward" path is reachable but the per-tape-entry storage cost doubles. Defer until a Phase 7+ teaching surface needs it (e.g. a Hessian-vector-product demo).
+- **GPU autograd backward kernels** — the WGSL kernel pack covers forward only; backward routes through reference. Phase 6.5 follow-up: lift the broadcast / contract backward into WGSL once the corresponding forward kernels are stable.
+- **Pytorch-style retain_graph parameter** — currently every `backward()` clears the tape. A `retain_tape=true` parameter would enable retraining without recomputing the graph; deferred behind a measured signal.
+- **Bundle C (planned)** — `tan` / `atan2` / `pow` activations to unblock SO(3) Lie-algebra rotation parameterisations in a future BA-with-rotations-on-the-manifold notebook. Tracked as a Phase 6 follow-up; no impl-plan yet.

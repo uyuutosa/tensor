@@ -130,6 +130,22 @@ Before saying "doc update done", verify:
 - [ ] No external standard is paraphrased — only linked.
 - [ ] If this is an ADR, the Y-statement section is filled and Status is `Proposed` (Accepted-state changes go through human review).
 - [ ] The same PR also contains the code change that motivated the doc change.
+- [ ] Project-specific (added 2026-05-14): the cross-reference audit script from [`design-guide/cross-reference-discipline.md` §2](./design-guide/cross-reference-discipline.md) was run and reports no broken relative links.
+- [ ] Project-specific: any new public symbol has both an `api-contract/` entry AND a `arc42/12-glossary/overview.md` entry (per the citability discipline G-8 / [ADR-0015](./arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md)).
+- [ ] Project-specific: any new `python/notebooks/*.ipynb` was executed before commit (the notebook output gate from PR #118 enforces this — failures are loud).
+
+## 6.1 Project-specific patterns to follow (2026-05-14)
+
+The 20-cycle and 100-cycle PDCA docs runs distilled these patterns. Any AI agent (or human contributor) touching `docs/` should know them:
+
+| Pattern                                  | Where it lives                                                                  |
+| ---------------------------------------- | ------------------------------------------------------------------------------- |
+| "INDEX bump on every release / Phase close" | [`design-guide/release-ceremony.md` §2 step 3](./design-guide/release-ceremony.md) |
+| "Every public surface gets a contract entry" | [`api-contract/README.md`](./api-contract/README.md)                              |
+| "Every public name gets a glossary entry"   | [`design-guide/glossary-maintenance.md`](./design-guide/glossary-maintenance.md)  |
+| "Link audit on every doc PR"               | [`design-guide/cross-reference-discipline.md`](./design-guide/cross-reference-discipline.md) |
+| "Doc-before-impl for major surfaces"        | [`user-manual/how-to/use-set-backend.md`](./user-manual/how-to/use-set-backend.md) (Phase 6.5 example) |
+| "Every recurring contributor pain → design-guide entry" | [`design-guide/python-notebook-authoring.md` §7](./design-guide/python-notebook-authoring.md) |
 
 ---
 

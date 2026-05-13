@@ -81,6 +81,47 @@ The DSL is authoritative; this is the prose mirror, expressed in hexagonal direc
 
 **The single hard rule (ADR-0009 + ADR-0011)**: a header under `include/tensor/core/` that is not `concepts.hpp` and not under `include/tensor/core/backend/<adapter>/` may not `#include` anything from `include/tensor/{tex,autograd}/`; and no header under `include/tensor/core/backend/<adapter>/` may include from another adapter. CI enforces this; see [`../../design-guide/architectural-discipline.md`](../../design-guide/architectural-discipline.md).
 
+**Enforcement examples** — the exact `grep` invocations that catch a violation (also recorded in [`../../design-guide/architectural-discipline.md`](../../design-guide/architectural-discipline.md) §5):
+
+```bash
+# Core depending on autograd / tex — must return nothing.
+grep -nE '#include[ ]+<tensor/(autograd|tex)' \
+    include/tensor/core/*.hpp include/tensor/core/*/*.hpp \
+    | grep -v include/tensor/core/concepts.hpp
+
+# Adapter depending on a sibling adapter — must return nothing.
+for adapter in reference eigen webgpu; do
+  others=$(echo "reference eigen webgpu" | tr ' ' '\n' | grep -v $adapter | paste -sd'|' -)
+  grep -nE "#include[ ]+<tensor/core/backend/($others)/" \
+      include/tensor/core/backend/$adapter/*.hpp
+done
+
+# autograd depending on tex (or vice-versa) — must return nothing.
+grep -nE '#include[ ]+<tensor/tex' include/tensor/autograd/*.hpp
+grep -nE '#include[ ]+<tensor/autograd' include/tensor/tex/*.hpp
+```
+
+When any of these returns a line, the violation must be fixed before merge (per OC-3's PR-time discipline). A future cycle may package these into a `tools/check-hexagon.sh` script and add it to the CI lint workflow alongside `tools/check-vendored.sh`.
+
+### Container ownership table
+
+Every container in §5's main table maps to exactly one source directory under the repo root. Lookup table for contributors landing in unfamiliar code:
+
+| Container                        | Source directory                                                            | Test directory                                 |
+| -------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------- |
+| `tensor::core`                   | `include/tensor/core/`                                                       | `tests/test_core_*.cpp`, `tests/test_dynamic_*.cpp`, `tests/test_typed_tensor.cpp`, `tests/test_label_tag.cpp`, `tests/test_axis_shape.cpp`, `tests/test_contract.cpp`, etc. |
+| `tensor::autograd`               | `include/tensor/autograd/`                                                   | `tests/test_autograd_*.cpp`                    |
+| `tensor::tex`                    | `include/tensor/tex/`                                                        | `tests/test_tex_*.cpp`, `tests/test_evaluator*.cpp` |
+| `tensor::core::backend::reference` | `include/tensor/core/backend/reference/`                                    | implicit (other tests run against it as canonical) |
+| `tensor::core::backend::eigen`   | `include/tensor/core/backend/eigen/`                                         | `tests/test_eigen_backend.cpp`                 |
+| `tensor::core::backend::webgpu`  | `include/tensor/core/backend/webgpu/`                                        | `tests/test_webgpu_backend.cpp`                |
+| `python/`                        | `python/src/`, `python/tensor/`, `python/CMakeLists.txt`                     | `python/tests/test_*.py`                       |
+| `python/extras/` (Phase 6.5 planned) | `python/extras/{eigen,webgpu}/`                                          | `python/tests/test_backend_parity.py`          |
+| `huggingface/space/`             | `huggingface/space/`                                                         | manual smoke via `python app.py` locally       |
+| `lyx-export/`                    | `lyx-export/`                                                                | `lyx-export/tests/`, golden-file CI            |
+| Jupyter Book site                | `book/` + `book/_toc.yml` + `book/stage.sh`                                  | manual `jupyter-book build book` smoke         |
+| CI workflows                     | `.github/workflows/{ci,deploy-book,notebook-ci,lyx-export-ci,python-wheel-smoke,cibuildwheel}.yml` | self-testing                          |
+
 ## Why this decomposition
 
 Each container exists because at least one of the §1 goals or one runtime scenario in [`../06-runtime/`](../06-runtime/) requires it:

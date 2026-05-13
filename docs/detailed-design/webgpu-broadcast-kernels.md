@@ -279,3 +279,10 @@ Tolerance: `1e-5` per [ADR-0012 §Decision Outcome point 5](../arc42/09-decision
 - Sibling detailed designs: [`./webgpu-element-wise-kernels.md`](./webgpu-element-wise-kernels.md), [`./webgpu-gemm-kernel.md`](./webgpu-gemm-kernel.md). Planned: `./kernel-backend-port.md` is the only remaining detailed-design slot.
 - C++ broadcast Domain: [`include/tensor/core/broadcast.hpp`](../../include/tensor/core/broadcast.hpp) — the kernel's per-thread logic mirrors `project_index` + `increment_index` from this header.
 - Shipping PR: [#62](https://github.com/uyuutosa/tensor/pull/62).
+- Sibling: [`./kernel-backend-port.md`](./kernel-backend-port.md) (the port these kernels implement), [`./python-sdk-binding-surface.md`](./python-sdk-binding-surface.md) (the Phase 6.5 Python consumer via `pip install tensor-named-axis[webgpu]`).
+
+## 8. Future work
+
+- **`unbroadcast` on WGSL** — currently the `unbroadcast` direction (the autograd backward through a broadcast op) delegates to reference. Lifting it onto WGSL closes the last broadcast-shaped gap and lets the WebGPU adapter cover autograd backward without falling back to CPU. Track as a Phase 7+ enhancement.
+- **`reduce_along_label` on WGSL** — Bundle B (PR #109) added the autograd-aware single-axis reduce; the WGSL path delegates to reference for now. Subgroup-shuffle pattern from `webgpu-element-wise-kernels.md` §7 future-work is the natural starting point.
+- **Strided-input fast path** — when the input strides are already contiguous in the broadcast direction, a single contiguous copy beats the per-thread `project_index` arithmetic. Detect at dispatch time and select kernel variant.

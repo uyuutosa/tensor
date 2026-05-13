@@ -51,6 +51,46 @@ Three layers, in order of trust:
 
 Until (2) and (3) are wired, contributors are expected to self-check; any review comment with the keyword **direction violation** halts the PR.
 
+### 4.1 Pre-PR grep commands (run locally before pushing)
+
+Three `grep` invocations catch every violation type. Run these from the repo root before opening a PR that touches `include/`:
+
+```bash
+# Violation 1: Core depends on autograd / tex.
+# Must return nothing (concepts.hpp is the only exception).
+grep -nE '#include[[:space:]]+<tensor/(autograd|tex)' \
+    include/tensor/core/*.hpp include/tensor/core/*/*.hpp \
+    2>/dev/null | grep -v include/tensor/core/concepts.hpp
+echo "(violation 1: empty if clean)"
+
+# Violation 2: An adapter depends on a sibling adapter.
+# Must return nothing.
+for adapter in reference eigen webgpu; do
+  others=$(echo "reference eigen webgpu" | tr ' ' '\n' | grep -v "^${adapter}$" | paste -sd'|' -)
+  grep -nE "#include[[:space:]]+<tensor/core/backend/(${others})/" \
+      "include/tensor/core/backend/${adapter}/"*.hpp 2>/dev/null
+done
+echo "(violation 2: empty if clean)"
+
+# Violation 3: autograd or tex includes the other.
+# Must return nothing.
+grep -nE '#include[[:space:]]+<tensor/tex' include/tensor/autograd/*.hpp 2>/dev/null
+grep -nE '#include[[:space:]]+<tensor/autograd' include/tensor/tex/*.hpp 2>/dev/null
+echo "(violation 3: empty if clean)"
+```
+
+A future PR will package these into `tools/check-hexagon.sh` + a CI step. Until then, the discipline is contributor + reviewer self-check.
+
+### 4.2 Worked failure example
+
+If a contributor adds `#include <tensor/autograd/variable.hpp>` to `include/tensor/core/dynamic_tensor.hpp`, the first grep returns:
+
+```
+include/tensor/core/dynamic_tensor.hpp:12:#include <tensor/autograd/variable.hpp>
+```
+
+That single output line is the review-blocker. The PR comment is "direction violation, line 12 — please reverse the include direction or move the dependency into a port".
+
 ## Contributor checklist (paste into PR descriptions when touching `include/`)
 
 ```markdown
