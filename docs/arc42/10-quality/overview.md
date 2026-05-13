@@ -199,7 +199,33 @@ Each scenario is in the Source / Stimulus / Environment / Response / Response Me
 | Response          | Python result and C++ canonical result agree element-wise within tolerance.                         |
 | Response measure  | `1e-12` for `double`; `1e-5` for `float`. Cross-validated against NumPy / `np.einsum` for `contract`. Identical to the cross-backend QO-1 envelope so the Python surface inherits Domain-side guarantees. |
 
-## 3. Cross-references
+## 3. Measured baselines (2026-05-12 backend perf report)
+
+The [2026-05-11 backend performance comparison](../../reports/2026-05-11_backend-performance-comparison.md) (with 2026-05-12 RTX 3090 measurements) gives the baselines that QF-* scenarios compare future work against. Snapshot for grep-discoverability:
+
+| Workload                       | reference baseline | eigen        | webgpu (RTX 3090, Dawn 20260410.140140) |
+| ------------------------------ | ------------------ | ------------ | --------------------------------------- |
+| Element-wise add 1024×1024 (`float`) | (see report)       | (see report) | (see report)                            |
+| Matmul 1024×1024 (`float`)            | (see report)       | (see report) | (see report)                            |
+| Broadcast unbroadcast 1024×1024       | (see report)       | (see report) | webgpu→reference delegate                 |
+
+The numbers themselves live in the dated report (Layer B). This §10 table only documents *which* report carries the canonical baselines and which scenarios consume them. When the next round of perf measurements lands (Phase 6.5 + Phase 5 inputs), a fresh `YYYY-MM-DD_backend-performance-*.md` report becomes the new pointer target; this §10 table refreshes the row.
+
+## 4. Quality target review cadence
+
+QO / QP / QF / QS scenarios drift over time — the wheel grows, the GPU adapter coverage extends, the wheel cold-start envelope opens or tightens. Cadence:
+
+| Cadence               | What gets re-validated                                                                                            |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Every release tag     | QP-1..QP-4 (matrix shape + Python install/cold-start) — fresh baselines logged in the release CHANGELOG entry.   |
+| Half-yearly bibliography audit (2026-11-11 next) | QC-3 (citability), QS-1 (documentation freshness), QS-2 (substrate sturdiness). |
+| After every measured perf report | QF-1..QF-2 — pointer in §3 above gets bumped to the new dated report.                                  |
+| Per-PR (continuous)   | QO-1..QO-4 — every PR's CI matrix runs the numerical-agreement asserts; tolerance violations block merge.        |
+| Phase close           | QO-3 (byte-for-byte 2016 README replication) — re-checked at every major milestone retrospective.                |
+
+The cadence is **piggy-backed** on artifacts that already exist (release tags, audit reports, perf reports, PR CI) — no new ceremony required. Drift is caught by whichever artifact ships next.
+
+## 5. Cross-references
 
 - §1 §4 quality goals (top three): [`../01-introduction-and-goals/overview.md`](../01-introduction-and-goals/overview.md)
 - §2 constraints bounding these qualities: [`../02-architecture-constraints/overview.md`](../02-architecture-constraints/overview.md)

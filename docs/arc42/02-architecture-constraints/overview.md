@@ -48,7 +48,30 @@ None apply to first-party content. The project does not handle PII, does not per
 
 Vendored content carries the upstream's license. As of 2026-05-12, `third_party/` is empty — the only vendored substrate (`gpu_cpp/` at tag 0.2.0) was removed once [ADR-0016](../09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md) superseded ADR-0014 §Decision Outcome point 2 (Dawn is reached directly via `webgpu_cpp.h` instead). For any future vendoring (e.g. `kokkos/stdBLAS` for the `tensor::linalg` shim), the maintainer's obligation is to preserve the LICENSE file and not modify the vendored code without re-vendoring discipline (per TC-9 above).
 
-## 4. Cross-references
+## 4. Constraint review cadence
+
+Constraints expire (per the "Expires when" column). The review cadence is **piggy-backed on the half-yearly bibliography audit** (per [ADR-0015 §Compliance](../09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md) / [ADR-0017](../09-decisions/0017-clarify-reproducibility-envelope.md)):
+
+| Half-yearly audit | What gets re-validated for §2                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------- |
+| TC-1, TC-4         | C++ baseline: GCC / Clang / MSVC / AppleClang floors. Bumped if Phase 5+ adopts C++23 features the floor can't compile. |
+| TC-3               | CMake floor; bumped when a vcpkg port requires it.                                            |
+| TC-9               | `third_party/` inventory + `VENDORED_FROM` records resolve. Empty as of 2026-05-13.           |
+| TC-10              | nanobind upper-bound (`< 3`) — bumped if nanobind 3.x ships breaking changes that affect the binding surface. |
+| TC-11              | PEP-508 extras packaging — re-evaluated if PyPI per-file size limits change materially or fat-wheel becomes preferable. |
+| OC-2               | Free-tier tooling — re-validated if GitHub Actions / Pages / Codespaces / mybinder.org pricing changes. |
+
+First audit: **2026-11-11** (six months from ADR-0015 + ADR-0017 acceptance). Output: a Layer-B report under [`../../reports/`](../../reports/) titled `YYYY-MM-DD_bibliography-audit.md` per the half-yearly convention.
+
+Constraints **lifted** out of cycle (without waiting for the audit) require:
+
+1. A new ADR superseding the relevant `Source` ADR in column 3.
+2. Updates to every cross-reference in this table.
+3. A retrospective report covering the why-now.
+
+The §11 risk register row that pointed at the constraint gets a status update on every audit (active / resolved / superseded).
+
+## 5. Cross-references
 
 - §1 Introduction and Goals: [`../01-introduction-and-goals/overview.md`](../01-introduction-and-goals/overview.md) — goals these constraints shape.
 - §4 Solution Strategy: [`../04-solution-strategy/strategy.md`](../04-solution-strategy/strategy.md) — strategies that respect these constraints.

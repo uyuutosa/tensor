@@ -143,7 +143,97 @@ last-reviewed: 2026-05-11
 
 **Why this is interesting.** Step 3 (sys.modules registration) is the nanobind ↔ Python-import-system boundary papercut that the [Phase 6 retrospective](../../reports/2026-05-13_phase-6-python-sdk-retrospective.md) flags as one of four conventions worth recording. Documenting it in §6 keeps it discoverable for the next nanobind binding work.
 
-## Why these five scenarios
+## Scenario 6 — Phase 6.5 `tensor.set_backend("eigen")` runtime switch
+
+**Trigger.** A learner has `pip install tensor-named-axis[eigen]` on a clean venv and calls `tensor.set_backend("eigen")` from a notebook cell, intending to compare Eigen SIMD vs the default reference adapter on a 1000×1000 matmul.
+
+**Walk-through (forward-doc; lands in `0.3.0` per [ADR-0019](../09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md)).**
+
+```text
+1. The wheel install put two `.so` files under tensor/:
+     site-packages/tensor/_tensor_native_reference.so   (from tensor-named-axis)
+     site-packages/tensor/_tensor_native_eigen.so       (from tensor-named-axis-eigen)
+2. `import tensor` runs `python/tensor/__init__.py`:
+   - For each backend in {reference, eigen, webgpu}:
+       try:
+           mod = importlib.import_module(f"._tensor_native_{backend}", __name__)
+           AVAILABLE[backend] = mod
+       except ImportError:
+           pass
+   - DEFAULT = first available backend (reference is always available).
+3. `tensor.list_available_backends()` returns ['reference', 'eigen'].
+4. `tensor.current_backend()` returns 'reference' (the default).
+5. `tensor.set_backend("eigen")`:
+   - Look up AVAILABLE["eigen"] → mod object.
+   - Rebind top-level exports:
+       tensor.DynamicTensor = mod.DynamicTensor
+       tensor.contract      = mod.contract
+       tensor.from_numpy    = mod.from_numpy
+       tensor.autograd      = mod.autograd
+       tensor.tex           = mod.tex
+       sys.modules["tensor.autograd"] = mod.autograd  # (the sys.modules trick from Scenario 5)
+       sys.modules["tensor.tex"]      = mod.tex
+   - Update `_CURRENT_BACKEND = "eigen"`.
+6. Subsequent `tensor.DynamicTensor(...)` constructions resolve to `mod.DynamicTensor`
+   — the new tensors carry an Eigen-backed C++ implementation.
+7. Tensors constructed *before* step 6 continue to use whatever backend was active at
+   their construction time. Mid-computation rebind is undefined; document this clearly
+   in the how-to (see `../../user-manual/how-to/use-set-backend.md`).
+```
+
+**Missing-backend path**:
+
+```text
+1. tensor.set_backend("webgpu") when webgpu is not in AVAILABLE.
+2. Raises:
+     RuntimeError: webgpu backend is not installed.
+     Install with:  pip install tensor-named-axis[webgpu]
+     Or install all backends:  pip install tensor-named-axis[all]
+     Currently available: ['reference', 'eigen']
+3. No silent fallback to reference. Explicit-request semantics: fail loud.
+```
+
+**Why this is interesting.** Steps 5–6 are runtime rebinding of `tensor.DynamicTensor` — looking up `tensor.DynamicTensor` after the rebind gives a different C++ type than before. This is fine because the wrapper class on the Python side is identical across backends (only the underlying `_tensor_native_*.so` differs), but it means any user-side `assert isinstance(x, tensor.DynamicTensor)` could fail if `x` was constructed before the rebind. The how-to (`use-set-backend.md`) documents the constraint.
+
+## Scenario 7 — Notebook execute-then-deploy pipeline (docs-system runtime)
+
+**Trigger.** A maintainer merges PR #117 (the executed-notebooks PR). `deploy-book.yml` fires on the merge-to-develop push.
+
+**Walk-through.** This is the docs-system's own runtime — included so contributors understand the pipeline they're editing.
+
+```text
+1. `.github/workflows/deploy-book.yml` triggers on push to develop:
+   - actions/checkout@v4 pulls the develop HEAD.
+   - actions/setup-python@v5 installs CPython 3.11.
+   - pip install jupyter-book>=0.15,<1.
+2. bash book/stage.sh:
+   - ln -sfn ../tutorials book/tutorials
+   - ln -sfn ../python    book/python
+   - ln -sfn ../docs      book/docs
+   (Per PR #116: Sphinx's source root is book/, so external content needs
+    to be reachable from inside book/.)
+3. jupyter-book build book:
+   - Sphinx reads book/_config.yml and book/_toc.yml.
+   - For each chapter in _toc.yml, Sphinx reads the .ipynb/.md/.rst file
+     and produces HTML under book/_build/html/.
+   - `execute_notebooks: "off"` in _config.yml — Sphinx renders the
+     EXISTING outputs in the committed JSON. (If commit was un-executed,
+     output cells are empty. The PR #118 gate prevents that.)
+   - The plotly `<script src="https://cdn.plot.ly/plotly-3.0.1.min.js">`
+     reference in committed-executed cells loads at browser-render time.
+     The MathJax v3 `<script defer src="...mathjax@3/...">` from the
+     book theme typesets $…$ math. (PR #120 ensured the two don't
+     collide.)
+4. actions/upload-pages-artifact@v3 uploads book/_build/html/.
+5. The `deploy` job (after `build`):
+   - actions/deploy-pages@v4 pushes to the gh-pages target.
+   - GitHub Pages serves the artifact at https://uyuutosa.github.io/tensor/.
+   - Cache TTL: max-age=600 (10 min).
+```
+
+**Why this is interesting.** The four PRs that closed the publish gap (#116 stage.sh, #117 executed-notebooks, #118 gate, #120 MathJax) each touched a different layer of this pipeline. Anchoring the layers here keeps the next docs-system regression from hiding in the gaps between layers.
+
+## Why these seven scenarios
 
 The §1 §G-1..§G-9 goals each show up here:
 
@@ -152,6 +242,8 @@ The §1 §G-1..§G-9 goals each show up here:
 - Scenario 3 → G-4 (end-to-end teaching arc), G-2.
 - Scenario 4 → G-1 (Hexagonal payoff), G-5 (zero-friction install / configure).
 - Scenario 5 → G-9 (Python is a first-class entry to the same Domain).
+- Scenario 6 → G-9 (Phase 6.5 forward — runtime backend selection).
+- Scenario 7 → G-4 + G-6 + G-8 (the docs-system pipeline that delivers all of the above).
 
 ## Cross-references
 

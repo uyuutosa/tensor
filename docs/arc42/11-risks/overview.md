@@ -72,7 +72,39 @@ These are the risks ADR-0014 was written to manage. The 2026-05-11 external-subs
 | R-P7 | **Notebooks committed un-executed render source-only on the published site.** Caught in PR #117: every `python/notebooks/*.ipynb` had `execution_count: None` so the Jupyter Book deploy emitted code blocks with no outputs. | 🟢 Low | PR #118 added a CI gate that fails when any `python/notebooks/*.ipynb` is committed without `execution_count` or outputs. Documented in [`CONTRIBUTING.md` §Python notebooks](../../../CONTRIBUTING.md). |
 | R-P8 | **`book/_toc.yml` external paths silently 404 on the deployed site.** Pre-PR #116 every notebook + report chapter was missing from the published Jupyter Book because `../tutorials/…` paths lay outside Sphinx's `book/`-rooted source tree. | 🟢 Low | PR #116 added `book/stage.sh` (symlinks `book/{tutorials,python,docs} -> ../<same>`) called by `deploy-book.yml` before `jupyter-book build`. Pattern documented in `README.md` and CONTRIBUTING.md. |
 
-## 6. Cross-references
+## 6. Risk monitoring methodology
+
+Each R-* row carries an implicit monitoring contract:
+
+- **Likelihood column** is updated whenever evidence shifts. The 🟢/🟡/🔴 symbol is not decorative — it's the current best assessment as of the file's `last-reviewed` frontmatter date.
+- **Active mitigations column** must include at least one *verifiable* item per row (CI job, ADR clause, code-level guard). "We watch carefully" is not a mitigation.
+- **Lessons-learned entries (R-P6 / R-P7 / R-P8)** carry the introducing PR number so the next reviewer can read the change-history.
+
+Review cadence (piggy-backed on existing artifacts per §10 §4):
+
+| Trigger                       | What gets re-validated                                                                |
+| ----------------------------- | ------------------------------------------------------------------------------------- |
+| Half-yearly bibliography audit (next: **2026-11-11**) | Every R-* row: is the likelihood still accurate? Is each mitigation still in place? Are there new risks worth filing? |
+| Every phase close (retrospective) | Phase-specific risks (R-P*, R-P3-related, etc.). New risks named in the retrospective land here as R-* rows in the next docs PR. |
+| Per-PR that touches CI / build / deploy | The relevant R-* row's mitigation column is verified against the change. |
+| Any "I just spent N hours debugging a class of bug I didn't see coming" event | File a new R-* row before closing the issue. |
+
+The 🟢 / 🟡 / 🔴 symbols obey a strict definition:
+
+- 🔴 **High**: actively threatens an unmet quality scenario or success criterion; needs a mitigation plan in the current PR.
+- 🟡 **Medium**: known issue with active mitigation; review at next phase close.
+- 🟢 **Low**: theoretical, well-mitigated, or transitive (depends on an external system that has its own monitoring).
+
+A row that has been 🟢 for two consecutive audits without changes can be moved to a "Resolved / archived" subsection in a future cycle; the row's history stays for context.
+
+## 7. Cross-references
+
+- §1 success criteria these risks could block: [`../01-introduction-and-goals/overview.md`](../01-introduction-and-goals/overview.md)
+- §2 constraints that bound these risks' impact: [`../02-architecture-constraints/overview.md`](../02-architecture-constraints/overview.md)
+- §9 ADRs that codify mitigations: [`../09-decisions/`](../09-decisions/) — especially [ADR-0010](../09-decisions/0010-refine-positioning-to-educational-first-production-capable.md), [ADR-0015](../09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md) (superseding [ADR-0013](../09-decisions/0013-reframe-as-canonical-reference-for-named-tensor-computation.md)), [ADR-0014](../09-decisions/0014-external-substrate-strategy.md), [ADR-0018](../09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md), [ADR-0019](../09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md).
+- §10 quality scenarios these risks threaten: [`../10-quality/overview.md`](../10-quality/overview.md). Cadence is shared (§10 §4).
+- Per-phase risks-and-mitigations tables: [`../../impl-plans/`](../../impl-plans/) — Phase 3 plan has a richer GPU-specific table; [Phase 6.5 plan](../../impl-plans/2026-05-13_phase-6-5-set-backend.md) has R-P6.5.* tracking.
+- Postmortems for materialised incidents (none yet, as of 2026-05-14): [`../../postmortems/`](../../postmortems/).
 
 - §1 success criteria these risks could block: [`../01-introduction-and-goals/overview.md`](../01-introduction-and-goals/overview.md)
 - §2 constraints that bound these risks' impact: [`../02-architecture-constraints/overview.md`](../02-architecture-constraints/overview.md)

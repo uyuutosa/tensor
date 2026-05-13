@@ -302,6 +302,53 @@ The PR #118 CI step that fails the `validate` job if any `python/notebooks/*.ipy
 
 Plotly's `notebook_connected` renderer hard-codes `include_mathjax="cdn"`, which injects MathJax v2 alongside Jupyter Book's MathJax v3 page-level loader. The v2 script clobbers v3's typesetting; `$…$` math renders as raw `\(…\)` text. Workaround: monkey-patch `pio.to_html` to force `include_mathjax=False` (see [`../../design-guide/python-notebook-authoring.md`](../../design-guide/python-notebook-authoring.md) §2). Caught in PR #120.
 
+### Bundle Adjustment (BA)
+
+Non-linear optimisation problem from photogrammetry / multi-view geometry: given `N` 3D points and `V` cameras with noisy observations, jointly recover the camera parameters (rotation + translation + intrinsics) and the point positions that minimise the reprojection-error sum-of-squares. The project's `python/notebooks/04_python-bundle-adjustment-perspective.ipynb` covers the *partial* BA case (cameras only, points fixed) under perspective projection. Reference: Triggs et al., *Bundle Adjustment — A Modern Synthesis* (ICCV 1999); Hartley & Zisserman §18.
+
+### Multi-view geometry (MVG)
+
+The branch of computer vision that studies geometric constraints from multiple views of a scene. The named-axis surface fits naturally because the constraints (bifocal `F_{ij}` / trifocal `T_i^{jk}` / quadrifocal `Q^{ijkl}`) are multi-linear functions of view-indexed pixel coordinates — written directly as Einstein contractions in the project's `_tex` DSL. Anchor: Hartley & Zisserman, *Multiple View Geometry in Computer Vision*, 2nd ed.
+
+### Bifocal / Trifocal / Quadrifocal tensors
+
+| Tensor          | Index pattern                              | DOF (algebraic) | What it constrains |
+| --------------- | ------------------------------------------ | --------------- | ------------------ |
+| Bifocal `F_{ij}`     | `pix1 × pix2`                                  | 7 (det = 0)     | Epipolar geometry between two views (`x^T F x' = 0`). |
+| Trifocal `T_i^{jk}` | `pix1 × pix2 × pix3` (one covariant, two contravariant) | 18              | Joint constraint across three views. |
+| Quadrifocal `Q^{ijkl}` | `pix1 × pix2 × pix3 × pix4` (all contravariant) | 16             | Four-view constraint; learnable end-to-end as a notebook demo. |
+
+Each is a worked example of "the algebra is the named-axis contraction" — see `03_multifocal-tensors.ipynb` for the autograd-learned versions.
+
+### Perspective divide
+
+The non-linear map `(y¹, y², y³) -> (y¹/y³, y²/y³)` that takes camera-space 3D coordinates to image-space 2D pixel coordinates. Where named-axis autograd has to navigate division gradients in `python/notebooks/04_python-bundle-adjustment-perspective.ipynb`. Bundle B's `__truediv__` operator (PR #109) added the autograd-aware version.
+
+### Torus knot (2, 3)
+
+The (p, q) = (2, 3) torus knot — a closed 3D curve wrapping 2 times around the torus's symmetry axis and 3 times around the torus tube. The MVG demo (`03_multifocal-tensors.ipynb`) samples N=30 points along it to get a synthetic 3D scene that's visually richer than a random cube while staying numerically well-conditioned for the F/T/Q learning loop. Switched from a random cube in PR #110 (the "demo polish" bundle).
+
+### Reprojection error
+
+The 2D distance between (a) the projection of an estimated 3D point through an estimated camera and (b) the observed pixel coordinate. Squared and summed over all `N × V` point-camera pairs, it becomes the BA loss `L(theta, t)` in `04_python-bundle-adjustment-perspective.ipynb`. Reverse-mode autograd via `tensor.autograd` produces the gradient w.r.t. the camera parameters.
+
+### Reference (canonical) backend
+
+The `tensor::core::backend::reference::Backend` adapter — the pure-C++ implementation that every other `KernelBackend` adapter must agree with, element-wise, within tolerance. The "always-available" backend in Phase 6.5's extras-packaging design (ADR-0019). Default for the educational on-ramp.
+
+### Approval tolerances (numerical agreement)
+
+The project's two-tier tolerance discipline:
+
+- `1e-12` for `double` operations (the educational default).
+- `1e-5` for `float` operations (the WebGPU-backend-bound type).
+
+These appear in QO-1, QO-4, every cross-backend test, and every Python ↔ C++ parity test. Tighter than `1e-9` would force `long double` (not available on every platform); looser than `1e-5` would let `float` SIMD accumulator orderings drift.
+
+### Pages site
+
+GitHub Pages deployment of the Jupyter Book at <https://uyuutosa.github.io/tensor/>. Built by [`.github/workflows/deploy-book.yml`](../../../.github/workflows/deploy-book.yml) on every push to `develop` or `main`. The system's runtime per §6 Scenario 7.
+
 ## Cross-references
 
 - §1 §G-8 (citability discipline) where this glossary plays a role: [`../01-introduction-and-goals/overview.md`](../01-introduction-and-goals/overview.md)
