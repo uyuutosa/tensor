@@ -33,6 +33,8 @@ parts:
     chapters:
       - file: ../python/notebooks/00_python-sdk-tour.ipynb
         title: "Python SDK tour — DynamicTensor / contract / NumPy interop"
+      - file: ../python/notebooks/01_python-autograd.ipynb
+        title: "Python autograd — DynamicVariable / backward / SGD"
 
   - caption: Reference
     chapters:

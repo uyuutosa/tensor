@@ -42,7 +42,7 @@ def test_public_surface_is_at_or_above_m2_baseline():
     updates this set.
     """
     public = {name for name in dir(tensor) if not name.startswith("_")}
-    expected_m3 = {
+    expected_m4 = {
         "hello",
         "Axis",
         "DynamicShape",
@@ -50,10 +50,16 @@ def test_public_surface_is_at_or_above_m2_baseline():
         "DynamicTensorF32",
         "contract",
         "from_numpy",
+        "autograd",
     }
-    assert expected_m3.issubset(public), (
-        f"missing P6.M3 baseline symbols: {sorted(expected_m3 - public)}"
+    assert expected_m4.issubset(public), (
+        f"missing P6.M4 baseline symbols: {sorted(expected_m4 - public)}"
     )
+    # The autograd submodule exposes the tape-based reverse-mode surface.
+    assert hasattr(tensor.autograd, "DynamicVariable")
+    assert hasattr(tensor.autograd, "backward")
+    assert hasattr(tensor.autograd, "sum_all")
+    assert hasattr(tensor.autograd, "sgd_update")
     # `__version__` is exposed but lives under the dunder filter; check
     # it separately to make sure the import binding succeeded.
     assert hasattr(tensor, "__version__")
