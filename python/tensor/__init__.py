@@ -41,6 +41,8 @@ Example
 >>> # c is a 5×5 outer-sum table — c_{ij} = a_i + b_j.
 """
 
+import sys as _sys
+
 from ._tensor_native import __version__
 from ._tensor_native import autograd
 from ._tensor_native import hello as _native_hello
@@ -52,6 +54,12 @@ from ._tensor_native import (
     contract,
     from_numpy,
 )
+
+# nanobind submodule (`autograd`) is exposed as an attribute of this
+# package by default. Register it under the canonical dotted name so
+# `import tensor.autograd as ag` works as users expect — without this
+# the only access path is `from tensor import autograd`.
+_sys.modules[__name__ + ".autograd"] = autograd
 
 __all__ = [
     "__version__",
