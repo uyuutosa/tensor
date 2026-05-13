@@ -429,6 +429,11 @@ NB_MODULE(_tensor_native, m) {
     // milestones could expose IndexedVar / BinOp / Sum / Equation /
     // Group node classes if a structural-walk use case appears.
     nb::class_<tex::Expression>(tex_mod, "Expression")
+        .def(nb::init<>(),
+             "Default-construct an empty Expression (no AST root). "
+             "Users normally obtain Expressions via `parse(...)`; the "
+             "default ctor is exposed for completeness and parity with "
+             "the C++ side.")
         .def("empty", &tex::Expression::empty,
              "True when the expression carries no AST nodes.")
         .def("__repr__",
