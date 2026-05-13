@@ -42,13 +42,16 @@ This policy keeps the educational kernel for arithmetic operators a single legib
 
 ## 4. Testing strategy
 
-The project tests across three orthogonal axes (see [§10 quality scenarios QO-1..QO-3](../10-quality/overview.md) for the response measures):
+The project tests across four orthogonal axes (see [§10 quality scenarios QO-1..QO-3](../10-quality/overview.md) for the response measures):
 
-1. **Per-container unit tests** — one `tests/test_<container>_<feature>.cpp` per concern. Currently 17 source files exercising tensor::core, tensor::autograd, tensor::tex, and the three KernelBackend adapters. Listed in [`detailed-design/tensor-core.md §6`](../../detailed-design/tensor-core.md).
-2. **Cross-backend numerical agreement** — `tests/test_eigen_backend.cpp` and `tests/test_webgpu_backend.cpp` assert that `reference::Backend` and the alternative adapter produce element-wise-agreeing tensors within a documented tolerance (`1e-9` for `double`, `1e-5` for `float`). This is the canonical correctness witness for "any new backend implementation is a working KernelBackend".
+1. **Per-container unit tests** — one `tests/test_<container>_<feature>.cpp` per concern. 20+ source files exercising tensor::core, tensor::autograd, tensor::tex, and the three KernelBackend adapters. Listed in [`detailed-design/tensor-core.md §6`](../../detailed-design/tensor-core.md).
+2. **Cross-backend numerical agreement** — `tests/test_eigen_backend.cpp` and `tests/test_webgpu_backend.cpp` assert that `reference::Backend` and the alternative adapter produce element-wise-agreeing tensors within a documented tolerance (`1e-9` for `double`, `1e-5` for `float`). This is the canonical correctness witness for "any new backend implementation is a working KernelBackend". Phase 6.5 adds `python/tests/test_backend_parity.py` mirroring this discipline from the Python side once `set_backend()` ships.
 3. **Autograd gradient_check** — every autograd primitive's analytical gradient is finite-difference-checked at every release. Tests live alongside the primitives in `tests/test_autograd_*.cpp`.
+4. **Python pytest suite** — `python/tests/test_smoke.py`, `test_arithmetic.py`, `test_contract_numpy.py`, `test_autograd.py`, `test_autograd_extensions.py`, `test_tex.py`. Run on `ubuntu-latest × CPython 3.11` via [`.github/workflows/python-wheel-smoke.yml`](../../../.github/workflows/python-wheel-smoke.yml) on every PR. Each test cross-validates the Python entry point against the same numerical result the C++ tests assert, within `1e-12` for `double` / `1e-5` for `float`.
 
-The 10-job CI matrix executes all of these on every PR ([QP-1](../10-quality/overview.md)).
+**CI matrix shape (post-PR #113).** The 9-job C++ matrix executes on every PR ([QP-1](../10-quality/overview.md)); the Python wheel smoke adds one more job; the deploy-book + notebook-validate jobs cover the docs side. Develop has been 100% green since PR #113 fixed the long-standing MSVC `__msvc_string_view` parse bug and the clang-13 frontend segfault on `test_label_tag.cpp` (`clang-13` → `clang-15` matrix bump). The cibuildwheel matrix (release-only, ~20 wheels per tag for `0.2.0` / ~52 for `0.3.0`) is triggered by tag push only.
+
+**Notebook output gate** ([`.github/workflows/notebook-ci.yml`](../../../.github/workflows/notebook-ci.yml) `validate` job, added PR #118). Every `python/notebooks/*.ipynb` must be committed with non-null `execution_count` AND at least one output cell. Catches the "notebook committed source-only → Jupyter Book renders no figures" bug class (caught the hard way in PR #117 when the MVG 3D plotly scenes were invisible on the published site). C++ tutorials under `tutorials/` are not gated because xeus-cpp execution requires a conda environment; their execution is covered by the weekly cron in the same workflow.
 
 ## 5. Naming and vocabulary conventions
 

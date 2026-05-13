@@ -40,7 +40,10 @@ In rough dependency order:
 7. **[ADR-0007](../09-decisions/0007-adopt-autograd-as-first-class-subsystem.md) — Adopt tape-based reverse-mode autograd as a first-class subsystem.**
    Pivots the library from a pure tensor-algebra DSL to a tinygrad-class teaching ML framework grounded in named-axis semantics. `tensor::autograd` extends the Domain hexagon.
 
-(Two implementation-flavored decisions — [ADR-0003](../09-decisions/0003-replace-eclipse-cdt-with-cmake-and-vcpkg.md) (CMake + vcpkg) and [ADR-0008](../09-decisions/0008-distribute-as-header-only-with-jupyter-tutorials.md) (header-only + Jupyter Book) — live one click away rather than in this top-7 index.)
+8. **[ADR-0018](../09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md) (refined by [ADR-0019](../09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md)) — Add a Python SDK as a DrivingAdapter; the C++ Domain remains the single source of truth.**
+   Python entry points consume the same `tensor::core` + `tensor::autograd` + `tensor::tex` headers the C++ tutorials exercise; nanobind wraps the boundary, scikit-build-core builds the per-CPython wheel matrix, and the public surface stays minimal (`DynamicTensor`, autograd `DynamicVariable`, `tex.Evaluator`, plus the `set_backend()` runtime selector from Phase 6.5). No algebra logic lives in Python. Wedge: per the 2026-05-12 landscape recheck §A.5, *no first-class named-axis tensor exists in production Python ML* — Phase 6 is the project's wedge into that gap. The packaging trade-off (small reference default + opt-in Eigen / WebGPU via PEP-508 extras, vs a fat wheel) is settled in ADR-0019.
+
+(Two implementation-flavored decisions — [ADR-0003](../09-decisions/0003-replace-eclipse-cdt-with-cmake-and-vcpkg.md) (CMake + vcpkg) and [ADR-0008](../09-decisions/0008-distribute-as-header-only-with-jupyter-tutorials.md) (header-only + Jupyter Book) — live one click away rather than in this top-8 index.)
 
 ## How these decisions hang together
 
@@ -48,8 +51,9 @@ In rough dependency order:
 - ADR-0002, ADR-0003 set the *substrate*: modern C++ + a contributor-friendly build.
 - ADR-0004, ADR-0005 set the *headline experience*: named axes you can see, write in TeX, and have the compiler check.
 - ADR-0006, ADR-0007 set the *educational arc*: from algebra to GPU acceleration to small-NN training.
+- ADR-0018, ADR-0019 set the *reach*: same Domain, second-language entry, opt-in packaging — opens the Python ML wedge without diluting the C++ tutorial corpus.
 
-The §1 goals (G-1..G-7) are realised by these seven decisions; the §5 building-block decomposition is a direct projection of them onto code. See [`../01-introduction-and-goals/overview.md`](../01-introduction-and-goals/overview.md) and [`../05-building-blocks/overview.md`](../05-building-blocks/overview.md).
+The §1 goals (G-1..G-9) are realised by these eight decisions; the §5 building-block decomposition is a direct projection of them onto code. See [`../01-introduction-and-goals/overview.md`](../01-introduction-and-goals/overview.md) and [`../05-building-blocks/overview.md`](../05-building-blocks/overview.md).
 
 ## Cross-references
 

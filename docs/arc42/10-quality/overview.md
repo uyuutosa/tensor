@@ -179,6 +179,26 @@ Each scenario is in the Source / Stimulus / Environment / Response / Response Me
 | Response          | Each signal gets a one-line status update; substrate decisions in ADR-0014 + ADR-0016 are re-validated against the current vendor state. |
 | Response measure  | Half-yearly audit report under `docs/reports/`. First audit due 2026-11-11 per [ADR-0015 §Compliance](../09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md) / [ADR-0017](../09-decisions/0017-clarify-reproducibility-envelope.md). |
 
+### QP-4 — Python SDK install + cold-start envelope (added in Phase 6)
+
+| Field             | Value                                                                                              |
+| ----------------- | -------------------------------------------------------------------------------------------------- |
+| Source            | `tensor-named-axis` wheel matrix (M6 + Phase 6.5).                                                  |
+| Stimulus          | New user runs `pip install tensor-named-axis` on a clean venv (Linux / macOS / Windows × CPython 3.9–3.13). |
+| Environment       | A typical laptop or HuggingFace Spaces CPU runner.                                                  |
+| Response          | Wheel download + install succeeds without compilation; `python -c "import tensor; tensor.hello()"` returns within ≤ 2 s of the install completion. |
+| Response measure  | **Default (`reference`-only) wheel size ≤ 10 MB** (educational on-ramp target). **`[webgpu]` wheel ≤ 60 MB** (Dawn runtime bound). **Import cold-start ≤ 2 s** on the smoke test in `cibuildwheel.yml`. Bundle-from-Git fallback (Colab / Binder / HF Space pre-PyPI) accepts ≤ 5 min cold-start while nanobind builds. |
+
+### QO-4 — Python ↔ C++ numerical agreement (added in Phase 6)
+
+| Field             | Value                                                                                              |
+| ----------------- | -------------------------------------------------------------------------------------------------- |
+| Source            | `python/tests/test_arithmetic.py`, `test_contract_numpy.py`, `test_autograd*.py`, `test_tex.py`.    |
+| Stimulus          | A Python entry point produces a tensor; the same operation in C++ produces the canonical answer.    |
+| Environment       | `pip install -e .` editable build + pytest on `ubuntu-latest × CPython 3.11`.                       |
+| Response          | Python result and C++ canonical result agree element-wise within tolerance.                         |
+| Response measure  | `1e-12` for `double`; `1e-5` for `float`. Cross-validated against NumPy / `np.einsum` for `contract`. Identical to the cross-backend QO-1 envelope so the Python surface inherits Domain-side guarantees. |
+
 ## 3. Cross-references
 
 - §1 §4 quality goals (top three): [`../01-introduction-and-goals/overview.md`](../01-introduction-and-goals/overview.md)
