@@ -19,11 +19,15 @@ A phase closes (per [`book/roadmap.md`](../../book/roadmap.md)) and the maintain
      git checkout develop && git pull
      git checkout -b release/<semver>
 
-2. Version bumps (one commit per file, or one bundled — both fine):
-   - vcpkg.json:    "version-string": "<semver>"
-   - CMakeLists.txt:   project(tensor VERSION <semver> …)
-   - pyproject.toml:   version = "<semver>"
-   (Plus any per-companion-project pyproject.toml after Phase 6.5 ships.)
+2. Version bumps — use the helper to keep all 5 files in lockstep:
+     bash tools/release.sh <semver>
+   The helper updates:
+   - vcpkg.json                          "version-string"
+   - CMakeLists.txt                       project(... VERSION ...)
+   - pyproject.toml                       project version + 2 extras pins
+   - python/extras/tensor-named-axis-eigen/pyproject.toml   version + base pin
+   - python/extras/tensor-named-axis-webgpu/pyproject.toml  version + base pin
+   (Mitigates R-P6.5.1 lockstep-drift risk.)
 
 3. CHANGELOG promotion:
    - Promote the [Unreleased] block to [<semver>] - <YYYY-MM-DD>.
