@@ -31,8 +31,17 @@
 #elif __has_include(<mdspan>)
 #  include <mdspan>
 #else
-#  error "Neither <mdspan> nor <experimental/mdspan> found"
+// Neither <mdspan> nor <experimental/mdspan> found in the current
+// toolchain (most often: xeus-cpp's Clang-Repl which doesn't ship the
+// Kokkos polyfill that vcpkg provides for the C++ build). Define the
+// MDSPAN_INTEROP_UNAVAILABLE marker so downstream code can fall back
+// to non-mdspan paths. Tutorials that only need the runtime tensor
+// surface (DynamicTensor, ops, contract, autograd, tex) compile fine;
+// only the `mdview` / `from_mdspan` helpers below become unavailable.
+#  define TENSOR_MDSPAN_INTEROP_UNAVAILABLE 1
 #endif
+
+#ifndef TENSOR_MDSPAN_INTEROP_UNAVAILABLE
 
 #include "tensor/core/shape.hpp"
 #include "tensor/core/tensor.hpp"
@@ -121,3 +130,5 @@ template <class T, std::size_t N>
 }
 
 }  // namespace tensor::core
+
+#endif  // !TENSOR_MDSPAN_INTEROP_UNAVAILABLE

@@ -75,7 +75,14 @@ struct LabelTag {
     // extent. The Axis is a value-type with a runtime-stored label string;
     // the type identity is forgotten on the way out (but the label string
     // is preserved).
-    [[nodiscard]] constexpr Axis operator()(std::size_t extent) const {
+    //
+    // NOT marked `constexpr` because `Axis` is not a literal type
+    // (`std::string` member). GCC 11 silently allowed `constexpr` here
+    // since the function was never invoked in a constexpr context, but
+    // Clang 21 (and xeus-cpp's Clang-Repl) rejects at declaration-time.
+    // The function is callable at runtime only — which is all the
+    // tutorials + tests ever did anyway.
+    [[nodiscard]] Axis operator()(std::size_t extent) const {
         return Axis{S.view(), extent};
     }
 };
