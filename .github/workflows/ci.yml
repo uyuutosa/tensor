@@ -163,31 +163,39 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-          # vcpkg-manifest features are opt-in. Setting the `webgpu`
-          # feature here pulls in Dawn (the WebGPU substrate) per the
-          # vcpkg.json `webgpu` feature definition; required whenever
-          # CMake will run find_package(Dawn) under
-          # -DTENSOR_KERNEL_BACKEND=webgpu. Empty string for other
-          # backends, which keeps the default-features-only behaviour.
-          VCPKG_MANIFEST_FEATURES: ${{ matrix.backend == 'webgpu' && 'webgpu' || '' }}
+        # vcpkg manifest features are opt-in. The webgpu lane passes
+        # `-DVCPKG_MANIFEST_FEATURES=webgpu` so vcpkg installs Dawn (per
+        # the `webgpu` feature in vcpkg.json) before find_package(Dawn)
+        # runs. Passing as a CMake cache variable (not env) is the
+        # canonical path in CMake manifest mode — vcpkg's toolchain file
+        # reads the CMake variable first and only falls back to the env
+        # var when the CMake variable is undefined.
         run: |
           BACKEND_ARG=""
+          FEATURE_ARG=""
           if [ -n "${{ matrix.backend }}" ]; then
             BACKEND_ARG="-DTENSOR_KERNEL_BACKEND=${{ matrix.backend }}"
           fi
-          cmake --preset=${{ matrix.preset }} ${BACKEND_ARG}
+          if [ "${{ matrix.backend }}" = "webgpu" ]; then
+            FEATURE_ARG="-DVCPKG_MANIFEST_FEATURES=webgpu"
+          fi
+          echo "Configuring with: ${BACKEND_ARG} ${FEATURE_ARG}"
+          cmake --preset=${{ matrix.preset }} ${BACKEND_ARG} ${FEATURE_ARG}
 
       - name: Configure (Windows)
         if: runner.os == 'Windows'
         shell: bash
-        env:
-          VCPKG_MANIFEST_FEATURES: ${{ matrix.backend == 'webgpu' && 'webgpu' || '' }}
         run: |
           BACKEND_ARG=""
+          FEATURE_ARG=""
           if [ -n "${{ matrix.backend }}" ]; then
             BACKEND_ARG="-DTENSOR_KERNEL_BACKEND=${{ matrix.backend }}"
           fi
-          cmake --preset=${{ matrix.preset }} ${BACKEND_ARG}
+          if [ "${{ matrix.backend }}" = "webgpu" ]; then
+            FEATURE_ARG="-DVCPKG_MANIFEST_FEATURES=webgpu"
+          fi
+          echo "Configuring with: ${BACKEND_ARG} ${FEATURE_ARG}"
+          cmake --preset=${{ matrix.preset }} ${BACKEND_ARG} ${FEATURE_ARG}
 
       - name: Build
         run: cmake --build --preset=${{ matrix.preset }}
