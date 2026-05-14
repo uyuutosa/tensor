@@ -45,10 +45,14 @@ def test_current_backend_returns_a_known_backend_name():
     assert name in {"reference", "eigen", "webgpu"}
 
 
-def test_default_backend_is_reference_when_installed():
-    # The Python adapter picks `reference` as the default if it's
-    # installed (per the discovery logic in tensor/__init__.py).
-    if "reference" in tensor.list_available_backends():
+def test_default_backend_respects_env_var_or_falls_back_to_reference():
+    # Per the discovery logic in tensor/__init__.py:
+    #   TENSOR_BACKEND env var > reference > eigen > webgpu.
+    import os
+    env_choice = os.environ.get("TENSOR_BACKEND", "").strip().lower()
+    if env_choice and env_choice in tensor.list_available_backends():
+        assert tensor.current_backend() == env_choice
+    elif "reference" in tensor.list_available_backends():
         assert tensor.current_backend() == "reference"
 
 
@@ -79,70 +83,49 @@ def test_set_backend_to_missing_raises_with_install_instructions():
     assert "Currently available:" in msg
 
 
-def test_set_backend_switches_observably():
-    # If multiple backends are installed, switching must change
-    # current_backend() AND must not break the public surface.
+def test_set_backend_to_other_installed_raises_with_env_var_hint():
+    """Per R-P6.5.5, switching backends within a process is unsupported;
+    must raise with the TENSOR_BACKEND env-var workaround."""
     available = tensor.list_available_backends()
-    if len(available) < 2:
-        pytest.skip("need ≥ 2 installed backends to test switching")
+    current = tensor.current_backend()
+    others = [b for b in available if b != current]
+    if not others:
+        pytest.skip("only one backend installed; nothing to switch from")
 
-    for backend in available:
-        tensor.set_backend(backend)
-        assert tensor.current_backend() == backend
+    other = others[0]
+    with pytest.raises(RuntimeError) as exc_info:
+        tensor.set_backend(other)
 
-        # The public surface still works after the switch.
-        a = tensor.from_numpy(np.array([1.0, 2.0, 3.0]), labels=["i"])
-        b = tensor.from_numpy(np.array([10.0, 20.0]), labels=["j"])
-        c = a + b
-        assert c.shape.rank() == 2  # i × j outer-sum table
-
-    # Reset to reference for downstream tests.
-    if "reference" in available:
-        tensor.set_backend("reference")
-
-
-def test_set_backend_rebinds_top_level_symbols():
-    # After set_backend(), tensor.DynamicTensor should point at the new
-    # backend's class. We can't easily compare type identities across
-    # nanobind modules, but we can at least verify the symbol still
-    # exists and is callable.
-    available = tensor.list_available_backends()
-    for backend in available:
-        tensor.set_backend(backend)
-        # Every public symbol survives the rebind:
-        assert callable(getattr(tensor, "DynamicTensor", None))
-        assert callable(getattr(tensor, "contract", None))
-        assert callable(getattr(tensor, "from_numpy", None))
-        # Submodules survive too:
-        assert hasattr(tensor, "autograd")
-        assert hasattr(tensor, "tex")
+    msg = str(exc_info.value)
+    assert current in msg or f"{current!r}" in msg
+    assert other in msg or f"{other!r}" in msg
+    assert "TENSOR_BACKEND" in msg
+    assert "restart Python" in msg.lower() or "fresh process" in msg.lower() \
+        or "restart python" in msg.lower()
 
 
-def test_dotted_imports_work_after_set_backend():
-    """`import tensor.autograd as ag` keeps working after each switch
-    (the sys.modules registration trick from the Phase 6 retrospective
-    has to re-run on each set_backend call)."""
-    available = tensor.list_available_backends()
-    for backend in available:
-        tensor.set_backend(backend)
-        import tensor.autograd as ag  # noqa: F401
-        import tensor.tex as tex  # noqa: F401
-        assert ag is tensor.autograd
-        assert tex is tensor.tex
+def test_dotted_imports_work():
+    """`import tensor.autograd as ag` keeps working (per the sys.modules
+    registration in __init__.py)."""
+    import tensor.autograd as ag  # noqa: F401
+    import tensor.tex as tex  # noqa: F401
+    assert ag is tensor.autograd
+    assert tex is tensor.tex
 
 
 def test_native_backend_attribute_matches_current_backend():
     """The native extension exposes `__backend__` as a string attribute
     (per python/src/_tensor_native.cpp's `m.attr(\"__backend__\")`).
     The Python-side `current_backend()` must agree."""
-    available = tensor.list_available_backends()
-    for backend in available:
-        tensor.set_backend(backend)
-        # Look up the loaded native module via the private dict; we
-        # only use this for the test introspection, not as public API.
-        from tensor import _AVAILABLE_BACKENDS  # type: ignore[attr-defined]
-        native = _AVAILABLE_BACKENDS[backend]
-        assert native.__backend__ == backend, (
-            f"native module reports __backend__={native.__backend__!r} "
-            f"but Python adapter selected {backend!r}"
-        )
+    from tensor import _NATIVE  # type: ignore[attr-defined]
+    assert _NATIVE.__backend__ == tensor.current_backend()
+
+
+def test_public_surface_still_works_after_set_backend_noop():
+    """`set_backend(current_backend())` is a no-op and the public
+    surface continues to function."""
+    tensor.set_backend(tensor.current_backend())
+    a = tensor.from_numpy(np.array([1.0, 2.0, 3.0]), labels=["i"])
+    b = tensor.from_numpy(np.array([10.0, 20.0]), labels=["j"])
+    c = a + b
+    assert c.shape.rank() == 2

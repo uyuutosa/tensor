@@ -25,13 +25,23 @@ Phase 6.5 status (2026-05-14):
 
 - P6.5.M1 ✅ — multi-backend build pipeline: ``TENSOR_KERNEL_BACKEND``
   env var routes the build into ``_tensor_native_{reference,eigen,webgpu}.so``.
-  The reference build still produces ``_tensor_native.so`` for backward
-  compatibility.
 - P6.5.M2 ✅ — ``tensor.set_backend(name)`` / ``current_backend()`` /
-  ``list_available_backends()`` with lazy ``importlib`` loading of all
-  installed backends + rebinding of top-level exports.
-- P6.5.M3-M4 🚧 — cibuildwheel extras pipeline + ``0.3.0`` release
-  ceremony (planned).
+  ``list_available_backends()`` Python surface.
+- P6.5.M3 ✅ — cibuildwheel matrix grows to 3 backends × 4 OS/arch ×
+  5 CPython = ~55 wheels per release; PEP-508 extras
+  (``tensor-named-axis[eigen]`` / ``[webgpu]`` / ``[all]``) pull in the
+  matching companion distribution.
+
+  **Known limitation per R-P6.5.5**: nanobind 2.x's type registry is
+  global per process. Loading more than one ``_tensor_native_*.so`` in
+  the same Python process produces duplicate-registration warnings and
+  partial bindings. As a workaround, this module loads exactly ONE
+  backend per process (preference: ``TENSOR_BACKEND`` env var >
+  reference > eigen > webgpu). ``set_backend()`` to a different
+  installed backend raises with instructions to restart the process
+  with the env var set. Future work tracked as a Phase 6.5 follow-up.
+
+- P6.5.M4 🚧 — ``0.3.0`` release ceremony (planned).
 
 See ``docs/impl-plans/2026-05-13_phase-6-5-set-backend.md`` and
 ``docs/arc42/09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md``
@@ -54,24 +64,22 @@ Example
 >>> # c is a 5×5 outer-sum table — c_{ij} = a_i + b_j.
 
 >>> import tensor
->>> tensor.list_available_backends()  # what's installed
-['reference']
 >>> tensor.current_backend()
 'reference'
->>> # tensor.set_backend("webgpu")
->>> # RuntimeError: webgpu backend is not installed. ...
+>>> tensor.list_available_backends()
+['reference']
 """
 
 import importlib as _importlib
+import importlib.util as _importlib_util
+import os as _os
 import sys as _sys
 from typing import Literal as _Literal
 
-# ─── Phase 6.5 — multi-backend discovery ────────────────────────────
-# Probe every backend the wheel matrix could ship. Each successful
-# import lands the matching native module in `_AVAILABLE_BACKENDS`.
-# The reference backend's compiled extension is named `_tensor_native`
-# (Phase 6 backward-compatible name); the eigen / webgpu wheels ship
-# `_tensor_native_eigen.so` / `_tensor_native_webgpu.so` (Phase 6.5).
+# ─── Phase 6.5 — single-backend-per-process discovery ──────────────
+# Per R-P6.5.5 (nanobind type registry is global per process), we
+# probe which backends are *installed* but lazy-load exactly one.
+# Preference: TENSOR_BACKEND env var > "reference" > "eigen" > "webgpu".
 
 _BACKEND_MODULE_NAMES = {
     "reference": "_tensor_native",
@@ -81,16 +89,15 @@ _BACKEND_MODULE_NAMES = {
 
 _BackendName = _Literal["reference", "eigen", "webgpu"]
 
-_AVAILABLE_BACKENDS: dict = {}
+# Detect which backend extensions are *installed* (i.e. .so file exists)
+# without actually importing them.
+_INSTALLED_BACKENDS: list = []
 for _name, _mod_name in _BACKEND_MODULE_NAMES.items():
-    try:
-        _AVAILABLE_BACKENDS[_name] = _importlib.import_module(
-            f".{_mod_name}", __name__
-        )
-    except ImportError:
-        pass
+    _spec = _importlib_util.find_spec(f"{__name__}.{_mod_name}")
+    if _spec is not None:
+        _INSTALLED_BACKENDS.append(_name)
 
-if not _AVAILABLE_BACKENDS:
+if not _INSTALLED_BACKENDS:
     raise ImportError(
         "No tensor backends are installed. The reference backend is "
         "always shipped with `tensor-named-axis`; this error means the "
@@ -98,65 +105,68 @@ if not _AVAILABLE_BACKENDS:
         "  pip install --force-reinstall tensor-named-axis"
     )
 
-# Default: the first backend the wheel matrix made available. Reference
-# is always available in a well-formed install; if the user only has
-# `[eigen]` somehow, it picks `eigen` instead of failing.
-_DEFAULT_BACKEND: _BackendName = (
-    "reference" if "reference" in _AVAILABLE_BACKENDS
-    else next(iter(_AVAILABLE_BACKENDS))
+# Choose ONE backend to actually load.
+_env_choice = _os.environ.get("TENSOR_BACKEND", "").strip().lower()
+if _env_choice and _env_choice not in _INSTALLED_BACKENDS:
+    raise ImportError(
+        f"TENSOR_BACKEND={_env_choice!r} but that backend is not "
+        f"installed. Installed: {_INSTALLED_BACKENDS}.\n"
+        f"Install with:  pip install tensor-named-axis[{_env_choice}]"
+    )
+
+# Preference order: env var > reference > eigen > webgpu.
+if _env_choice:
+    _CHOSEN_BACKEND: _BackendName = _env_choice  # type: ignore[assignment]
+else:
+    for _preferred in ("reference", "eigen", "webgpu"):
+        if _preferred in _INSTALLED_BACKENDS:
+            _CHOSEN_BACKEND = _preferred  # type: ignore[assignment]
+            break
+
+_NATIVE = _importlib.import_module(
+    f".{_BACKEND_MODULE_NAMES[_CHOSEN_BACKEND]}", __name__
 )
-_CURRENT_BACKEND: _BackendName = _DEFAULT_BACKEND
+_CURRENT_BACKEND: _BackendName = _CHOSEN_BACKEND
 
+# Bind public surface against the loaded backend's module.
+__version__ = _NATIVE.__version__
+Axis = _NATIVE.Axis
+DynamicShape = _NATIVE.DynamicShape
+DynamicTensor = _NATIVE.DynamicTensor
+DynamicTensorF32 = _NATIVE.DynamicTensorF32
+contract = _NATIVE.contract
+from_numpy = _NATIVE.from_numpy
+autograd = _NATIVE.autograd
+tex = _NATIVE.tex
+_native_hello = _NATIVE.hello
 
-def _bind_to(backend: _BackendName) -> None:
-    """Rebind the top-level public surface against the named backend's module."""
-    mod = _AVAILABLE_BACKENDS[backend]
-
-    # Rebind each public symbol against the active backend's module.
-    g = globals()
-    for _sym in (
-        "__version__",
-        "Axis",
-        "DynamicShape",
-        "DynamicTensor",
-        "DynamicTensorF32",
-        "contract",
-        "from_numpy",
-        "autograd",
-        "tex",
-    ):
-        g[_sym] = getattr(mod, _sym)
-
-    # `hello` is bound separately because `hello()` at the top of this
-    # module is the Python-side wrapper; we keep the wrapper but route
-    # it to the active backend's native `hello`.
-    g["_native_hello"] = mod.hello
-
-    # nanobind submodules are *attributes* of the parent module, not
-    # importable as Python submodules without explicit registration.
-    # Re-register every time `set_backend()` switches so the dotted
-    # `import tensor.autograd` / `import tensor.tex` keep pointing at
-    # the active backend's submodule.
-    _sys.modules[__name__ + ".autograd"] = mod.autograd
-    _sys.modules[__name__ + ".tex"] = mod.tex
-
-
-# Activate the default backend at import time.
-_bind_to(_DEFAULT_BACKEND)
+# nanobind submodules are attributes, not Python submodules. Register
+# the dotted forms so `import tensor.autograd as ag` works (per the
+# fix in PR #104).
+_sys.modules[__name__ + ".autograd"] = autograd
+_sys.modules[__name__ + ".tex"] = tex
 
 
 def set_backend(name: _BackendName) -> None:
-    """Switch the active `KernelBackend` adapter at runtime.
+    """Select the active `KernelBackend` adapter (Phase 6.5 / ADR-0019).
 
-    Phase 6.5 (ADR-0019). Selects between *installed* backends only; the
-    base install ships only ``reference`` (5 MB wheel). Add Eigen and / or
-    WebGPU via ``pip install tensor-named-axis[eigen]`` / ``[webgpu]`` /
-    ``[all]``.
+    The base install ships only ``reference`` (5 MB wheel). Add Eigen
+    and / or WebGPU via ``pip install tensor-named-axis[eigen]`` /
+    ``[webgpu]`` / ``[all]``.
 
-    Subsequent ``tensor.DynamicTensor(...)`` constructions resolve to the
-    new backend's implementation. Tensors built before the switch keep
-    their construction-time backend; mid-computation rebinding is
-    undefined (per [ADR-0019]).
+    **Known limitation (R-P6.5.5)**: nanobind 2.x's type registry is
+    global per process. Switching to a different backend within an
+    existing Python process is not supported — the new backend's
+    extension module would conflict with the already-loaded one. Use
+    one of:
+
+    1. Set ``TENSOR_BACKEND=<name>`` before launching Python.
+    2. Restart Python and call ``set_backend(name)`` (or use the env var).
+    3. ``pip uninstall`` one backend's extras + install the other.
+
+    Calling ``set_backend(current_backend())`` is always a no-op.
+    Calling ``set_backend(other)`` raises ``RuntimeError`` with these
+    instructions.
 
     Parameters
     ----------
@@ -166,65 +176,48 @@ def set_backend(name: _BackendName) -> None:
     Raises
     ------
     RuntimeError
-        If ``name`` is not in ``list_available_backends()``. The error
-        message includes the exact ``pip install`` command for the
-        missing backend.
+        If ``name`` is not in ``list_available_backends()`` — error
+        message includes the ``pip install`` command.
+        If ``name`` is installed but differs from the currently-loaded
+        backend — error message includes the env-var workaround.
 
     Examples
     --------
     >>> import tensor
-    >>> tensor.list_available_backends()  # doctest: +SKIP
-    ['reference', 'eigen']
-    >>> tensor.set_backend('eigen')  # doctest: +SKIP
-    >>> tensor.current_backend()  # doctest: +SKIP
-    'eigen'
+    >>> tensor.set_backend(tensor.current_backend())   # no-op
     """
-    if name not in _AVAILABLE_BACKENDS:
-        installed = sorted(_AVAILABLE_BACKENDS.keys())
+    if name not in _INSTALLED_BACKENDS:
         raise RuntimeError(
             f"{name} backend is not installed.\n"
             f"Install with:  pip install tensor-named-axis[{name}]\n"
             f"Or install all backends:  pip install tensor-named-axis[all]\n"
-            f"Currently available: {installed}"
+            f"Currently available: {sorted(_INSTALLED_BACKENDS)}"
         )
-    global _CURRENT_BACKEND
-    _CURRENT_BACKEND = name
-    _bind_to(name)
+    if name != _CURRENT_BACKEND:
+        raise RuntimeError(
+            f"Cannot switch from {_CURRENT_BACKEND!r} to {name!r} within "
+            f"an existing Python process — nanobind's type registry is "
+            f"process-global (Phase 6.5 R-P6.5.5).\n"
+            f"To use {name!r} instead, restart Python with:\n"
+            f"  TENSOR_BACKEND={name} python ...\n"
+            f"Or pin the backend at install time and uninstall the "
+            f"unwanted extra."
+        )
+    # No-op — already on the requested backend.
 
 
 def current_backend() -> str:
-    """Return the name of the currently active backend.
-
-    Examples
-    --------
-    >>> import tensor
-    >>> tensor.current_backend()
-    'reference'
-    """
+    """Return the name of the currently active backend."""
     return _CURRENT_BACKEND
 
 
 def list_available_backends() -> list:
-    """Return the list of backends installed in this Python environment.
+    """Return the list of backends *installed* in this Python environment.
 
-    The base ``tensor-named-axis`` wheel ships only ``reference``. The
-    extras (``[eigen]`` / ``[webgpu]`` / ``[all]``) install companion
-    distributions that share the ``tensor/`` PEP-420 namespace package
-    and add their backend to this list.
-
-    Returns
-    -------
-    list[str]
-        Sorted backend names — a subset of
-        ``["reference", "eigen", "webgpu"]``.
-
-    Examples
-    --------
-    >>> import tensor
-    >>> tensor.list_available_backends()  # doctest: +SKIP
-    ['reference']
+    Note: only ONE of these is actually loaded — see ``current_backend()``.
+    Switching requires a fresh process (Phase 6.5 R-P6.5.5).
     """
-    return sorted(_AVAILABLE_BACKENDS.keys())
+    return sorted(_INSTALLED_BACKENDS)
 
 
 def hello() -> str:

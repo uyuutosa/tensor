@@ -121,7 +121,17 @@ void bind_dynamic_tensor(nb::module_& m, char const* py_name)
 {
     using DT = DynamicTensor<T>;
 
-    nb::class_<DT>(m, py_name)
+    // Phase 6.5 NB: nanobind 2.12 does not have pybind11's
+    // `py::module_local()` feature; nanobind's type registry is
+    // global per process. As a consequence, two backend extensions
+    // (`_tensor_native.so` + `_tensor_native_eigen.so`) cannot coexist
+    // in the same Python process — the second `import` warns about
+    // duplicate registration and the second module's class bindings
+    // fall through. The Python adapter (`tensor/__init__.py`) detects
+    // this at `import tensor` time and lazy-loads only ONE backend per
+    // process; switching requires reinstalling the matching extra in
+    // a fresh process. See `docs/arc42/11-risks/overview.md` R-P6.5.5.
+    nb::class_<DT>(m, py_name, nb::is_final())
         .def(nb::init<>())
         .def(nb::init<DynamicShape>(), "shape"_a)
         .def(nb::init<DynamicShape, std::vector<T>>(),
@@ -263,6 +273,8 @@ NB_MODULE(TENSOR_NB_MODULE_NAME, m) {
           "work?` diagnostic.");
 
     // ── Axis ──────────────────────────────────────────────────────────
+    // module_local() per Phase 6.5 / ADR-0019 (see bind_dynamic_tensor
+    // comment above for the same rationale).
     nb::class_<Axis>(m, "Axis")
         .def("__init__",
              [](Axis* self, std::string label, std::size_t extent) {

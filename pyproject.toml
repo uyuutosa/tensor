@@ -51,6 +51,16 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=7"]
+# Phase 6.5 / ADR-0019 — PEP-508 extras for runtime backend selection.
+# The default install (no extras) ships reference only (~5 MB wheel).
+# Each extra pulls in a companion distribution that adds its
+# `_tensor_native_<backend>.so` to the shared `tensor/` PEP-420
+# namespace package; `tensor.set_backend("<backend>")` then switches
+# the active adapter at runtime.
+reference = []  # explicit alias for the default (no-op)
+eigen = ["tensor-named-axis-eigen==0.1.0+dev"]
+webgpu = ["tensor-named-axis-webgpu==0.1.0+dev"]
+all = ["tensor-named-axis[eigen,webgpu]"]
 
 [project.urls]
 Homepage = "https://github.com/uyuutosa/tensor"
