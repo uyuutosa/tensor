@@ -121,13 +121,24 @@ jobs:
         # src/dawn/common/xlib_with_undefs.h #includes for the X11-XCB
         # bridge surface. Missing this is the most common Dawn-build
         # failure on a fresh Ubuntu runner.
+        #
+        # mesa-vulkan-drivers ships the lavapipe (LLVMpipe) software
+        # Vulkan ICD, plus the Vulkan loader. GitHub-hosted Linux
+        # runners have no physical GPU; without a software ICD,
+        # vkCreateInstance returns VK_ERROR_INCOMPATIBLE_DRIVER and the
+        # WebGPU-vs-reference parity tests at test_webgpu_backend.cpp
+        # produce garbage output. Lavapipe is slow but correct for
+        # compute shaders.
         run: |
           sudo apt-get install -y \
               libx11-dev libx11-xcb-dev libxcb1-dev \
               libxext-dev libxrandr-dev \
               libxcursor-dev libxinerama-dev libxi-dev \
               mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev \
+              mesa-vulkan-drivers libvulkan1 \
               pkg-config
+          # Verify the software ICD registered.
+          ls -la /usr/share/vulkan/icd.d/ || true
 
       - name: Install Ninja (macOS)
         if: runner.os == 'macOS'

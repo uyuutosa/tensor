@@ -131,12 +131,16 @@ jobs:
           # vcpkg itself (per Dawn's `vulkan` feature deps).
           # libx11-xcb-dev provides X11/Xlib-xcb.h that Dawn includes
           # for its X11-XCB bridge surface.
+          # mesa-vulkan-drivers ships lavapipe (software Vulkan ICD) so
+          # the wheel-smoke test on the GPU-less runner can still
+          # bring up a Dawn instance.
           sudo apt-get update
           sudo apt-get install -y \
               libx11-dev libx11-xcb-dev libxcb1-dev \
               libxext-dev libxrandr-dev \
               libxcursor-dev libxinerama-dev libxi-dev \
               mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev \
+              mesa-vulkan-drivers libvulkan1 \
               pkg-config
 
       - name: Verify Dawn system deps (macOS / webgpu)
