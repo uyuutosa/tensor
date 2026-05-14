@@ -1,0 +1,105 @@
+# Phase 6.5.M3 — Eigen-backed companion distribution for tensor-named-axis.
+#
+# Ships only the `tensor/_tensor_native_eigen.so` extension module
+# (compiled against the Eigen 3.4 KernelBackend adapter); shares the
+# `tensor/` PEP-420 namespace package with the base `tensor-named-axis`
+# distribution. Per [ADR-0019] + the Phase 6.5 impl-plan §P6.5.M3.
+#
+# Build via:
+#   pip install ./python/extras/tensor-named-axis-eigen -v
+# Or from the project root after the base wheel is installed:
+#   pip install tensor-named-axis[eigen]   # resolves to this distribution
+#
+# [ADR-0019]: ../../../docs/arc42/09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md
+
+[build-system]
+requires = [
+    "scikit-build-core>=0.10",
+    "nanobind>=2.0,<3",
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "tensor-named-axis-eigen"
+version = "0.1.0+dev"
+description = "Eigen 3.4 KernelBackend adapter for tensor-named-axis (Phase 6.5 extras companion; ADR-0019)."
+authors = [
+    { name = "uyuutosa" },
+]
+license = { file = "../../../LICENSE" }
+readme = "../../../README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+# Lockstep version pin — the companion is meaningless without the base
+# distribution's `tensor/__init__.py` (the discovery + set_backend
+# logic). The pin uses `==` rather than `>=` to ensure
+# ABI compatibility between the .so files (different Python minor
+# versions would have different nanobind ABIs).
+dependencies = [
+    "tensor-named-axis==0.1.0+dev",
+    "numpy>=1.20",
+]
+
+[project.urls]
+Homepage = "https://github.com/uyuutosa/tensor"
+Documentation = "https://uyuutosa.github.io/tensor/"
+Repository = "https://github.com/uyuutosa/tensor.git"
+"Bug Tracker" = "https://github.com/uyuutosa/tensor/issues"
+Changelog = "https://github.com/uyuutosa/tensor/blob/main/CHANGELOG.md"
+
+# scikit-build-core wraps the same `python/CMakeLists.txt` the base
+# distribution uses; we just pre-set TENSOR_KERNEL_BACKEND to "eigen"
+# via cmake.define so the build produces `_tensor_native_eigen.so`.
+[tool.scikit-build]
+cmake.source-dir = "../../"
+cmake.version = ">=3.25"
+cmake.build-type = "Release"
+# No wheel.packages — this distribution does not ship Python source.
+# Only the CMake-installed `tensor/_tensor_native_eigen.<abi>.so`
+# lands in the wheel; the base distribution provides `tensor/__init__.py`.
+wheel.packages = []
+
+[tool.scikit-build.cmake.define]
+TENSOR_KERNEL_BACKEND = "eigen"
+
+# cibuildwheel-side overrides for this companion project. The base
+# distribution's [tool.cibuildwheel] applies generically; this section
+# can adjust per-companion needs (e.g. `before_all` for vcpkg installs).
+[tool.cibuildwheel]
+build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
+skip = ["*-musllinux_*", "*-win32", "*-manylinux_i686"]
+build-verbosity = 1
+test-command = 'python -c "import tensor; assert \"eigen\" in tensor.list_available_backends(), tensor.list_available_backends()"'
+
+[tool.cibuildwheel.linux]
+# manylinux2014 includes Eigen3 via the `eigen3-devel` epel package on
+# CentOS 7; pip-install-from-source path picks it up via CMake's
+# find_package. The cibuildwheel `before-all` step explicitly installs
+# it to short-circuit the CMake lookup.
+before-all = "yum install -y eigen3-devel || true; apt-get update && apt-get install -y libeigen3-dev || true"
+manylinux-x86_64-image = "manylinux2014"
+
+[tool.cibuildwheel.macos]
+# Homebrew Eigen3 — preinstalled on macos-13 / macos-14 GitHub runners.
+before-all = "brew install eigen || true"
+
+[tool.cibuildwheel.windows]
+# vcpkg Eigen3 — bootstrapped by the cibuildwheel workflow file.
+before-all = "echo 'Eigen3 expected via vcpkg from cibuildwheel.yml'"

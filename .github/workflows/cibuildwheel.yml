@@ -1,26 +1,35 @@
 name: Build wheels + publish to PyPI
 
-# Multi-platform wheel build for the Python SDK + tag-triggered PyPI
-# publish. Single workflow because cross-workflow artefact sharing is
-# fiddly; the build_* jobs upload wheels as workflow artefacts, and
-# publish_to_pypi gates on tag-push + downloads them in the same run.
+# Multi-platform, multi-backend wheel build for the Python SDK + tag-
+# triggered PyPI publish. Single workflow because cross-workflow
+# artefact sharing is fiddly; the build_* jobs upload wheels as workflow
+# artefacts, and publish_to_pypi gates on tag-push + downloads them in
+# the same run.
 #
-# Platforms:
-#   - Linux x86_64 (ubuntu-latest, manylinux2014)
-#   - macOS x86_64 (macos-13)
-#   - macOS arm64  (macos-14 / Apple Silicon)
-#   - Windows x86_64 (windows-latest, MSVC)
-# CPython 3.9 – 3.13.
+# Phase 6 (M6): one backend (reference). 4 OS/arch × 5 CPython = 20 wheels.
+# Phase 6.5 (M3 / ADR-0019): three backends (reference / eigen / webgpu)
+# via PEP-508 extras. Companion projects under `python/extras/` each
+# carry their own pyproject.toml; this workflow builds all three.
+#
+# Matrix shape (Phase 6.5):
+#   - reference: 4 OS/arch × 5 CPython = 20 wheels (the base distribution
+#     `tensor-named-axis`).
+#   - eigen:     4 OS/arch × 5 CPython = 20 wheels
+#     (companion `tensor-named-axis-eigen`).
+#   - webgpu:    3 OS/arch × 5 CPython = 15 wheels (Windows webgpu
+#     is M3-scoped out per the Phase 6.5 impl-plan + R-P6.5.4 risk;
+#     companion `tensor-named-axis-webgpu`).
+#   = ~55 wheels per release.
 #
 # Triggers:
-#   - manual dispatch (smoke-test the matrix before tagging)
-#   - on tag matching v* or semver-like — feeds publish_to_pypi
+#   - manual dispatch (smoke-test the matrix before tagging).
+#   - on tag matching v* or semver-like — feeds publish_to_pypi.
 #
 # Trusted publishing (OIDC) is used for the PyPI upload — the maintainer
-# must enable the trusted-publisher policy on the PyPI project page
-# (PyPI → tensor-named-axis → Settings → Publishing → Add → GitHub →
-# uyuutosa/tensor + workflow file `cibuildwheel.yml`) before the first
-# tag-triggered upload succeeds.
+# must enable the trusted-publisher policy on each of the THREE PyPI
+# project pages (tensor-named-axis / tensor-named-axis-eigen /
+# tensor-named-axis-webgpu) before the first tag-triggered upload
+# succeeds.
 
 on:
   workflow_dispatch:
@@ -34,20 +43,62 @@ permissions:
 
 jobs:
   build_wheels:
-    name: ${{ matrix.os }} / ${{ matrix.arch }}
+    name: ${{ matrix.backend }} / ${{ matrix.os }} / ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          # ── reference (the base `tensor-named-axis` distribution) ──
+          - backend: reference
+            project_dir: '.'
+            os: ubuntu-latest
             arch: x86_64
-          - os: macos-13
+          - backend: reference
+            project_dir: '.'
+            os: macos-13
             arch: x86_64
-          - os: macos-14
+          - backend: reference
+            project_dir: '.'
+            os: macos-14
             arch: arm64
-          - os: windows-latest
+          - backend: reference
+            project_dir: '.'
+            os: windows-latest
             arch: AMD64
+          # ── eigen (`tensor-named-axis-eigen` companion) ──
+          - backend: eigen
+            project_dir: './python/extras/tensor-named-axis-eigen'
+            os: ubuntu-latest
+            arch: x86_64
+          - backend: eigen
+            project_dir: './python/extras/tensor-named-axis-eigen'
+            os: macos-13
+            arch: x86_64
+          - backend: eigen
+            project_dir: './python/extras/tensor-named-axis-eigen'
+            os: macos-14
+            arch: arm64
+          - backend: eigen
+            project_dir: './python/extras/tensor-named-axis-eigen'
+            os: windows-latest
+            arch: AMD64
+          # ── webgpu (`tensor-named-axis-webgpu` companion) ──
+          # Windows webgpu is M3-scoped out per Phase 6.5 impl-plan
+          # (R-P6.5.4: Dawn vcpkg port on Windows needs maintainer
+          # verification — M4 stretch goal).
+          - backend: webgpu
+            project_dir: './python/extras/tensor-named-axis-webgpu'
+            os: ubuntu-latest
+            arch: x86_64
+          - backend: webgpu
+            project_dir: './python/extras/tensor-named-axis-webgpu'
+            os: macos-13
+            arch: x86_64
+          - backend: webgpu
+            project_dir: './python/extras/tensor-named-axis-webgpu'
+            os: macos-14
+            arch: arm64
 
     steps:
       - uses: actions/checkout@v4
@@ -57,28 +108,70 @@ jobs:
         with:
           python-version: "3.11"
 
+      # ── Backend-specific system-dep bootstrap ──────────────────────
+      # The companion projects' `[tool.cibuildwheel] before-all` hooks
+      # are intended for inside-the-container install steps. These
+      # workflow-level steps run on the runner OS itself and prepare
+      # the toolchain that cibuildwheel will use to compile against.
+
+      - name: Install Eigen3 system dep (Linux host)
+        if: matrix.backend == 'eigen' && runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libeigen3-dev
+
+      - name: Install Eigen3 system dep (macOS host)
+        if: matrix.backend == 'eigen' && runner.os == 'macOS'
+        run: brew install eigen
+
+      - name: Bootstrap vcpkg + Dawn (Linux / webgpu)
+        if: matrix.backend == 'webgpu' && runner.os == 'Linux'
+        run: |
+          # Dawn requires a vcpkg baseline override. The exact baseline
+          # is the maintainer's verified one (per ADR-0014 §1); for now
+          # the build will fail until the maintainer wires the override
+          # here. M3 ships the matrix entry; M4 stretch goal closes this.
+          echo "::warning::Dawn vcpkg bootstrap not yet wired — webgpu Linux wheel build will fail until M4. Skipping system deps."
+
+      - name: Bootstrap Dawn (macOS / webgpu)
+        if: matrix.backend == 'webgpu' && runner.os == 'macOS'
+        run: |
+          echo "::warning::Dawn macOS bootstrap not yet wired — webgpu macOS wheel build will fail until M4. Skipping system deps."
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.21.3
+        with:
+          package-dir: ${{ matrix.project_dir }}
         env:
           CIBW_ARCHS: ${{ matrix.arch }}
           # CPython 3.9 – 3.13; skip PyPy, musllinux, 32-bit.
           CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
           CIBW_SKIP: "*-musllinux_* *-win32 *-manylinux_i686"
-          # Verbose build so failures point at the offending compile.
           CIBW_BUILD_VERBOSITY: 1
-          # Smoke: import the wheel + call hello() to verify the
-          # nanobind extension is actually loaded.
-          CIBW_TEST_COMMAND: 'python -c "import tensor; print(tensor.__version__); assert tensor.hello() == \"hello from tensor::core\""'
+          # Smoke command tailored per backend: reference verifies
+          # hello(); eigen / webgpu verify their backend shows up in
+          # list_available_backends(). The eigen / webgpu test commands
+          # are set in the companion project's [tool.cibuildwheel].
+          # The base's smoke command is set here for the reference path.
+          CIBW_TEST_COMMAND: ${{ matrix.backend == 'reference' && 'python -c "import tensor; print(tensor.__version__); assert tensor.hello() == \"hello from tensor::core\""' || '' }}
 
       - name: Upload wheels as workflow artefact
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}-${{ matrix.arch }}
-          path: ./wheelhouse/*.whl
+          name: wheels-${{ matrix.backend }}-${{ matrix.os }}-${{ matrix.arch }}
+          path: ${{ matrix.project_dir }}/wheelhouse/*.whl
 
   build_sdist:
-    name: Source distribution
+    name: Source distribution (${{ matrix.backend }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: reference
+            project_dir: '.'
+          - backend: eigen
+            project_dir: './python/extras/tensor-named-axis-eigen'
+          - backend: webgpu
+            project_dir: './python/extras/tensor-named-axis-webgpu'
     steps:
       - uses: actions/checkout@v4
 
@@ -91,13 +184,18 @@ jobs:
         run: python -m pip install build
 
       - name: Build sdist
-        run: python -m build --sdist
+        run: |
+          cd "${{ matrix.project_dir }}"
+          python -m build --sdist --outdir ../../dist || python -m build --sdist
 
       - name: Upload sdist as workflow artefact
         uses: actions/upload-artifact@v4
         with:
-          name: sdist
-          path: ./dist/*.tar.gz
+          name: sdist-${{ matrix.backend }}
+          path: |
+            ${{ matrix.project_dir }}/dist/*.tar.gz
+            dist/*.tar.gz
+          if-no-files-found: warn
 
   publish_to_pypi:
     name: Publish to PyPI
@@ -109,11 +207,15 @@ jobs:
     permissions:
       contents: read
       id-token: write   # required for PyPA trusted publishing (OIDC)
+    # Phase 6.5: separate environments per distribution would be ideal
+    # but PyPA trusted publishing routes the workflow_file → project
+    # mapping by metadata, not environment. Single `pypi` environment
+    # configured at the maintainer-side once for each project.
     environment:
       name: pypi
       url: https://pypi.org/p/tensor-named-axis
     steps:
-      - name: Download all wheels + sdist
+      - name: Download all wheels + sdists
         uses: actions/download-artifact@v4
         with:
           path: ./dist

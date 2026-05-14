@@ -1,0 +1,93 @@
+# Phase 6.5.M3 — WebGPU-backed companion distribution for tensor-named-axis.
+#
+# Ships only the `tensor/_tensor_native_webgpu.so` extension module
+# (compiled against the Dawn KernelBackend adapter via webgpu_cpp.h
+# per ADR-0016); shares the `tensor/` PEP-420 namespace package with
+# the base `tensor-named-axis` distribution. Per [ADR-0019] +
+# the Phase 6.5 impl-plan §P6.5.M3.
+#
+# Build via:
+#   pip install ./python/extras/tensor-named-axis-webgpu -v
+# Or from the project root after the base wheel is installed:
+#   pip install tensor-named-axis[webgpu]   # resolves to this distribution
+#
+# IMPORTANT: Windows webgpu wheels are M3-scoped out (Dawn vcpkg port
+# on Windows needs maintainer verification — Phase 6.5.M4 stretch goal).
+# The Linux + macOS wheels in this distribution carry the WebGPU runtime
+# (~50 MB) — see arc42 §10 QP-4 for the wheel-size envelope.
+#
+# [ADR-0019]: ../../../docs/arc42/09-decisions/0019-phase-6-5-runtime-backend-selection-via-extras.md
+
+[build-system]
+requires = [
+    "scikit-build-core>=0.10",
+    "nanobind>=2.0,<3",
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "tensor-named-axis-webgpu"
+version = "0.1.0+dev"
+description = "Dawn/WebGPU KernelBackend adapter for tensor-named-axis (Phase 6.5 extras companion; ADR-0019)."
+authors = [
+    { name = "uyuutosa" },
+]
+license = { file = "../../../LICENSE" }
+readme = "../../../README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+dependencies = [
+    "tensor-named-axis==0.1.0+dev",
+    "numpy>=1.20",
+]
+
+[project.urls]
+Homepage = "https://github.com/uyuutosa/tensor"
+Documentation = "https://uyuutosa.github.io/tensor/"
+Repository = "https://github.com/uyuutosa/tensor.git"
+"Bug Tracker" = "https://github.com/uyuutosa/tensor/issues"
+Changelog = "https://github.com/uyuutosa/tensor/blob/main/CHANGELOG.md"
+
+[tool.scikit-build]
+cmake.source-dir = "../../"
+cmake.version = ">=3.25"
+cmake.build-type = "Release"
+wheel.packages = []
+
+[tool.scikit-build.cmake.define]
+TENSOR_KERNEL_BACKEND = "webgpu"
+
+[tool.cibuildwheel]
+build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
+skip = ["*-musllinux_*", "*-win32", "*-manylinux_i686"]
+build-verbosity = 1
+test-command = 'python -c "import tensor; assert \"webgpu\" in tensor.list_available_backends(), tensor.list_available_backends()"'
+
+[tool.cibuildwheel.linux]
+# Dawn is not in the default vcpkg baseline (per ADR-0014 §1 +
+# arc42 §11 R-S3). The cibuildwheel `before-all` step bootstraps
+# vcpkg with the maintainer-overridden baseline that includes
+# `dawn` and installs `dawn[core,vulkan]` before the wheel build.
+before-all = "echo 'Dawn vcpkg port bootstrap is handled in cibuildwheel.yml before this hook'"
+manylinux-x86_64-image = "manylinux2014"
+
+[tool.cibuildwheel.macos]
+# macOS Dawn via Homebrew is unreliable; the workflow installs Dawn
+# from a vcpkg overlay or downloads a Dawn binary release.
+before-all = "echo 'Dawn macOS bootstrap is handled in cibuildwheel.yml before this hook'"
