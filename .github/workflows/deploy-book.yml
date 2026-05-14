@@ -13,6 +13,12 @@ permissions:
   id-token: write
 
 # Allow one in-flight deploy at a time; cancel any prior queued one.
+# NOTE (2026-05-14): when two PR merges land in close succession the
+# second run may appear "missing" briefly because the concurrency
+# group queues it until the first run completes. The auto-trigger
+# does fire — it's just queued, not dropped. If a deploy looks
+# stuck for >10 min, `gh workflow run deploy-book.yml --ref develop`
+# triggers it manually; cancel-in-progress dedupes against the queue.
 concurrency:
   group: "pages"
   cancel-in-progress: true
