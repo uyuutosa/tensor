@@ -78,6 +78,36 @@ jobs:
               xeus-cpp jupyter nbconvert
           conda init bash
 
+      - name: Patch xcpp20 kernelspec with project header include path
+        shell: bash -l {0}
+        continue-on-error: true
+        run: |
+          # xeus-cpp uses Clang-Repl (not cling), so the legacy
+          # `#pragma cling add_include_path("../include")` at the top
+          # of every tutorial is silently ignored. The xeus-cpp
+          # equivalent is passing `-I/path/to/include` as a clang
+          # flag at kernel-launch time, which means injecting it into
+          # the kernelspec's `argv` array.
+          conda activate xcpp
+          python - <<PY
+          import json, os, subprocess, sys
+          out = subprocess.check_output(
+              ["jupyter", "kernelspec", "list", "--json"], text=True)
+          kernels = json.loads(out)["kernelspecs"]
+          if "xcpp20" not in kernels:
+              print("::warning::xcpp20 kernelspec not found; skipping patch")
+              sys.exit(0)
+          kjson = os.path.join(kernels["xcpp20"]["resource_dir"], "kernel.json")
+          with open(kjson) as f:
+              spec = json.load(f)
+          include_arg = f"-I{os.environ['GITHUB_WORKSPACE']}/include"
+          if include_arg not in spec["argv"]:
+              spec["argv"].append(include_arg)
+          with open(kjson, "w") as f:
+              json.dump(spec, f, indent=2)
+          print("Patched kernel.json argv:", spec["argv"])
+          PY
+
       - name: Execute C++ tutorials in place
         shell: bash -l {0}
         continue-on-error: true
