@@ -48,6 +48,8 @@ parts:
         title: "Multi-focal tensors — F, T, Q learned via autograd"
       - file: python/notebooks/04_python-bundle-adjustment-perspective.ipynb
         title: "Bundle adjustment under perspective projection"
+      - file: python/notebooks/05_swappable-backends.ipynb
+        title: "Swappable backends — runtime KernelBackend selection (Phase 6.5)"
 
   - caption: User manual (Diátaxis)
     chapters:
