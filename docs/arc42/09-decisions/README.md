@@ -44,7 +44,7 @@ Always start from [`../../templates/5_adr.md`](../../templates/5_adr.md). Do not
 
 ## Index (this project's actual ADR roll-call, 2026-05-14)
 
-19 ADRs as of 2026-05-14. Grouped thematically; the supersession chain is captured in the diagram below the table.
+21 ADRs as of 2026-05-14 (0001-0019 Accepted; 0020 + 0021 Proposed). Grouped thematically; the supersession chain is captured in the diagram below the table.
 
 ### Positioning + canonical-reference framing
 
@@ -55,6 +55,7 @@ Always start from [`../../templates/5_adr.md`](../../templates/5_adr.md). Do not
 | 0013  | [`0013-reframe-as-canonical-reference-for-named-tensor-computation.md`](./0013-reframe-as-canonical-reference-for-named-tensor-computation.md) | Reframe as canonical reference                                                                                   | **Superseded by 0015**                          | 2026-05-11 |
 | 0015  | [`0015-aspire-to-canonical-reference-quality-not-self-anoint.md`](./0015-aspire-to-canonical-reference-quality-not-self-anoint.md)            | Aspire to canonical-reference quality (don't self-anoint)                                                        | Accepted (refined by 0017)                     | 2026-05-11 |
 | 0017  | [`0017-clarify-reproducibility-envelope.md`](./0017-clarify-reproducibility-envelope.md)               | Clarify reproducibility envelope (build+test+bench vs notebook audit)                                            | Accepted                                        | 2026-05-12 |
+| 0021  | [`0021-strategic-narrowing-to-specialist-reference-positioning.md`](./0021-strategic-narrowing-to-specialist-reference-positioning.md) | Strategic narrowing — adopt specialist-reference positioning, decline production-scale ML chase                  | Proposed                                        | 2026-05-14 |
 
 ### Substrate + build
 
@@ -100,7 +101,8 @@ ADR-0001 ─── refined by ──→ ADR-0010 (educational-first, production-
                   │
                   └─ SUPERSEDED BY ADR-0015 (aspire to canonical-reference quality)
                                       │
-                                      └─ Compliance bullet 3 refined by ADR-0017
+                                      ├─ Compliance bullet 3 refined by ADR-0017
+                                      └─ operationalised by ADR-0021 (strategic narrowing; 2026-05-14 landscape response)
 
 ADR-0014 §Decision Outcome point 2 ── refined by ──→ ADR-0016
           (gpu.cpp wrapper)                            (Dawn direct via webgpu_cpp.h)
