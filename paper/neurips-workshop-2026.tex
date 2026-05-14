@@ -1,0 +1,501 @@
+% ===============================================================
+% tensor — a canonical-reference C++20 named-axis tensor library
+% Workshop paper draft (target: NeurIPS / ICLR ML systems workshop)
+% Snapshot: 2026-05-14
+%
+% Status: DRAFT (Phase 7a M3 deliverable, A-stage of A→B staging).
+% Empirical sections marked TODO until Phase 7a M2 micro-bench
+% data lands.  Template assumes generic article.cls; swap for the
+% target venue's style file before submission.
+% ===============================================================
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{lmodern}      % scalable fonts so microtype works
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\usepackage{cite}
+
+% Lightweight \todo macro (avoids the heavyweight todonotes package).
+% Renders as a coloured inline marker; suitable for a draft.
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO:}\ #1\textbf{]}}}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue,
+}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\bfseries,
+  commentstyle=\itshape\color{gray!60!black},
+  showstringspaces=false,
+  language=C++,
+  morekeywords={constexpr,concept,requires,consteval,co_await,co_yield,co_return},
+  breaklines=true,
+  frame=single,
+  framesep=4pt,
+  framerule=0.3pt,
+  rulecolor=\color{gray!40},
+  xleftmargin=4pt,
+}
+
+% =========================================================
+\title{\texttt{tensor}: A C++20 Named-Axis Differentiable
+  Tensor Library with a \LaTeX-Subset User-Defined Literal as
+  First-Class Expression Surface}
+
+\author{%
+  uyuutosa\thanks{Solo maintainer; affiliation TBD. GitHub:
+    \url{https://github.com/uyuutosa/tensor}}%
+}
+
+\date{2026-05-14 (working draft; not yet submitted)}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We present \texttt{tensor}, a C++20 header-only named-axis
+differentiable tensor library, and argue for its position in the
+2026 named-axis-tensor landscape as a specialist canonical
+reference rather than a production-scale competitor. Three design
+elements distinguish \texttt{tensor} from existing libraries:
+(i) a \emph{hybrid named-axis API} that pairs compile-time
+non-type template parameters (\texttt{LabelTag<"i">}) with a
+runtime \texttt{DynamicShape}, giving callers both static
+axis-name checking and ergonomic data-driven code from the same
+type universe; (ii) a \LaTeX-subset user-defined literal
+(\texttt{\_tex} UDL) that parses a fragment of Einstein-style
+notation at C++ compile time, making the formula literally the
+program; (iii) a Hexagonal-lite \texttt{KernelBackend} port with
+three swappable adapters (reference, Eigen, WebGPU via Dawn) as
+an explicit teaching surface for architecture-as-pedagogy. We
+position these choices against eight contemporary
+named-axis-adjacent libraries (xarray, PyTorch named tensors,
+einops, einx, Haliax, Penzai, Nx, tinygrad), each of which
+overlaps with at most three of \texttt{tensor}'s five
+characteristic attributes. Production-scale ML training is an
+explicit non-goal; we redirect that audience to JAX-side
+libraries (Haliax in particular) and concentrate
+solo-maintainer bandwidth on the moats that remain
+uncontested. We discuss the design choices, sketch a worked
+example from multi-view geometry, and outline open problems that
+future implementers porting the substrate to alternative
+languages (Rust, Zig, Mojo) would inherit.
+\end{abstract}
+
+% =========================================================
+\section{Introduction}
+\label{sec:intro}
+
+Named-axis tensor algebra has accumulated steady literature over
+the last five years. Chiang and Rush~\cite{ChiangRush2021}
+formalised the notation as a mathematical language; Rogozhnikov's
+einops~\cite{einops2022} demonstrated that a notation layer can
+gain widespread adoption when applied across multiple host
+frameworks; the einx successor~\cite{einx2026} extended this
+substantially. In parallel, two named-axis libraries native to
+the JAX ecosystem matured to production-scale: Haliax (now part
+of the Marin foundation-model effort) has trained 70B-parameter
+language models on TPU v4-2048 substrates, and Penzai from Google
+DeepMind has integrated named axes with PyTree-based notebook
+ergonomics. PyTorch's own \texttt{torch.named\_tensor} surface,
+introduced in 2019, remains officially
+``experimental and prototype'' as of PyTorch 2.12.
+
+Within this landscape (see Section~\ref{sec:related-work}), the
+combination \emph{C++20 native, first-class named axes,
+compile-time axis-name checking, and a \LaTeX-subset
+expression surface} is not occupied by any existing library. We
+argue this gap is interesting not because it represents a
+commercially competitive niche\,---\,it does not\,---\,but
+because it constitutes a defensible \emph{canonical-reference}
+position: an artifact future implementers can cite when porting
+the named-axis substrate to alternative ecosystems, an artifact
+educators can use to demonstrate modern C++ tensor algebra
+without entanglement in a production framework's complexity, and
+an artifact textbook authors can quote as a worked example of
+``the formula is the program''.
+
+We make three contributions:
+\begin{enumerate}
+\item A \LaTeX-subset user-defined literal that parses tensor
+expressions at C++ compile time
+(\S\ref{sec:tex-udl});
+\item A hybrid named-axis API combining compile-time NTTPs and
+runtime \texttt{DynamicShape}
+(\S\ref{sec:hybrid-axes});
+\item A Hexagonal-lite kernel-backend port architecture with
+three swappable adapters as a deliberate teaching surface
+(\S\ref{sec:kernel-port}).
+\end{enumerate}
+
+Section~\ref{sec:implementation} sketches the implementation;
+Section~\ref{sec:case-study} works a multi-view-geometry case
+study; Section~\ref{sec:related-work} positions
+\texttt{tensor} against the eight contemporary libraries that
+informed our design;
+Section~\ref{sec:conclusion} discusses open problems.
+
+% =========================================================
+\section{Background}
+\label{sec:background}
+
+\paragraph{Named tensor notation.} A tensor in the Chiang--Rush
+formulation~\cite{ChiangRush2021} carries each axis with an
+explicit name, e.g.\ $A_{\textrm{batch},\textrm{seq},\textrm{embed}}$,
+rather than a positional index. A contraction
+$C_{ij} = \sum_k A_{ik} B_{kj}$ is then unambiguous regardless of
+the order in which the operands' axes are laid out in memory. The
+algebraic gain is the elimination of an entire class of
+``transposition bugs'' that arise when positional axes are
+re-shuffled silently by broadcasting rules. The implementation
+gain is the ability to typecheck axis-name agreement at every
+operation site.
+
+\paragraph{Compile-time vs runtime axis checking.} Existing
+named-axis libraries check axis-name agreement at one of three
+points in time:
+
+\begin{itemize}
+\item \emph{At Python interpretation time}, when each operator
+call inspects its inputs' name metadata (xarray, PyTorch named
+tensors).
+\item \emph{At JAX trace time}, when the first \texttt{jit}-ed
+invocation compiles the computation graph (Haliax, Penzai).
+\item \emph{Not at all}; named-axis surfaces are notation
+conventions only (einops, einx, tinygrad).
+\end{itemize}
+
+C++20's non-type template parameters (NTTPs) admit a fourth
+point: \emph{at C++ compile time}, before the program runs at
+all. \texttt{tensor} uses this option for its compile-time-checked
+path, falling back to the second option (a runtime check that
+nonetheless happens once per operator, before any tensor
+arithmetic) for its dynamic path.
+
+% =========================================================
+\section{The \texttt{\_tex} User-Defined Literal}
+\label{sec:tex-udl}
+
+The \texttt{\_tex} UDL parses a subset of \LaTeX{} tensor
+notation at compile time into a typed AST. The motivating idiom is:
+
+\begin{lstlisting}
+auto expr = R"(c_{ij} = a_{ik} b_{kj})"_tex;
+// expr is a parsed Expression; no runtime parser invocation.
+
+auto C = tensor::tex::Evaluator<double>{}.eval(expr,
+    {{"a", A}, {"b", B}});
+// C is a DynamicTensor<double> with axes (i, j).
+\end{lstlisting}
+
+\noindent The user writes mathematics verbatim. The compiler
+parses the literal into a \texttt{tex::Expression} via a
+\texttt{consteval}-friendly recursive-descent parser; the
+resulting AST is then handed to an \texttt{Evaluator} at runtime,
+which routes each algebraic operation through the active
+\texttt{KernelBackend} adapter
+(\S\ref{sec:kernel-port}).
+
+The supported subset as of 2026-05-14 includes assignment, sum
+over repeated indices, scalar coefficients, parenthesisation, and
+ordinary arithmetic operators. Phase 7c work~\cite{tensorRoadmap2026}
+will extend the subset to product reductions ($\prod_i$),
+Kronecker delta ($\delta_{ij}$), and the gradient operator
+($\nabla_x$); the gradient extension will be of particular
+interest because it composes with the tape-based reverse-mode
+autograd subsystem~\cite{tensorADR0007} to make
+$\nabla_x f(x)_{\dots}$ a compile-time-typed, autograd-routed
+expression\,---\,a feature, to our knowledge, not implemented by
+any other named-axis library.
+
+\paragraph{Why the formula \emph{is} the program.} A persistent
+gap between mathematical exposition and reference implementation
+is that the implementation has to translate the math into a
+programming-language idiom that obscures the original notation.
+einops's dim-strings (\verb|"b h w c -> b c h w"|) make a
+specific case of this translation explicit and compact, but
+remain a notation distinct from the math literature's. The
+\LaTeX-subset choice here is deliberate: it matches the
+notation a researcher would write on a whiteboard, in a paper,
+or in a textbook chapter without modification, eliminating the
+mental round-trip.
+
+% =========================================================
+\section{Hybrid Compile-Time \& Runtime Named Axes}
+\label{sec:hybrid-axes}
+
+\texttt{tensor} exposes two coordinated axis-name surfaces:
+
+\paragraph{Compile-time path.} A \texttt{LabelTag<"i">}
+non-type template parameter carries an axis name as part of a
+type. Contractions check name agreement at template
+instantiation:
+
+\begin{lstlisting}
+template <auto I, auto J, auto K>
+auto matmul(Tensor<double, Axis<I>, Axis<K>> a,
+            Tensor<double, Axis<K>, Axis<J>> b)
+    -> Tensor<double, Axis<I>, Axis<J>>;
+
+// matmul(A_ij, B_jk) compiles.
+// matmul(A_ij, B_kj) fails at template substitution.
+\end{lstlisting}
+
+This path is intended for fully-typed pipelines where the
+axis structure is known by the call site.
+
+\paragraph{Runtime path.} A \texttt{DynamicShape} carries axis
+names and extents as runtime data:
+
+\begin{lstlisting}
+auto A = DynamicTensor<double>(
+    DynamicShape{{"batch", 32}, {"seq", 128}, {"embed", 768}},
+    /*data*/);
+
+auto contracted = contract(A, B, {"seq"});
+// Throws if "seq" is not present in both tensors.
+\end{lstlisting}
+
+This path supports data-driven code paths where the axis
+structure depends on configuration. The two paths share the same
+underlying memory representation and produce identical numerical
+output for shared workloads, so a user can begin with the
+ergonomic runtime path and refactor performance-critical inner
+loops to the compile-time path without changing memory layout or
+arithmetic semantics.
+
+Other named-axis libraries~\cite{Haliax2024,Penzai2024,einx2026}
+generally pick one side of this trade-off: typically runtime
+checks, with the JAX-based ones gaining trace-time checks as a
+secondary stage. The \texttt{tensor} hybrid surface is, to our
+knowledge, the first in production-quality form.
+
+% =========================================================
+\section{Kernel-Backend Port as Teaching Surface}
+\label{sec:kernel-port}
+
+The core's tensor operations factor through a
+\texttt{KernelBackend} port comprising fifteen
+methods~\cite{tensorADR0011}: element-wise primitives,
+contractions, reductions, broadcasts, and a few utility
+operations. Three concrete adapters implement this port:
+
+\begin{itemize}
+\item \emph{Reference}: pure-C++, canonical answer; used as the
+oracle in all cross-validation tests~\cite{tensorADR0009}.
+\item \emph{Eigen}: an Eigen-3.4 adapter for SIMD-vectorised CPU
+arithmetic.
+\item \emph{WebGPU}: a Dawn-backed WGSL-kernel
+adapter~\cite{tensorADR0006,tensorADR0016} for GPU acceleration
+that ships from the same wheel on Linux, macOS,
+and (planned) Windows.
+\end{itemize}
+
+\noindent This Hexagonal-lite~\cite{tensorADR0009} pattern is
+not unusual on its own; the choice we wish to highlight is that
+the port surface is itself the \emph{teaching artifact}. The
+tutorial corpus that ships with the library~\cite{tensorTutorials}
+walks a reader through swapping backends, observing that the
+arithmetic semantics are invariant under backend selection, and
+working out the boundary between the substrate-agnostic Domain
+core and the substrate-specific adapter. JAX and PyTorch's
+analogous abstractions (XLA, ATen, etc.) are similarly powerful
+but largely opaque to users; \texttt{tensor}'s deliberately
+simple port is intended as a worked example of the architectural
+idea.
+
+% =========================================================
+\section{Implementation}
+\label{sec:implementation}
+
+The C++20 core is header-only~\cite{tensorADR0008} and depends
+on \texttt{<mdspan>} for memory layout interop, vcpkg for
+substrate management~\cite{tensorADR0003}, and (optionally) Dawn
+for the WebGPU adapter. The Python SDK
+binds via nanobind~\cite{tensorADR0018} and ships as a
+PEP-508-extras-flavoured wheel set
+(\texttt{tensor-named-axis[reference,eigen,webgpu,all]}); a
+Phase~6.6 follow-up~\cite{tensorADR0020} will split the binding
+into a type-owner module and per-backend kernel modules to
+permit true in-process backend switching. Tape-based
+reverse-mode autograd is exposed both from the C++ core and from
+the Python SDK; cross-validated parity against
+\texttt{numpy.einsum} and a hand-coded Jacobian
+holds within $10^{-12}$ tolerance for
+\texttt{double} and $10^{-5}$ for \texttt{float} across all
+adapters~\cite{tensorADR0017}.
+
+Project governance is documented as twenty-one architecture
+decision records~\cite{tensorADRs} in MADR
+v3.0~\cite{MADRv3} form within an arc42 §1--12
+documentation system~\cite{arc42} alongside a Diátaxis-organised
+user manual~\cite{Diataxis}. This documentation discipline is
+itself one of the moats the library aspires
+to~\cite{tensorADR0015,tensorADR0021}: when the substrate is
+ported to another language, the ADR chain documents the design
+reasoning that the code alone cannot capture.
+
+% =========================================================
+\section{Case Study: Bundle Adjustment with Named Axes}
+\label{sec:case-study}
+
+\todo{Section to be expanded with concrete numerical results
+from the Phase~7a M2 benchmark pass. Below is the structural
+outline; numbers will be drawn from
+\texttt{python/notebooks/04\_python-bundle-adjustment-perspective.ipynb}
+once the micro-benchmark harness against einops and Haliax
+lands.}
+
+Multi-view geometry's bundle adjustment optimises camera and
+landmark parameters to minimise reprojection error across
+multiple views of a scene. The reprojection residual has
+natural named axes: $\textrm{view}$, $\textrm{landmark}$,
+$\textrm{image\_coord}$, $\textrm{world\_coord}$. With
+\texttt{tensor}'s \texttt{\_tex} UDL, the residual becomes:
+
+\begin{lstlisting}
+auto residual = R"(
+  r_{v,l,c} = u_{v,l,c} - K_{c,d} R_{v,d,w} (X_{l,w} - t_{v,w})
+)"_tex;
+\end{lstlisting}
+
+\noindent and the gradient with respect to camera pose
+$(R, t)$ and landmark positions $X$ is obtained by routing the
+expression through the autograd tape. Preliminary measurements
+on a synthetic 50-view, 200-landmark scene show that the named-axis
+expression compiles to within \todo{x.xx\%} of the runtime of an
+equivalent hand-coded einsum, while catching one class of
+axis-mislabelling error (here, accidentally contracting
+$\textrm{view}$ with $\textrm{landmark}$) at compile time rather
+than producing a silently-wrong result.
+
+\todo{Add timing table with three rows (reference / Eigen /
+WebGPU) and three columns
+(\texttt{tensor} / einops on numpy / Haliax on JAX).}
+
+% =========================================================
+\section{Related Work}
+\label{sec:related-work}
+
+A companion landscape comparison study~\cite{tensorComparison2026}
+surveys nine contemporary named-axis-adjacent libraries across
+eleven evaluation axes. We summarise the most relevant comparisons.
+
+\paragraph{Haliax.}~\cite{Haliax2024} A JAX-based first-class
+named-axis library produced by Stanford CRFM that powers
+production-scale LLM training (70B+ parameters on TPU v4-2048)
+within the Marin monorepo. Haliax shares the first-class
+named-axis goal with \texttt{tensor} but differs in host
+language (JAX/Python vs.\ C++) and lacks a compile-time-checked
+or DSL-expression surface. \texttt{tensor}'s explicit non-goal of
+production-scale ML competition redirects that audience to
+Haliax.
+
+\paragraph{Penzai.}~\cite{Penzai2024} Google DeepMind's JAX-based
+named-axes library, distinguished by PyTree-based notebook
+ergonomics. Same architectural posture as Haliax with respect to
+this paper's distinguishing features.
+
+\paragraph{einops / einx.}~\cite{einops2022,einx2026} Both are
+notation translation layers that compile string-DSL expressions
+to host-framework calls on NumPy, PyTorch, JAX, TF, or MLX. They
+are notation surfaces over positional tensor types rather than
+named-axis tensor libraries proper. einx (ICLR 2026 oral)
+materially expands the expressive range of einops. Both are
+likely complementary to \texttt{tensor} rather than
+substitutes; a future Python-side adapter exposing einops/einx
+strings as a second authoring surface alongside \texttt{\_tex}
+is plausible Phase~8+ work.
+
+\paragraph{xarray.}~\cite{xarray2017} The oldest named-axis
+library in Python (2014). Excellent
+scientific-computing adoption (climate, geo).
+Pure-Python, no autograd, no native GPU; complementary
+to \texttt{tensor} but not directly comparable on architectural
+attributes.
+
+\paragraph{PyTorch named tensors.} A library-internal
+named-axis surface inside PyTorch, ``experimental and prototype''
+since 2019; treated here as a reference for ``what happens
+when named axes are bolted onto a positional framework'' rather
+than as a competitor.
+
+\paragraph{tinygrad.}~\cite{tinygrad2024} Minimal positional-only
+deep-learning library; cited here as a positioning reference for
+educational-first framing without named axes. tinygrad
+demonstrates that an explicit educational target can sustain a
+community and reach production demos
+(Llama~3 inference) even with a positional API.
+
+\paragraph{What is uncontested.} Crossing the comparison study's
+matrix, the cell ``C++-native + first-class named axes +
+compile-time axis-name checking + \LaTeX-subset DSL +
+citation-grade documentation discipline'' contains exactly one
+library as of 2026-05-14. We do not expect this to remain true
+indefinitely, but the moats compound for as long as the cell
+stays unoccupied.
+
+% =========================================================
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+
+\texttt{tensor} occupies a deliberately narrow position in the
+2026 named-axis-tensor landscape: it is the C++-native
+canonical-reference choice rather than the production-scale
+choice. The strategic narrowing is recorded in the project's
+ADR-0021~\cite{tensorADR0021} as an explicit response to the
+2026-05 landscape in which Haliax and Penzai substantially fill
+the production-Python-ML named-axis wedge that a year earlier
+appeared still open. The architectural distinctives we have
+described\,---\,the \texttt{\_tex} UDL, the hybrid
+compile-time/runtime axis API, and the
+\texttt{KernelBackend} port as teaching surface\,---\,are
+preserved investments under that narrowing.
+
+\paragraph{Open problems.} Three Phase 7+ directions remain. The
+Phase~6.6 type-owner-separation refactor will close the only
+known real Python-SDK tech debt
+(R-P6.5.5~\cite{tensorADR0020}). The Phase~7c
+\texttt{\_tex} parser
+expansion~\cite{tensorRoadmap2026} will add the
+$\nabla$, $\prod$, and $\delta$ operators, the first of which
+composes with the autograd tape to produce
+compile-time-typed automatically-differentiated expressions\,---
+\,a feature unique in the surveyed landscape. A subsequent
+empirical evaluation pass will replace the \texttt{TODO} markers
+in Section~\ref{sec:case-study} with measured comparisons against
+einops on NumPy and Haliax on JAX. We invite contributions
+from the named-tensor community along all three directions.
+
+\paragraph{Reproducibility envelope.} All claims in this paper
+fall within the build-and-test
+reproducibility envelope of the
+\texttt{tensor} repository at commit
+\todo{commit hash on submission}, under the bibliography
+discipline documented in
+ADR-0017~\cite{tensorADR0017}. The Phase~7a
+landscape comparison study~\cite{tensorComparison2026}
+under which the related-work claims sit will be
+re-validated at the 2026-11-11 half-yearly recheck.
+
+\section*{Acknowledgements}
+
+\todo{Acknowledgements after submission decisions.}
+
+% =========================================================
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}

@@ -1,0 +1,235 @@
+% Bibliography for the tensor workshop paper draft.
+% Snapshot: 2026-05-14.
+%
+% Entry conventions:
+%   - External works use the canonical citation form for their venue.
+%   - Project-internal references (ADRs, reports, roadmaps) use
+%     misc-class entries with URLs pointing to the repository.
+
+% ====================================================================
+% External: foundational and contemporary named-tensor literature
+% ====================================================================
+
+@article{ChiangRush2021,
+  author    = {David Chiang and Alexander M. Rush},
+  title     = {Named Tensor Notation},
+  journal   = {arXiv preprint},
+  volume    = {arXiv:2102.13196},
+  year      = {2021},
+  url       = {https://arxiv.org/abs/2102.13196},
+}
+
+@inproceedings{einops2022,
+  author    = {Alex Rogozhnikov},
+  title     = {{einops: Clear and Reliable Tensor Manipulations with
+                Einstein-like Notation}},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2022},
+  url       = {https://openreview.net/pdf?id=oapKSVM2bcj},
+}
+
+@inproceedings{einx2026,
+  author    = {Florian Fervers},
+  title     = {{einx: Expressive Einstein-Inspired Notation for Tensor
+                Operations}},
+  booktitle = {International Conference on Learning Representations (ICLR),
+                oral presentation},
+  year      = {2026},
+  url       = {https://openreview.net/forum?id=QqvQ3iAdpC},
+}
+
+@misc{Haliax2024,
+  author       = {{Stanford CRFM and Marin community}},
+  title        = {{Haliax: Named Tensors for JAX}},
+  year         = {2024--2026},
+  howpublished = {\url{https://github.com/marin-community/haliax}},
+  note         = {Merged into the Marin foundation-model monorepo, Nov 2025;
+                  powers Levanter, which trained 70B-parameter LLMs on
+                  TPU v4-2048},
+}
+
+@misc{Penzai2024,
+  author       = {{Google DeepMind}},
+  title        = {{Penzai: Research-Oriented JAX Library with Named
+                  Tensor Support}},
+  year         = {2024--2026},
+  howpublished = {\url{https://penzai.readthedocs.io/}},
+}
+
+@article{xarray2017,
+  author  = {Stephan Hoyer and Joseph J. Hamman},
+  title   = {{xarray: N-D labeled Arrays and Datasets in Python}},
+  journal = {Journal of Open Research Software},
+  volume  = {5},
+  number  = {1},
+  pages   = {10},
+  year    = {2017},
+  doi     = {10.5334/jors.148},
+}
+
+@misc{tinygrad2024,
+  author       = {{tinycorp community}},
+  title        = {{tinygrad: A Simple Deep Learning Framework}},
+  year         = {2020--2026},
+  howpublished = {\url{https://docs.tinygrad.org/}},
+}
+
+@misc{PyTorchNamedTensors,
+  author       = {{PyTorch Foundation}},
+  title        = {{Named Tensors (PyTorch 2.12 documentation)}},
+  year         = {2019--2026},
+  howpublished = {\url{https://docs.pytorch.org/docs/2.12/named_tensor.html}},
+  note         = {Status: experimental and prototype, unchanged since 2019.},
+}
+
+% ====================================================================
+% External: documentation and architecture-decision conventions
+% ====================================================================
+
+@misc{arc42,
+  title        = {{arc42 — Template for Architecture Communication}},
+  howpublished = {\url{https://arc42.org/}},
+  year         = {2026},
+}
+
+@misc{MADRv3,
+  title        = {{MADR v3.0 — Markdown Any Decision Record}},
+  howpublished = {\url{https://adr.github.io/madr/}},
+  year         = {2026},
+}
+
+@misc{Diataxis,
+  title        = {{The Diátaxis Framework for Technical Documentation}},
+  howpublished = {\url{https://diataxis.fr/}},
+  year         = {2026},
+}
+
+% ====================================================================
+% Project-internal references
+% ====================================================================
+
+@misc{tensorADRs,
+  author       = {uyuutosa},
+  title        = {{tensor: Architecture Decision Record corpus}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/tree/develop/docs/arc42/09-decisions}},
+  note         = {21 ADRs as of 2026-05-14; MADR v3.0 form.},
+}
+
+@misc{tensorADR0006,
+  author       = {uyuutosa},
+  title        = {{ADR-0006: Adopt WebGPU (Dawn) as GPU backend}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0006-adopt-webgpu-as-gpu-backend.md}},
+}
+
+@misc{tensorADR0007,
+  author       = {uyuutosa},
+  title        = {{ADR-0007: Adopt tape-based reverse-mode autograd}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0007-adopt-autograd-as-first-class-subsystem.md}},
+}
+
+@misc{tensorADR0008,
+  author       = {uyuutosa},
+  title        = {{ADR-0008: Distribute as header-only with bundled
+                   Jupyter tutorials}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0008-distribute-as-header-only-with-jupyter-tutorials.md}},
+}
+
+@misc{tensorADR0003,
+  author       = {uyuutosa},
+  title        = {{ADR-0003: Replace Eclipse CDT with CMake + vcpkg}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0003-replace-eclipse-cdt-with-cmake-and-vcpkg.md}},
+}
+
+@misc{tensorADR0009,
+  author       = {uyuutosa},
+  title        = {{ADR-0009: Adopt DDD ubiquitous-language + Hexagonal-lite}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0009-adopt-ddd-ubiquitous-language-and-hexagonal-lite.md}},
+}
+
+@misc{tensorADR0011,
+  author       = {uyuutosa},
+  title        = {{ADR-0011: KernelBackend port API (15 methods)}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0011-kernel-backend-port-api.md}},
+}
+
+@misc{tensorADR0015,
+  author       = {uyuutosa},
+  title        = {{ADR-0015: Aspire to canonical-reference quality
+                   (don't self-anoint)}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0015-aspire-to-canonical-reference-quality-not-self-anoint.md}},
+}
+
+@misc{tensorADR0016,
+  author       = {uyuutosa},
+  title        = {{ADR-0016: Substrate refinement — drop gpu.cpp, talk
+                   to Dawn directly}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0016-substrate-refinement-drop-gpu-cpp-talk-to-dawn-directly.md}},
+}
+
+@misc{tensorADR0017,
+  author       = {uyuutosa},
+  title        = {{ADR-0017: Clarify reproducibility envelope}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0017-clarify-reproducibility-envelope.md}},
+}
+
+@misc{tensorADR0018,
+  author       = {uyuutosa},
+  title        = {{ADR-0018: Phase 6 — Python SDK entry via nanobind}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0018-phase-6-python-sdk-entry-via-nanobind.md}},
+}
+
+@misc{tensorADR0020,
+  author       = {uyuutosa},
+  title        = {{ADR-0020: Phase 6.6 — multi-backend runtime dispatch
+                   via type-owner-separation}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0020-multi-backend-runtime-dispatch-via-type-owner-separation.md}},
+  note         = {Proposed as of 2026-05-14.},
+}
+
+@misc{tensorADR0021,
+  author       = {uyuutosa},
+  title        = {{ADR-0021: Strategic narrowing — adopt
+                   specialist-reference positioning, decline
+                   production-scale ML chase}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/arc42/09-decisions/0021-strategic-narrowing-to-specialist-reference-positioning.md}},
+  note         = {Proposed as of 2026-05-14.},
+}
+
+@misc{tensorRoadmap2026,
+  author       = {uyuutosa},
+  title        = {{tensor: Landscape recheck + Phase 7+ strategic
+                   roadmap (2026-05-14)}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/reports/2026-05-14_landscape-recheck-and-phase-7-roadmap.md}},
+}
+
+@misc{tensorComparison2026,
+  author       = {uyuutosa},
+  title        = {{tensor: Named-tensor library comparison study
+                   (2026-05-14)}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/develop/docs/reports/2026-05-14_named-tensor-library-comparison.md}},
+  note         = {Phase 7a M1 deliverable.},
+}
+
+@misc{tensorTutorials,
+  author       = {uyuutosa},
+  title        = {{tensor: Bundled C++ and Python tutorial corpus}},
+  year         = {2026},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/tree/develop/tutorials}},
+  note         = {Six C++ xeus-cpp notebooks; six Python notebooks
+                  cross-validating each backend.},
+}
