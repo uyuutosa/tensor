@@ -116,9 +116,15 @@ jobs:
         # Linux. The X11 + Mesa headers are needed at compile time;
         # vulkan-headers and vulkan-utility-libraries come via vcpkg
         # itself (see Dawn's `vulkan` feature deps).
+        #
+        # libx11-xcb-dev provides X11/Xlib-xcb.h that Dawn's
+        # src/dawn/common/xlib_with_undefs.h #includes for the X11-XCB
+        # bridge surface. Missing this is the most common Dawn-build
+        # failure on a fresh Ubuntu runner.
         run: |
           sudo apt-get install -y \
-              libx11-dev libxext-dev libxrandr-dev \
+              libx11-dev libx11-xcb-dev libxcb1-dev \
+              libxext-dev libxrandr-dev \
               libxcursor-dev libxinerama-dev libxi-dev \
               mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev \
               pkg-config
