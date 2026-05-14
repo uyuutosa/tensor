@@ -37,12 +37,12 @@ def test_public_surface_is_at_or_above_m2_baseline():
     - ``DynamicTensor``       — float64 tensor (the educational default).
     - ``DynamicTensorF32``    — float32 tensor (for the WebGPU-bound path).
 
-    P6.M3 will add ``contract`` and NumPy interop helpers; P6.M4 will add
-    ``autograd``; P6.M5 will add the ``tex`` submodule. Each milestone
-    updates this set.
+    P6.M3 added ``contract`` + ``from_numpy``; P6.M4 added ``autograd``;
+    P6.M5 added the ``tex`` submodule. P6.5.M2 adds ``set_backend`` +
+    ``current_backend`` + ``list_available_backends``.
     """
     public = {name for name in dir(tensor) if not name.startswith("_")}
-    expected_m5 = {
+    expected_p6_5 = {
         "hello",
         "Axis",
         "DynamicShape",
@@ -52,9 +52,14 @@ def test_public_surface_is_at_or_above_m2_baseline():
         "from_numpy",
         "autograd",
         "tex",
+        # Phase 6.5 M2 additions:
+        "set_backend",
+        "current_backend",
+        "list_available_backends",
     }
-    assert expected_m5.issubset(public), (
-        f"missing P6.M5 baseline symbols: {sorted(expected_m5 - public)}"
+    assert expected_p6_5.issubset(public), (
+        f"missing P6.5.M2 baseline symbols: "
+        f"{sorted(expected_p6_5 - public)}"
     )
     # The autograd submodule exposes the tape-based reverse-mode surface.
     assert hasattr(tensor.autograd, "DynamicVariable")

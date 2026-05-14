@@ -228,15 +228,34 @@ void bind_dynamic_variable(nb::module_& m, char const* py_name) {
 
 }  // anonymous namespace
 
-NB_MODULE(_tensor_native, m) {
+// Phase 6.5 / ADR-0019: the module name is parameterised at compile time
+// via the `-DTENSOR_NB_MODULE_NAME=<name>` flag from python/CMakeLists.txt.
+// Default is `_tensor_native` for backward compatibility with the
+// reference-only Phase 6 build; the eigen / webgpu wheels override to
+// `_tensor_native_eigen` / `_tensor_native_webgpu` so all three can
+// coexist under the same `tensor/` PEP-420 namespace package.
+#ifndef TENSOR_NB_MODULE_NAME
+#define TENSOR_NB_MODULE_NAME _tensor_native
+#endif
+
+// Likewise the backend-name string the Python `set_backend()` machinery
+// inspects via `<module>.__backend__`. Defaults to "reference" on the
+// legacy reference build.
+#ifndef TENSOR_KERNEL_BACKEND_NAME
+#define TENSOR_KERNEL_BACKEND_NAME "reference"
+#endif
+
+NB_MODULE(TENSOR_NB_MODULE_NAME, m) {
     m.doc() =
-        "tensor Python SDK — native nanobind extension (P6.M3). "
-        "Adds `contract` (named-axis Einstein-sum) + NumPy interop "
-        "(from_numpy / .numpy()) on top of M2's `DynamicTensor` + four "
-        "arithmetic operators. Subsequent milestones add autograd (M4), "
-        "`tex.Evaluator` (M5), and runtime backend selection (M6).";
+        "tensor Python SDK — native nanobind extension. "
+        "Phase 6 (M1-M6) shipped: `DynamicTensor`, arithmetic, `contract`, "
+        "NumPy interop, `autograd`, `tex`. Phase 6.5 adds runtime backend "
+        "selection (`set_backend()`); the C++ side here exports its "
+        "backend identity as `__backend__` for the Python adapter to "
+        "route on.";
 
     m.attr("__version__") = "0.1.0+dev";
+    m.attr("__backend__") = TENSOR_KERNEL_BACKEND_NAME;
 
     m.def("hello",
           []() -> char const* { return "hello from tensor::core"; },
