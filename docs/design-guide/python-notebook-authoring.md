@@ -28,7 +28,7 @@ jupyter nbconvert --to notebook --inplace --execute \
 git add python/notebooks/<file>.ipynb
 ```
 
-C++ tutorials under `tutorials/` are *not* gated because their `xcpp20` kernel requires a conda environment — the weekly cron in `notebook-ci.yml` covers their execution separately.
+C++ tutorials under `tutorials/` are *not* gated by the same mechanism because their `xcpp20` kernel requires a conda environment that most contributors don't have locally. Instead, `deploy-book.yml` installs xeus-cpp at deploy time and executes the tutorials in-place before the `jupyter-book build` step (`continue-on-error: true` so a flaky xeus-cpp doesn't block deploys; the fallback is source-only render). This means **the published site always shows tutorial outputs even when the committed `.ipynb` has none** — a different pattern from the Python notebooks but with the same end-user-facing result. See [`../../.github/workflows/deploy-book.yml`](../../.github/workflows/deploy-book.yml) §"C++ tutorial execution" steps.
 
 ## 2. Plotly + MathJax — the conflict you'll hit twice
 

@@ -47,10 +47,64 @@ jobs:
         # the deployed site (etoc.ref "nonexisting document" warning).
         run: bash book/stage.sh
 
+      # ─── C++ tutorial execution (xeus-cpp) ───────────────────────
+      # Same bug class PR #117 fixed for Python notebooks: committed
+      # `execution_count: None` tutorials render source-only on the
+      # site. Python notebooks are committed pre-executed (per
+      # `python-notebook-authoring.md`); the C++ tutorials can't
+      # easily follow the same pattern because xeus-cpp isn't
+      # universally installable. Solution: install xeus-cpp here in
+      # CI and execute the tutorials in-place before
+      # `jupyter-book build`, so the deploy always renders with
+      # outputs even when the committed tutorial has none.
+      #
+      # `continue-on-error: true` because xeus-cpp is R-S2 (R-rated
+      # Medium): a flaky xeus-cpp upgrade should not block deploys —
+      # the fallback is the existing source-only render (current
+      # state, no worse than today).
+      - name: Set up Miniconda (for xeus-cpp)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          auto-activate-base: true
+          activate-environment: ""
+        continue-on-error: true
+
+      - name: Install xeus-cpp via conda-forge
+        shell: bash -l {0}
+        continue-on-error: true
+        run: |
+          conda create -n xcpp -c conda-forge -y \
+              xeus-cpp jupyter nbconvert
+          conda init bash
+
+      - name: Execute C++ tutorials in place
+        shell: bash -l {0}
+        continue-on-error: true
+        run: |
+          # Activate the xcpp env then execute every tutorial. Per
+          # ADR-0014 §3, the canonical kernel is `xcpp20`. If any
+          # tutorial fails (e.g. xeus-cpp / Clang-Repl regression),
+          # `continue-on-error: true` keeps the deploy moving — the
+          # tutorial just renders source-only as it does today.
+          conda activate xcpp
+          for nb in tutorials/*.ipynb; do
+            echo "::group::executing ${nb}"
+            jupyter nbconvert --to notebook --inplace --execute \
+                              --ExecutePreprocessor.timeout=180 \
+                              --ExecutePreprocessor.kernel_name=xcpp20 \
+                              "${nb}" || \
+                echo "::warning::${nb} did not execute cleanly; falling back to source-only render"
+            echo "::endgroup::"
+          done
+
       - name: Build the book
         # Source root is book/; with the symlinks above, the TOC's
         # tutorials/, python/notebooks/, docs/reports/ paths all
-        # resolve. Jupyter Book writes _build/html under book/.
+        # resolve. Jupyter Book writes _build/html under book/. The
+        # C++ tutorials are executed in-place by the xeus-cpp step
+        # above (best-effort); the Python notebooks are already
+        # committed pre-executed per the notebook-output gate.
         run: jupyter-book build book
 
       - name: Upload Pages artifact
