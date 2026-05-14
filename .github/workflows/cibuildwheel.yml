@@ -122,19 +122,27 @@ jobs:
         if: matrix.backend == 'eigen' && runner.os == 'macOS'
         run: brew install eigen
 
-      - name: Bootstrap vcpkg + Dawn (Linux / webgpu)
+      - name: Install Dawn system deps (Linux / webgpu)
         if: matrix.backend == 'webgpu' && runner.os == 'Linux'
         run: |
-          # Dawn requires a vcpkg baseline override. The exact baseline
-          # is the maintainer's verified one (per ADR-0014 §1); for now
-          # the build will fail until the maintainer wires the override
-          # here. M3 ships the matrix entry; M4 stretch goal closes this.
-          echo "::warning::Dawn vcpkg bootstrap not yet wired — webgpu Linux wheel build will fail until M4. Skipping system deps."
+          # Dawn's vcpkg port enables {gl, gles, vulkan, x11} by default
+          # on Linux. The X11 + Mesa dev headers are needed at compile
+          # time; vulkan-headers and vulkan-utility-libraries arrive via
+          # vcpkg itself (per Dawn's `vulkan` feature deps).
+          sudo apt-get update
+          sudo apt-get install -y \
+              libx11-dev libxext-dev libxrandr-dev \
+              libxcursor-dev libxinerama-dev libxi-dev \
+              mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev \
+              pkg-config
 
-      - name: Bootstrap Dawn (macOS / webgpu)
+      - name: Verify Dawn system deps (macOS / webgpu)
         if: matrix.backend == 'webgpu' && runner.os == 'macOS'
         run: |
-          echo "::warning::Dawn macOS bootstrap not yet wired — webgpu macOS wheel build will fail until M4. Skipping system deps."
+          # Dawn on macOS uses Metal (no extra system deps beyond Xcode).
+          # The Metal framework ships with the runner image. Vcpkg's
+          # Dawn port handles abseil and tint-tools.
+          xcrun --show-sdk-version
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.21.3
@@ -146,6 +154,10 @@ jobs:
           CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
           CIBW_SKIP: "*-musllinux_* *-win32 *-manylinux_i686"
           CIBW_BUILD_VERBOSITY: 1
+          # vcpkg-manifest features are opt-in. Forward the `webgpu`
+          # feature into the cibuildwheel container so vcpkg installs
+          # Dawn (the WebGPU substrate) for that lane only.
+          CIBW_ENVIRONMENT: ${{ matrix.backend == 'webgpu' && 'VCPKG_MANIFEST_FEATURES=webgpu' || '' }}
           # Smoke command tailored per backend: reference verifies
           # hello(); eigen / webgpu verify their backend shows up in
           # list_available_backends(). The eigen / webgpu test commands

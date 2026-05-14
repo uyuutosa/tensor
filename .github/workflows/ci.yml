@@ -109,6 +109,20 @@ jobs:
             sudo apt-get install -y clang-15
           fi
 
+      - name: Install Dawn system deps (Linux + webgpu only)
+        if: runner.os == 'Linux' && matrix.backend == 'webgpu'
+        shell: bash
+        # Dawn's vcpkg port enables {gl, gles, vulkan, x11} by default on
+        # Linux. The X11 + Mesa headers are needed at compile time;
+        # vulkan-headers and vulkan-utility-libraries come via vcpkg
+        # itself (see Dawn's `vulkan` feature deps).
+        run: |
+          sudo apt-get install -y \
+              libx11-dev libxext-dev libxrandr-dev \
+              libxcursor-dev libxinerama-dev libxi-dev \
+              mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev \
+              pkg-config
+
       - name: Install Ninja (macOS)
         if: runner.os == 'macOS'
         run: brew install ninja
@@ -149,6 +163,13 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
+          # vcpkg-manifest features are opt-in. Setting the `webgpu`
+          # feature here pulls in Dawn (the WebGPU substrate) per the
+          # vcpkg.json `webgpu` feature definition; required whenever
+          # CMake will run find_package(Dawn) under
+          # -DTENSOR_KERNEL_BACKEND=webgpu. Empty string for other
+          # backends, which keeps the default-features-only behaviour.
+          VCPKG_MANIFEST_FEATURES: ${{ matrix.backend == 'webgpu' && 'webgpu' || '' }}
         run: |
           BACKEND_ARG=""
           if [ -n "${{ matrix.backend }}" ]; then
@@ -159,6 +180,8 @@ jobs:
       - name: Configure (Windows)
         if: runner.os == 'Windows'
         shell: bash
+        env:
+          VCPKG_MANIFEST_FEATURES: ${{ matrix.backend == 'webgpu' && 'webgpu' || '' }}
         run: |
           BACKEND_ARG=""
           if [ -n "${{ matrix.backend }}" ]; then
