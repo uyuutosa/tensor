@@ -152,11 +152,20 @@ jobs:
       - name: Install TeX Live (PDF build)
         if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
         continue-on-error: true
+        # `texlive-fonts-extra` ships `bbm.sty` (blackboard-bold) +
+        # many other math-mode fonts Sphinx's MyST math rendering
+        # pulls in. Without it the LaTeX build halts on the first
+        # math-heavy chapter. `texlive-science` covers physics,
+        # mathtools, and the other typical Sphinx math packages.
+        # Confirmed missing in the 2026-05-15 smoke test (run
+        # 25897438571): `! LaTeX Error: File 'bbm.sty' not found`.
         run: |
           sudo apt-get install -y --no-install-recommends \
               texlive-latex-recommended \
               texlive-latex-extra \
               texlive-fonts-recommended \
+              texlive-fonts-extra \
+              texlive-science \
               texlive-xetex \
               latexmk
 
