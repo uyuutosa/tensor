@@ -177,12 +177,31 @@ jobs:
         continue-on-error: true
         # `jupyter-book build book --builder pdflatex` runs Sphinx's
         # LaTeX builder (configured in book/_config.yml) and then
-        # invokes `make` inside `book/_build/latex/` to produce the
-        # PDF. Skipping on push-to-develop keeps the HTML-only
+        # invokes latexmk inside `book/_build/latex/` to produce
+        # the PDF. Skipping on push-to-develop keeps the HTML-only
         # deploys fast (~6 min vs ~25 min for the PDF build).
+        #
+        # latexmk frequently exits non-zero on resolvable
+        # cross-reference issues (e.g., a missing-{ on a markdown
+        # math fragment makes the 2nd pass emergency-stop) even
+        # though the 1st pass produces a usable PDF. The check
+        # below promotes the step to success whenever a PDF was
+        # written; the artifact upload then carries it forward.
+        # Content-side LaTeX cleanups are tracked separately.
         run: |
+          set +e
           jupyter-book build book --builder pdflatex
-          ls -lah book/_build/latex/*.pdf
+          jb_status=$?
+          set -e
+          if [[ -s book/_build/latex/tensor-named-axis.pdf ]]; then
+            ls -lah book/_build/latex/tensor-named-axis.pdf
+            if [[ $jb_status -ne 0 ]]; then
+              echo "::warning::jupyter-book exited $jb_status but PDF was produced; treating as soft success."
+            fi
+            exit 0
+          fi
+          echo "::error::No PDF produced (jupyter-book exit ${jb_status})."
+          exit "$jb_status"
 
       - name: Upload PDF artifact
         if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
