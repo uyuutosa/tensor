@@ -142,6 +142,46 @@ jobs:
         with:
           path: book/_build/html
 
+      # ── PDF artifact (Phase 7a M2) ────────────────────────────────
+      # Builds `book/_build/latex/tensor-named-axis.pdf` via Sphinx's
+      # PDF-via-LaTeX builder. TeX Live is ~5 GB on a cold runner;
+      # to limit blast radius the PDF build runs only on
+      # `workflow_dispatch` + tag push, not on every develop push.
+      # `continue-on-error: true` keeps the HTML deploy alive even if
+      # the LaTeX toolchain breaks (R-P7a.1 per the impl-plan).
+      - name: Install TeX Live (PDF build)
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y --no-install-recommends \
+              texlive-latex-recommended \
+              texlive-latex-extra \
+              texlive-fonts-recommended \
+              texlive-xetex \
+              latexmk
+
+      - name: Build PDF artifact
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+        continue-on-error: true
+        # `jupyter-book build book --builder pdflatex` runs Sphinx's
+        # LaTeX builder (configured in book/_config.yml) and then
+        # invokes `make` inside `book/_build/latex/` to produce the
+        # PDF. Skipping on push-to-develop keeps the HTML-only
+        # deploys fast (~6 min vs ~25 min for the PDF build).
+        run: |
+          jupyter-book build book --builder pdflatex
+          ls -lah book/_build/latex/*.pdf
+
+      - name: Upload PDF artifact
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: tensor-named-axis-pdf
+          path: book/_build/latex/tensor-named-axis.pdf
+          retention-days: 90
+          if-no-files-found: warn
+
   deploy:
     needs: build
     runs-on: ubuntu-22.04

@@ -79,6 +79,8 @@ parts:
         title: "Explanation — why Hexagonal lite?"
       - file: docs/user-manual/explanation/formula-is-the-program-essay.md
         title: "Explanation — the formula is the program"
+      - file: docs/user-manual/explanation/pdf-export.md
+        title: "Explanation — the tensor PDF artifact"
 
   - caption: Reference (architecture)
     chapters:

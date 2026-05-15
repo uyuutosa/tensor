@@ -45,3 +45,23 @@ sphinx:
   config:
     html_show_copyright: false
     nb_execution_show_tb: true
+    # ── LaTeX / PDF artifact (Phase 7a M2) ─────────────────────────
+    # PDF builds run in CI on tag push (see deploy-book.yml) and
+    # ship as a release artifact (`tensor-named-axis-<version>.pdf`).
+    # Local devs with TeX Live can run:
+    #
+    #   jupyter-book build book --builder pdflatex
+    #
+    # which produces `book/_build/latex/tensor-named-axis.pdf`.
+    # See `docs/user-manual/explanation/pdf-export.md` for what's
+    # inside the artifact and how to cite it.
+    latex_engine: pdflatex
+    latex_elements:
+      papersize: a4paper
+      pointsize: 11pt
+
+# Filename of the LaTeX/PDF output. Picked up by Jupyter Book's
+# LaTeX-builder logic when `builder: pdflatex` is requested.
+latex:
+  latex_documents:
+    targetname: tensor-named-axis.tex
