@@ -68,7 +68,7 @@
 % --- Domain macros (will migrate to paper/common/symbols.tex) ---
 \newcommand{\NamedTensor}[1]{\mathsf{#1}}
 \newcommand{\ax}[1]{\textsf{#1}}                              % axis name
-\newcommand{\udltex}[1]{\texttt{"#1"\_tex}}                   % _tex UDL literal
+\newcommand{\udltex}{\code{\_tex}}                            % _tex UDL (argless)
 \newcommand{\code}[1]{\texttt{#1}}
 
 % ---------------------------------------------------------------------------
@@ -100,14 +100,18 @@ language-level named tensors with fully runtime checks (\code{Haliax},
 \code{Penzai}, \code{xarray}). We argue these approaches under-use the
 host language's static type system, and present a hybrid design that
 encodes axis information across the compile-time / runtime boundary.
-The contributions are: (i) a \udltex{i j {->} i j} user-defined-literal
-that lifts Einstein-style formulas into C++ template parameters at
-compile time, (ii) a hybrid \emph{NTTP $\times$ DynamicShape} axis
-system that statically rejects axis mismatches when shapes are known
-and falls back to runtime guards otherwise, and (iii) a
-\emph{Hexagonal-lite} kernel-backend port that demonstrates substrate
-substitutability across a reference implementation, an Eigen-based
-substrate, and a WebGPU substrate (Dawn) behind a single port boundary.
+The contributions are: (i) a \udltex{} user-defined literal that
+parses a LaTeX-math subset (e.g.\
+\code{R"(c\_\{ij\} = a\_i b\_j)"\_tex}) into a named-axis expression
+AST whose structural indices the type system can reason about, letting
+the same formula compose with the static-axis machinery at no boundary
+cost; (ii) a hybrid \emph{NTTP $\times$ DynamicShape} axis system that
+statically rejects axis-name mismatches when shapes are known and
+falls back to runtime guards otherwise, sharing one kernel
+implementation across both paths; (iii) a \emph{Hexagonal-lite}
+kernel-backend port that demonstrates substrate substitutability
+across a reference implementation, an Eigen-based substrate, and a
+WebGPU substrate (Dawn) behind a single port boundary.
 \TODO{1-sentence headline empirical result once the B-stage bench
 harness lands — e.g., ``We catch 87\% of the axis-bug benchmark suite at
 compile time with zero runtime cost; \BENCH{X}-fold speedup on the
@@ -160,10 +164,14 @@ This paper presents the \code{tensor} library, organised around three
 design moves:
 
 \begin{enumerate}
-  \item \textbf{The \udltex{} bridge} (\Cref{sec:udl}): a user-defined
-        literal that parses Einstein-style formulas at compile time
-        and emits the corresponding template parameter pack.
-        \udltex{i j {->} i j} \emph{is} the type signature.
+  \item \textbf{The \udltex{} LaTeX bridge} (\Cref{sec:udl}): a
+        user-defined literal that parses a LaTeX-math subset
+        (\code{R"(c\_\{ij\} = a\_i b\_j)"\_tex}) into a named-axis
+        \code{Expression} AST. The AST's index structure --- the
+        names attached to each \code{IndexedVar} and the bound index
+        on each \code{Sum} --- is what the type system reasons about,
+        so the same formula composes with the static-axis machinery
+        of contribution~(ii) at no boundary cost.
   \item \textbf{Hybrid axis system} (\Cref{sec:hybrid}): non-type
         template parameters carry compile-time axis sizes;
         \code{DynamicShape} carries the runtime-determined cases; the
@@ -228,58 +236,125 @@ flexibility) or full type erasure at the kernel boundary. Our design
 target is to recover the latter without giving up the former.
 
 % ===========================================================================
-\section{Design 1: The \texorpdfstring{\udltex{}}{\_tex} Bridge}
+\section{Design 1: The \texorpdfstring{\udltex{}}{\_tex} LaTeX Bridge}
 \label{sec:udl}
 
-% ~1.5 pages. The big idea: the formula IS the program. Show the
-% parse, show what it expands to, show that it's a real C++ feature
-% (consteval + UDL).
+% ~1.5 pages. The honest framing: today's UDL is a runtime LaTeX-subset
+% parser; its contribution is structural (the AST shape composes with
+% the static-axis type system) rather than temporal (when the parse
+% fires). The scheduled consteval lift is § Future Work, not here.
 
-\paragraph{The interface.}
-A contraction between an embedding matrix and a token-index vector
-appears in code as:
+\subsection{Interface}
+\label{sec:udl-interface}
+
+The user writes the formula the way the corresponding paper would, in
+a C++ raw-string literal suffixed \code{\_tex}, and feeds it through
+an Evaluator bound to named tensors:
 
 \begin{lstlisting}[language=cppx]
-auto y = "ij,j->i"_tex(E, x);
+// Bind names -> tensors, then evaluate the formula.
+tex::Evaluator<double> ev;
+ev.bind("a", DynamicTensor{Shape{Axis{"i", 5}}, /*data*/});
+ev.bind("b", DynamicTensor{Shape{Axis{"j", 5}}, /*data*/});
+
+auto c = ev.evaluate(R"(c_{ij} = a_i b_j)"_tex);
+// c has named axes (i, j); c[i,j] == a[i] * b[j].
 \end{lstlisting}
 
-The literal \udltex{ij,j{->}i} is parsed \emph{at compile time} into a
-structural representation of the contraction's axes, which becomes a
-template parameter on the underlying kernel call.
+The literal \code{R"(c\_\{ij\} = a\_i b\_j)"\_tex} parses on
+construction into an \code{Expression} AST. The
+\code{tex::Evaluator} walks the AST against name-to-tensor bindings,
+asserting that each \code{IndexedVar}'s subscript list matches its
+bound tensor's axis labels in order. For example,
+\code{R"(a\_\{ji\})"\_tex} bound against a tensor whose axes are
+declared $(\ax{i},\ax{j})$ is rejected by the Evaluator's
+subscript-order check.
 
-\subsection{Parse pipeline}
-\label{sec:udl-parse}
+\subsection{Grammar}
+\label{sec:udl-grammar}
 
-% The UDL operator hands the raw character pack to a consteval parser
-% that produces a structural type: { lhs_axes, rhs_axes, output_axes }.
-% Walk through the small grammar.
+The accepted grammar is the LaTeX-math subset useful for naming and
+combining axis-indexed quantities (informal BNF in priority order):
 
-\TODO{walk-through of the consteval parser: grammar (one-line BNF),
-the parsed AST type, how it becomes a non-type template parameter on
-the kernel.}
+\begin{lstlisting}[basicstyle=\ttfamily\footnotesize,numbers=none]
+equation    := expression ('=' expression)?
+expression  := term (('+' | '-') term)*
+term        := factor (('*' | '\cdot' | juxt) factor)*
+factor      := ('-' factor) | unary
+unary       := atom (('/' atom)*)
+atom        := '(' expression ')'
+             | '\sum' '_' subscript group
+             | name subscript?
+subscript   := '_' (letter | '{' letters '}')
+group       := '{' expression '}' | atom
+\end{lstlisting}
 
-\subsection{Why a UDL, not a string-typed API}
-\label{sec:udl-why}
+Whitespace is ignored; juxtaposition is implicit multiplication. The
+parser is a hand-written recursive descent; the grammar is small
+enough that the implementation fits in a single header
+(\code{include/tensor/tex/parser.hpp}).
 
-% Three reasons: (a) parse fires at compile time, errors land at the
-% literal's source location, (b) the type system sees the parsed
-% structure, not the string, (c) zero runtime overhead.
+The choice of LaTeX over an einops-style mini-language is deliberate.
+The subset that matters --- subscripted variables, Einstein sums
+(\code{R"(\textbackslash sum\_i \{a\_i b\_i\})"\_tex}), and equations
+that name a result --- is the notation tensor-program papers and
+textbooks already use. The literal is also \emph{readable as LaTeX},
+so the same text that drives evaluation can be re-emitted into the
+program's typeset output: a Jupyter cell prints back the original
+formula, closing the loop from notation to running code to rendered
+documentation.
 
-\TODO{three-paragraph contrast against \code{einops.rearrange("...")},
-emphasising that the UDL pays the parse cost once at compile time and
-the runtime side sees a typed structural value, not a string.}
+\subsection{Composability with the Static-Axis System}
+\label{sec:udl-composability}
 
-\subsection{What the UDL is not}
-\label{sec:udl-limits}
+The system-level claim of this section is not about \emph{when} the
+parse fires --- it fires at literal construction today, which is
+runtime --- but about \emph{what shape} it produces. The parsed AST's
+indices are the same structural objects the static-axis machinery of
+\Cref{sec:hybrid} reasons about. The Evaluator's binding step is a
+type-level operation when the bound tensor's axes are NTTP-encoded,
+and a runtime check when they are carried in a \code{DynamicShape}.
+The Evaluator does not branch on which world it is in; one code path
+services both.
 
-% Honest scope: it's not a full einops/einx replacement; broadcasts
-% are explicit; the formula must be a literal (not constructible at
-% runtime); ellipsis and partial application are deliberate non-goals.
+\TODO{one-paragraph walk-through of one literal
+(\code{R"(c\_\{ij\} = a\_i b\_j)"\_tex}) feeding three scenarios: (a)
+two NTTP-shaped tensors --- the bind step is compile-time-checked;
+(b) one NTTP, one \code{DynamicShape} --- names checked statically,
+sizes at \code{bind} time; (c) two \code{DynamicShape} --- both
+checks at \code{bind} time. The formula text is unchanged across all
+three.}
 
-The \udltex{} literal accepts a restricted Einstein notation: explicit
-axes only, no ellipsis, no rank-polymorphic patterns. Patterns whose
-shape varies at runtime are handled by the hybrid system in
-\Cref{sec:hybrid} rather than by extending the literal grammar.
+\subsection{Scope and the Scheduled \texorpdfstring{\code{consteval}}{consteval} Lift}
+\label{sec:udl-limits-and-future}
+
+The parser is presently runtime, executed at the literal's
+construction site. The natural \code{consteval} formulation is
+blocked by C++20's prohibition on \code{std::unique\_ptr} escaping a
+constant-evaluated context (the current AST is a
+\code{unique\_ptr}-of-variant tree). ADR-0005~\cite{adr0005} schedules
+a refactor that replaces the \code{unique\_ptr} representation with a
+fixed-size arena-of-variants whose lifetime is the literal's; that
+representation does escape constant evaluation and lifts the entire
+parse into the compiler.
+
+Three properties of the current design are unchanged by the lift, and
+are this section's contribution:
+
+\begin{enumerate}
+  \item the parser's output type (\code{Expression}) is identical in
+        both worlds;
+  \item the Evaluator's binding-and-check pass is identical;
+  \item the parse cost is paid once per literal, not once per call
+        --- today at static-initialiser time, after the lift at
+        compile time.
+\end{enumerate}
+
+Grammar-wise, the deliberate non-goals are: no ellipsis, no broadcast
+operators, no rank-polymorphic patterns, no run-time--constructed
+strings (the literal arrives as \code{char const*}). Cases the
+grammar cannot express are carried by the hybrid system of
+\Cref{sec:hybrid}.
 
 % ===========================================================================
 \section{Design 2: Hybrid NTTP $\times$ DynamicShape}
@@ -294,9 +369,12 @@ A named tensor carries its axis information in one of two ways:
 
 \begin{description}
   \item[Compile-time path] axis names \emph{and} sizes are encoded as
-        non-type template parameters. The compiler refutes
-        \udltex{ij,j{->}i} applied to an $(I,K)$ matrix; the error
-        message names the offending axis.
+        non-type template parameters. A literal expecting axes
+        $(\ax{i},\ax{j})$ --- e.g.\
+        \code{R"(c\_\{ij\} = a\_i b\_j)"\_tex} --- bound through the
+        Evaluator against a tensor whose NTTP axes are
+        $(\ax{i},\ax{k})$ is refuted at template instantiation; the
+        diagnostic names the offending axis.
   \item[Runtime path] axis names are encoded as template parameters
         (compile-time) but sizes live in a \code{DynamicShape} value
         (runtime). The compiler refutes axis-\emph{name} mismatches;
@@ -444,9 +522,18 @@ unhelpful;
 Dawn-supported platforms is currently constrained.}
 
 \paragraph{Future work.}
-\TODO{2--3 sentences: extending the UDL grammar towards full einx
-expressivity without losing the compile-time guarantee; auto-tuned
-substrate selection; integration with Triton-class kernel languages.}
+The primary scheduled lift is moving the \udltex{} parser from
+runtime (literal-construction time) to \code{consteval} (compile
+time) by replacing the \code{unique\_ptr}-of-variant AST with a
+fixed-size arena representation that escapes constant evaluation
+(\Cref{sec:udl-limits-and-future}, ADR-0005~\cite{adr0005}); the
+output type and Evaluator pass are unchanged, so this is a
+mechanical refactor whose payoff is moving parse cost from program
+startup to compile time. Beyond that: extending the grammar towards
+rank-polymorphic patterns without losing the structural-index
+property; auto-tuned substrate selection based on shape and target;
+integration with Triton-class kernel languages at the Hexagonal-lite
+adapter layer.
 
 % ===========================================================================
 \section{Conclusion}
@@ -455,11 +542,12 @@ substrate selection; integration with Triton-class kernel languages.}
 Named-axis libraries should treat the host language's type system as
 load-bearing infrastructure, not as a place to attach metadata. The
 \code{tensor} library demonstrates that the static and dynamic worlds
-compose: a compile-time UDL bridge, a hybrid NTTP $\times$
-DynamicShape axis system, and a Hexagonal-lite kernel backend deliver
-substrate-portable, axis-typed tensor programs in a mainstream
-systems language. \TODO{one-sentence summary of the headline empirical
-result once \BENCH{} numbers land.}
+compose: a LaTeX-bridging \udltex{} UDL whose AST shape is the same
+object the type system reasons about, a hybrid NTTP $\times$
+DynamicShape axis system that shares one kernel across both paths,
+and a Hexagonal-lite kernel backend that demonstrates substrate
+substitutability across three concrete adapters. \TODO{one-sentence
+summary of the headline empirical result once \BENCH{} numbers land.}
 
 % ===========================================================================
 \bibliographystyle{plain}
