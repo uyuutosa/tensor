@@ -109,6 +109,37 @@ jobs:
             sudo apt-get install -y clang-15
           fi
 
+      - name: Install Dawn system deps (Linux + webgpu only)
+        if: runner.os == 'Linux' && matrix.backend == 'webgpu'
+        shell: bash
+        # Dawn's vcpkg port enables {gl, gles, vulkan, x11} by default on
+        # Linux. The X11 + Mesa headers are needed at compile time;
+        # vulkan-headers and vulkan-utility-libraries come via vcpkg
+        # itself (see Dawn's `vulkan` feature deps).
+        #
+        # libx11-xcb-dev provides X11/Xlib-xcb.h that Dawn's
+        # src/dawn/common/xlib_with_undefs.h #includes for the X11-XCB
+        # bridge surface. Missing this is the most common Dawn-build
+        # failure on a fresh Ubuntu runner.
+        #
+        # mesa-vulkan-drivers ships the lavapipe (LLVMpipe) software
+        # Vulkan ICD, plus the Vulkan loader. GitHub-hosted Linux
+        # runners have no physical GPU; without a software ICD,
+        # vkCreateInstance returns VK_ERROR_INCOMPATIBLE_DRIVER and the
+        # WebGPU-vs-reference parity tests at test_webgpu_backend.cpp
+        # produce garbage output. Lavapipe is slow but correct for
+        # compute shaders.
+        run: |
+          sudo apt-get install -y \
+              libx11-dev libx11-xcb-dev libxcb1-dev \
+              libxext-dev libxrandr-dev \
+              libxcursor-dev libxinerama-dev libxi-dev \
+              mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev \
+              mesa-vulkan-drivers libvulkan1 \
+              pkg-config
+          # Verify the software ICD registered.
+          ls -la /usr/share/vulkan/icd.d/ || true
+
       - name: Install Ninja (macOS)
         if: runner.os == 'macOS'
         run: brew install ninja
@@ -149,22 +180,39 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
+        # vcpkg manifest features are opt-in. The webgpu lane passes
+        # `-DVCPKG_MANIFEST_FEATURES=webgpu` so vcpkg installs Dawn (per
+        # the `webgpu` feature in vcpkg.json) before find_package(Dawn)
+        # runs. Passing as a CMake cache variable (not env) is the
+        # canonical path in CMake manifest mode — vcpkg's toolchain file
+        # reads the CMake variable first and only falls back to the env
+        # var when the CMake variable is undefined.
         run: |
           BACKEND_ARG=""
+          FEATURE_ARG=""
           if [ -n "${{ matrix.backend }}" ]; then
             BACKEND_ARG="-DTENSOR_KERNEL_BACKEND=${{ matrix.backend }}"
           fi
-          cmake --preset=${{ matrix.preset }} ${BACKEND_ARG}
+          if [ "${{ matrix.backend }}" = "webgpu" ]; then
+            FEATURE_ARG="-DVCPKG_MANIFEST_FEATURES=webgpu"
+          fi
+          echo "Configuring with: ${BACKEND_ARG} ${FEATURE_ARG}"
+          cmake --preset=${{ matrix.preset }} ${BACKEND_ARG} ${FEATURE_ARG}
 
       - name: Configure (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: |
           BACKEND_ARG=""
+          FEATURE_ARG=""
           if [ -n "${{ matrix.backend }}" ]; then
             BACKEND_ARG="-DTENSOR_KERNEL_BACKEND=${{ matrix.backend }}"
           fi
-          cmake --preset=${{ matrix.preset }} ${BACKEND_ARG}
+          if [ "${{ matrix.backend }}" = "webgpu" ]; then
+            FEATURE_ARG="-DVCPKG_MANIFEST_FEATURES=webgpu"
+          fi
+          echo "Configuring with: ${BACKEND_ARG} ${FEATURE_ARG}"
+          cmake --preset=${{ matrix.preset }} ${BACKEND_ARG} ${FEATURE_ARG}
 
       - name: Build
         run: cmake --build --preset=${{ matrix.preset }}

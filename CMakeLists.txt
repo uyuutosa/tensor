@@ -54,11 +54,12 @@ endif()
 # gpu.cpp vendoring is no longer load-bearing.
 #
 # Selecting -DTENSOR_KERNEL_BACKEND=webgpu pulls in Dawn via
-# find_package(Dawn CONFIG REQUIRED) — the consumer is responsible for
-# making the Dawn vcpkg port discoverable (typically via
-# -DCMAKE_PREFIX_PATH=<vcpkg-install>/x64-linux). The project's default
-# vcpkg.json builtin-baseline does NOT include `dawn`; consumers
-# override the baseline locally per ADR-0014 / discussion-points Axis E.
+# find_package(Dawn CONFIG REQUIRED). Dawn is wired through the vcpkg
+# manifest `webgpu` feature (see vcpkg.json). The current builtin-
+# baseline ships `dawn@20260410.140140`; vcpkg only installs Dawn when
+# the manifest feature is opt-in via `VCPKG_MANIFEST_FEATURES=webgpu`
+# (set automatically by CI on the webgpu lane, or by the consumer
+# locally when building the WebGPU backend). Per ADR-0014 §1.
 #
 # The four element-wise binary methods (add / sub / mul / div) and the
 # four unary methods (exp / log / relu / neg) on
