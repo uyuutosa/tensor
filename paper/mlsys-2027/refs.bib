@@ -144,15 +144,39 @@
 }
 
 % ===========================================================================
-% Bundle-adjustment dataset / case study
+% SfM and bundle-adjustment datasets / pipeline
 % ===========================================================================
+
+@inproceedings{schoenberger2016sfm,
+  author    = {Sch{\"o}nberger, Johannes L. and Frahm, Jan-Michael},
+  title     = {Structure-from-Motion Revisited},
+  booktitle = {{IEEE} Conference on Computer Vision and Pattern Recognition ({CVPR})},
+  year      = {2016},
+  note      = {The {COLMAP} pipeline; de-facto reference for modern incremental {S}f{M}.}
+}
+
+@inproceedings{schoeps2017eth3d,
+  author    = {Sch{\"o}ps, Thomas and Sch{\"o}nberger, Johannes L. and Galliani, Silvano and Sattler, Torsten and Schindler, Konrad and Pollefeys, Marc and Geiger, Andreas},
+  title     = {A Multi-View Stereo Benchmark with High-Resolution Images and Multi-Camera Videos},
+  booktitle = {{IEEE} Conference on Computer Vision and Pattern Recognition ({CVPR})},
+  year      = {2017},
+  note      = {The {ETH3D} benchmark; \url{https://www.eth3d.net/}. High-resolution images with {LIDAR}-derived ground truth, {COLMAP}-format poses.}
+}
+
+@inproceedings{strecha2008benchmarking,
+  author    = {Strecha, Christoph and von Hansen, Wolfgang and {Van Gool}, Luc and Fua, Pascal and Thoennessen, Ulrich},
+  title     = {On Benchmarking Camera Calibration and Multi-View Stereo for High Resolution Imagery},
+  booktitle = {{IEEE} Conference on Computer Vision and Pattern Recognition ({CVPR})},
+  year      = {2008},
+  note      = {The classic ``Castle / Fountain / Herzjesu'' multi-view benchmark; \url{https://www.epfl.ch/labs/cvlab/data/data-strechamvs/}.}
+}
 
 @inproceedings{agarwal2010bal,
   author    = {Agarwal, Sameer and Snavely, Noah and Seitz, Steven M. and Szeliski, Richard},
   title     = {Bundle Adjustment in the Large},
   booktitle = {European Conference on Computer Vision ({ECCV})},
   year      = {2010},
-  note      = {The {BAL} dataset \url{https://grail.cs.washington.edu/projects/bal/}.}
+  note      = {The {BAL} observation dataset; \url{https://grail.cs.washington.edu/projects/bal/}. Used as a small-scale validation supplement to the {ETH3D} case study.}
 }
 
 % ===========================================================================

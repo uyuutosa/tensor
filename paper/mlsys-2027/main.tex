@@ -773,14 +773,32 @@ report both so the cost of opting into the static path is visible.
 \subsection{Bundle-adjustment Case Study}
 \label{sec:eval-ba}
 
-\paragraph{Methodology.}
+\paragraph{Workload.}
 We assemble residuals and Jacobians for the standard bundle-adjustment
-nonlinear least-squares problem on a 50-view $\times$ 200-landmark
-scene from the BAL dataset~\cite{agarwal2010bal}. The
-named-axis structure (\code{view}, \code{landmark}, \code{pose-dof},
-\code{obs}) is invariant across implementations; what varies is the
-library used to express the Jacobian-assembly contractions and the
-substrate that evaluates them.
+(BA) nonlinear least-squares problem on the
+\emph{courtyard} scene of the ETH3D multi-view stereo
+benchmark~\cite{schoeps2017eth3d} (38 high-resolution images,
+COLMAP-format poses obtained via the canonical incremental SfM
+pipeline~\cite{schoenberger2016sfm}), with a 50-view
+$\times$ 200-landmark subselection chosen so the problem fits in
+GPU memory on a consumer card while remaining large enough to
+exercise the substrates' scaling. A second pass on the
+\emph{fountain-P11} scene of the Strecha
+benchmark~\cite{strecha2008benchmarking} (11 high-resolution images
+with LIDAR ground-truth) supplies a smaller, classic validation
+scene; the BAL dataset~\cite{agarwal2010bal} contributes a
+\emph{Ladybug-49} small-scale ablation. The named-axis structure
+(\code{view}, \code{landmark}, \code{pose-dof}, \code{obs}) is
+invariant across the implementations being compared; what varies is
+the library used to express the Jacobian-assembly contractions and
+the substrate that evaluates them.
+
+The case-study code is the same code as
+\code{tutorials/09\_bundle-adjustment.ipynb} of the source
+distribution, scaled up: the tutorial introduces the formulation on a
+synthetic 5-view $\times$ 20-landmark mini-scene; the bench harness
+swaps the data source for the ETH3D / Strecha / Ladybug-49 scenes
+and instruments the timings reported below.
 
 \paragraph{Backends compared.} Three substrates of our system, plus
 two cross-library baselines:
@@ -858,11 +876,14 @@ and use absolute baseline numbers only to anchor units.
 \paragraph{Construct validity of the BA case study.}
 Bundle adjustment exercises high-rank index reasoning
 (\code{view} $\times$ \code{landmark}, sparse 2D residual) but
-under-exercises broadcasting (which is where named-axis libraries
-diverge most). A second case study sensitive to broadcasting
-(e.g.\ multi-head attention forward) would strengthen external
-validity; we record this as deliberately out of scope for the
-present 10-page submission and note it in \Cref{sec:discussion}.
+under-exercises broadcasting (where named-axis libraries diverge
+most). The three-scene rollout (ETH3D \emph{courtyard} primary,
+Strecha \emph{fountain-P11} validation, BAL \emph{Ladybug-49}
+small-scale ablation) covers a span of camera/landmark ratios but
+remains within the BA class. A second case study sensitive to
+broadcasting (e.g.\ multi-head attention forward) would strengthen
+external validity; we record this as deliberately out of scope for
+the present 10-page submission and note it in \Cref{sec:discussion}.
 
 % ===========================================================================
 \section{Related Work}

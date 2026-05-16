@@ -24,14 +24,16 @@ This pulls xeus-cpp 0.10.0+, vcpkg, the C++20 toolchain, and Jupyter Book. Once 
 | 06  | WebGPU acceleration (design walkthrough)           | **shipped** | 3 (P3.M6) |
 | 07  | A small MLP on a toy dataset                       | **shipped** | 2 (P2.M6) |
 | 08  | Swappable backends — Hexagonal payoff (reference vs Eigen) | **shipped** | 2.5 (P2.5.M5) |
+| 09  | Bundle adjustment, named-axis style — 1-D toy + hand-off to MLSys paper §6.2 | **shipped** | 7a (M4 paper companion) |
 
-The six shipped notebooks cover the pedagogical arc end-to-end:
+The seven shipped notebooks cover the pedagogical arc end-to-end:
 
 - **00 + 07** demonstrate the headline named-axis story and a real training loop converging to W ≈ 2, b ≈ 1.
 - **01** surfaces the project's "the formula is the program" differentiator (the `_tex` UDL + `Evaluator<T>`) as a standalone walkthrough.
 - **05** walks the tape-based autograd primitive-by-primitive.
 - **08** demonstrates the Hexagonal-lite architectural payoff (same Domain code on reference / Eigen).
 - **06** narrates the WGSL kernels + Dawn dispatch design (and now references real-GPU-verified shipped kernels via PRs #60 / #61 / #62).
+- **09** stages bundle adjustment as a named-axis case study and hands off to the MLSys 2027 paper (`paper/mlsys-2027/`, §6.2), whose bench harness scales the same formula to ETH3D / Strecha / BAL.
 
 ## Suggested reading order
 
