@@ -1,15 +1,17 @@
 % ---------------------------------------------------------------------------
 % refs.bib — MLSys 2027 paper
 %
-% NOTE: this is a stub copy. PR #135 (workshop paper draft) carries a
-% richer bibliography at paper/refs.bib (21 entries). Once #135 lands on
-% develop we will collapse this venue-local file in favour of the
-% shared paper/refs.bib via a follow-up "papers/ restructure" PR.
-% Until then this stub holds the minimal entries required for the
-% skeleton to compile without "undefined citation" warnings.
+% Policy: every entry here is an externally-verifiable reference (peer-
+% reviewed paper, official documentation, public software project page,
+% or canonical author-published artefact). The project's internal ADRs
+% and landscape reports are intentionally NOT cited as references —
+% architectural rationale belongs in the body, supported by external
+% sources where the claim is comparative.
 % ---------------------------------------------------------------------------
 
-% ----- External: named-tensor / axis-typing community -----
+% ===========================================================================
+% Notation and named-tensor theory
+% ===========================================================================
 
 @inproceedings{chiang2024named,
   author    = {Chiang, David and Rush, Alexander M.},
@@ -18,6 +20,10 @@
   year      = {2024},
   note      = {Formalises named-axis notation as a typed calculus.}
 }
+
+% ===========================================================================
+% Named-axis libraries (string-based runtime)
+% ===========================================================================
 
 @misc{einops,
   author       = {Rogozhnikov, Alex},
@@ -32,6 +38,10 @@
   howpublished = {\url{https://github.com/fferflo/einx}},
   year         = {2023--2026}
 }
+
+% ===========================================================================
+% Named-axis libraries (named-value runtime)
+% ===========================================================================
 
 @misc{haliax,
   author       = {{Stanford CRFM and contributors}},
@@ -59,8 +69,44 @@
   title        = {Named Tensors (experimental)},
   howpublished = {\url{https://pytorch.org/docs/stable/named_tensor.html}},
   year         = {2019--2026},
-  note         = {API marked experimental; broad-broadcast semantics retained for compatibility.}
+  note         = {API marked experimental since 2019; community-tracking status at \url{https://github.com/pytorch/pytorch/issues/60832}.}
 }
+
+@misc{jax-xmap-deletion,
+  author       = {{JAX maintainers}},
+  title        = {Deprecation and removal of \texttt{xmap} from {JAX}},
+  howpublished = {\url{https://github.com/jax-ml/jax/discussions/20312}},
+  year         = {2024}
+}
+
+% ===========================================================================
+% Named-axis libraries (type-level static, C++)
+% ===========================================================================
+
+@misc{einsums-cpp,
+  author       = {{Einsums contributors}},
+  title        = {Einsums: A {C}++ tensor library with compile-time Einstein-notation patterns},
+  howpublished = {\url{https://einsums.github.io/Einsums/}},
+  year         = {2023--2026}
+}
+
+@misc{fastor,
+  author       = {Poya, Roman and {Fastor contributors}},
+  title        = {Fastor: A lightweight high-performance tensor algebra library for modern {C}++},
+  howpublished = {\url{https://github.com/romeric/Fastor}},
+  year         = {2017--2026}
+}
+
+@misc{tenseur,
+  author       = {Marc, Istvan},
+  title        = {On designing {Tenseur}: a {C}++ tensor library with lazy evaluation},
+  howpublished = {\url{https://istmarc.github.io/post/2024/10/27/on-designing-tenseur-a-c-tensor-library-with-lazy-evaluation/}},
+  year         = {2024}
+}
+
+% ===========================================================================
+% Tile / kernel-DSL adjacents
+% ===========================================================================
 
 @misc{tinygrad,
   author       = {Hotz, George and {tinygrad contributors}},
@@ -69,47 +115,89 @@
   year         = {2020--2026}
 }
 
-@misc{dawn,
-  author       = {{Google Chrome}},
-  title        = {Dawn: A {WebGPU} implementation},
-  howpublished = {\url{https://dawn.googlesource.com/dawn}},
+@inproceedings{kjolstad2017taco,
+  author    = {Kjolstad, Fredrik and Kamil, Shoaib and Chou, Stephen and Lugato, David and Amarasinghe, Saman},
+  title     = {The Tensor Algebra Compiler},
+  booktitle = {Proc.\ {ACM} Program.\ Lang.\ ({OOPSLA})},
+  year      = {2017}
+}
+
+@misc{comet,
+  author       = {{COMET contributors (PNNL)}},
+  title        = {{COMET}: {D}omain-specific {COM}piler for {E}xtreme-scale {T}ensor algebra},
+  howpublished = {\url{https://github.com/pnnl/COMET}},
+  year         = {2021--2026}
+}
+
+@misc{mlir-linalg,
+  author       = {{MLIR project}},
+  title        = {{MLIR} \texttt{linalg} {D}ialect},
+  howpublished = {\url{https://mlir.llvm.org/docs/Dialects/Linalg/}},
   year         = {2020--2026}
 }
 
-% ----- Internal: ADRs and design reports -----
-
-@misc{adr0005,
-  author       = {{tensor project}},
-  title        = {{ADR-0005}: Adopt {TeX} / {LyX} as a first-class authoring surface},
-  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/main/docs/arc42/09-decisions/0005-adopt-tex-lyx-as-authoring-surface.md}},
-  year         = {2026},
-  note         = {Schedules the \texttt{consteval} lift of the \texttt{\_tex} UDL parser, pending a fixed-size AST representation that escapes constant evaluation.}
+@inproceedings{ragan-kelley2013halide,
+  author    = {Ragan-Kelley, Jonathan and Barnes, Connelly and Adams, Andrew and Paris, Sylvain and Durand, Fr{\'e}do and Amarasinghe, Saman},
+  title     = {{Halide}: A Language and Compiler for Optimizing Parallelism, Locality, and Recomputation in Image Processing Pipelines},
+  booktitle = {{PLDI}},
+  year      = {2013}
 }
 
-@misc{adr0014,
-  author       = {{tensor project}},
-  title        = {{ADR-0014}: {Dawn-via-vcpkg} substrate strategy for the {WebGPU} kernel backend},
-  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/main/docs/arc42/09-decisions/0014-dawn-via-vcpkg-substrate.md}},
-  year         = {2026}
+% ===========================================================================
+% SfM and bundle-adjustment datasets / pipeline
+% ===========================================================================
+
+@inproceedings{schoenberger2016sfm,
+  author    = {Sch{\"o}nberger, Johannes L. and Frahm, Jan-Michael},
+  title     = {Structure-from-Motion Revisited},
+  booktitle = {{IEEE} Conference on Computer Vision and Pattern Recognition ({CVPR})},
+  year      = {2016},
+  note      = {The {COLMAP} pipeline; de-facto reference for modern incremental {S}f{M}.}
 }
 
-@misc{adr0021,
-  author       = {{tensor project}},
-  title        = {{ADR-0021}: {Hexagonal-lite} kernel backend port boundary},
-  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/main/docs/arc42/09-decisions/0021-hexagonal-lite-kernel-backend.md}},
-  year         = {2026}
+@inproceedings{schoeps2017eth3d,
+  author    = {Sch{\"o}ps, Thomas and Sch{\"o}nberger, Johannes L. and Galliani, Silvano and Sattler, Torsten and Schindler, Konrad and Pollefeys, Marc and Geiger, Andreas},
+  title     = {A Multi-View Stereo Benchmark with High-Resolution Images and Multi-Camera Videos},
+  booktitle = {{IEEE} Conference on Computer Vision and Pattern Recognition ({CVPR})},
+  year      = {2017},
+  note      = {The {ETH3D} benchmark; \url{https://www.eth3d.net/}. High-resolution images with {LIDAR}-derived ground truth, {COLMAP}-format poses.}
 }
 
-@misc{adr0025,
-  author       = {{tensor project}},
-  title        = {{ADR-0025}: \texttt{\_tex} {UDL} for shape and contraction literals},
-  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/main/docs/arc42/09-decisions/0025-tex-udl.md}},
-  year         = {2026}
+@inproceedings{strecha2008benchmarking,
+  author    = {Strecha, Christoph and von Hansen, Wolfgang and {Van Gool}, Luc and Fua, Pascal and Thoennessen, Ulrich},
+  title     = {On Benchmarking Camera Calibration and Multi-View Stereo for High Resolution Imagery},
+  booktitle = {{IEEE} Conference on Computer Vision and Pattern Recognition ({CVPR})},
+  year      = {2008},
+  note      = {The classic ``Castle / Fountain / Herzjesu'' multi-view benchmark; \url{https://www.epfl.ch/labs/cvlab/data/data-strechamvs/}.}
 }
 
-@misc{landscape-comparison-2026,
-  author       = {{tensor project}},
-  title        = {{Phase 7a M1}: Named-tensor library landscape comparison study},
-  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/main/docs/research/phase-7a-m1-landscape-comparison.md}},
-  year         = {2026}
+@inproceedings{agarwal2010bal,
+  author    = {Agarwal, Sameer and Snavely, Noah and Seitz, Steven M. and Szeliski, Richard},
+  title     = {Bundle Adjustment in the Large},
+  booktitle = {European Conference on Computer Vision ({ECCV})},
+  year      = {2010},
+  note      = {The {BAL} observation dataset; \url{https://grail.cs.washington.edu/projects/bal/}. Used as a small-scale validation supplement to the {ETH3D} case study.}
+}
+
+% ===========================================================================
+% Architecture pattern
+% ===========================================================================
+
+@misc{cockburn-hexagonal,
+  author       = {Cockburn, Alistair},
+  title        = {Hexagonal Architecture ({P}orts and {A}dapters)},
+  howpublished = {\url{https://alistair.cockburn.us/hexagonal-architecture/}},
+  year         = {2005},
+  note         = {Originally published 2005; revised through 2024.}
+}
+
+% ===========================================================================
+% GPU substrate
+% ===========================================================================
+
+@misc{dawn,
+  author       = {{Google Chrome}},
+  title        = {{D}awn: A {W}eb{GPU} implementation},
+  howpublished = {\url{https://dawn.googlesource.com/dawn}},
+  year         = {2020--2026}
 }
