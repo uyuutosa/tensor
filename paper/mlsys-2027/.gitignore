@@ -7,4 +7,6 @@
 *.out
 *.synctex.gz
 *.toc
-*.pdf
+# main.pdf is committed (viewable inline on GitHub blob viewer); see PR
+# for rationale. Rebuild via `make` after every .tex/.bib change and
+# commit alongside the source.
