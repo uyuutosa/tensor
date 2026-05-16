@@ -1,0 +1,468 @@
+% ---------------------------------------------------------------------------
+% MLSys 2027 — main-track submission (skeleton, A-stage of A→B staging)
+%
+% Status: skeleton + section outlines + framing prose. Body to be filled
+% in iteratively. Empirical numbers in §5 (Evaluation) are marked
+% [TODO:bench] and depend on the B-stage bench harness landing
+% (paper/mlsys-2027/README.md → "A → B staging").
+%
+% Build: `make` in this directory (pdflatex + bibtex + pdflatex × 2).
+% Venue style file (mlsys2027.sty) will be swapped in when the CFP
+% drops; until then we compile with the generic article class.
+% ---------------------------------------------------------------------------
+
+\documentclass[11pt]{article}
+
+% --- Geometry / typography ---
+\usepackage[letterpaper,margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+
+% --- Math ---
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+
+% --- Tables / figures ---
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{subcaption}
+
+% --- Code listings ---
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset{
+  basicstyle=\ttfamily\small,
+  commentstyle=\color{gray!70!black}\itshape,
+  keywordstyle=\color{blue!50!black}\bfseries,
+  stringstyle=\color{red!60!black},
+  showstringspaces=false,
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  frame=single,
+  framerule=0pt,
+  backgroundcolor=\color{gray!8},
+  xleftmargin=2em,
+  xrightmargin=1em,
+  belowskip=-0.5em
+}
+\lstdefinelanguage{cppx}[]{C++}{
+  morekeywords={requires,concept,consteval,constinit,co_await,co_return,co_yield},
+  moredelim=[s][\color{purple!70!black}]{"}{"_tex},
+}
+
+% --- References / hyperlinks ---
+\usepackage[hidelinks]{hyperref}
+\usepackage{cleveref}
+\usepackage{url}
+
+% --- TODO marker (no external package dep) ---
+\newcommand{\TODO}[1]{\textbf{\textcolor{red!70!black}{[TODO: #1]}}}
+\newcommand{\BENCH}[1]{\textbf{\textcolor{orange!70!black}{[BENCH: #1]}}}
+
+% --- Domain macros (will migrate to paper/common/symbols.tex) ---
+\newcommand{\NamedTensor}[1]{\mathsf{#1}}
+\newcommand{\ax}[1]{\textsf{#1}}                              % axis name
+\newcommand{\udltex}[1]{\texttt{"#1"\_tex}}                   % _tex UDL literal
+\newcommand{\code}[1]{\texttt{#1}}
+
+% ---------------------------------------------------------------------------
+
+\title{Named Axes as a Systems Discipline:\\
+       Hybrid Compile-Time and Runtime Coordination\\
+       for Tensor Programs}
+
+\author{%
+  \TODO{author block — fill at submission time}\\
+  \texttt{authors@example.com}
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+% ===========================================================================
+\begin{abstract}
+% ~150-200 words. The "elevator" answer to: what is the contribution,
+% what changes if a reader accepts it, what evidence we offer.
+Tensor programs routinely fail on \emph{axis-bug} classes that current
+type systems cannot catch: silent broadcasts across mis-named dimensions,
+transposed contractions, and shape-compatible but semantically incorrect
+reductions. Existing named-axis libraries address this either through
+runtime string-based notation (\code{einops}, \code{einx}) or
+language-level named tensors with fully runtime checks (\code{Haliax},
+\code{Penzai}, \code{xarray}). We argue these approaches under-use the
+host language's static type system, and present a hybrid design that
+encodes axis information across the compile-time / runtime boundary.
+The contributions are: (i) a \udltex{i j {->} i j} user-defined-literal
+that lifts Einstein-style formulas into C++ template parameters at
+compile time, (ii) a hybrid \emph{NTTP $\times$ DynamicShape} axis
+system that statically rejects axis mismatches when shapes are known
+and falls back to runtime guards otherwise, and (iii) a
+\emph{Hexagonal-lite} kernel-backend port that demonstrates substrate
+substitutability across a reference implementation, an Eigen-based
+substrate, and a WebGPU substrate (Dawn) behind a single port boundary.
+\TODO{1-sentence headline empirical result once the B-stage bench
+harness lands — e.g., ``We catch 87\% of the axis-bug benchmark suite at
+compile time with zero runtime cost; \BENCH{X}-fold speedup on the
+bundle-adjustment case study.''}
+\end{abstract}
+
+% ===========================================================================
+\section{Introduction}
+\label{sec:intro}
+
+% ~1 page. Lead with the failure-mode story (axis bug), position
+% against the landscape, state contributions, lay out roadmap.
+
+Consider a researcher writing a multi-head attention block. They
+compose two linear projections, a softmax, and a matmul. The shapes
+type-check at every step --- every intermediate has the right number of
+dimensions --- yet the network silently produces incorrect outputs at
+training time, because two axes were transposed five lines up. The
+type system saw a $(B,H,T,D)$ tensor where the writer meant
+$(B,T,H,D)$; the names lived only in a comment.
+
+This failure mode is endemic. \TODO{cite a concrete bug-hunting study
+or anecdote --- ideally one of: PyTorch named-tensors postmortem,
+Haliax design doc on motivation, our own M1 landscape report
+\cite{landscape-comparison-2026}.} Existing libraries respond along
+two axes:
+
+\begin{itemize}
+  \item \textbf{String-based runtime notation} (\code{einops}~\cite{einops},
+        \code{einx}~\cite{einx}): expressive (Einstein-style formulas
+        are the source of truth) but defers all checking to runtime
+        and forfeits the host language's type system.
+  \item \textbf{Language-level named tensors with runtime checks}
+        (\code{Haliax}~\cite{haliax}, \code{Penzai}~\cite{penzai},
+        \code{xarray}~\cite{xarray}, deprecated
+        \code{torch.named\_tensor}~\cite{pytorch-named-tensors}):
+        axis names are first-class values, but verification still
+        happens at runtime.
+\end{itemize}
+
+\paragraph{The thesis.}
+A named-axis library should be able to refute the attention-block bug
+\emph{at compile time, when the shapes are known}, while still
+permitting the runtime-shape case that batch processing demands. The
+test of a design is not whether axis names are present but whether they
+participate in the type system.
+
+\paragraph{Contributions.}
+This paper presents the \code{tensor} library, organised around three
+design moves:
+
+\begin{enumerate}
+  \item \textbf{The \udltex{} bridge} (\Cref{sec:udl}): a user-defined
+        literal that parses Einstein-style formulas at compile time
+        and emits the corresponding template parameter pack.
+        \udltex{i j {->} i j} \emph{is} the type signature.
+  \item \textbf{Hybrid axis system} (\Cref{sec:hybrid}): non-type
+        template parameters carry compile-time axis sizes;
+        \code{DynamicShape} carries the runtime-determined cases; the
+        two compose without bifurcating the kernel API.
+  \item \textbf{Hexagonal-lite kernel-backend port}
+        (\Cref{sec:hex-lite}): a single port boundary admits three
+        substrates (reference, Eigen, WebGPU-via-Dawn~\cite{dawn,adr0014})
+        without leaking substrate concerns into the named-axis layer.
+\end{enumerate}
+
+\paragraph{Roadmap.}
+\Cref{sec:bg} surveys the axis-bug taxonomy and the prior-art landscape.
+\Cref{sec:udl,sec:hybrid,sec:hex-lite} present the three design moves.
+\Cref{sec:eval} reports the static-catch benchmark and a
+bundle-adjustment case study across three backends. \Cref{sec:related}
+positions against contemporaneous work. \Cref{sec:discussion} discusses
+limitations.
+
+% ===========================================================================
+\section{Background \& Motivation}
+\label{sec:bg}
+
+% ~1 page. Three subsections: axis-bug taxonomy, prior-art landscape
+% (compressed from M1 study), the open gap our design fills.
+
+\subsection{The axis-bug taxonomy}
+\label{sec:bg-taxonomy}
+
+% [TODO: concrete enumeration with one-line example each]
+% Drawn from internal landscape report; aim for 4-6 classes:
+%   T1. Transposed contraction (axes match by position, not meaning)
+%   T2. Silent broadcast (size-1 dim gets stretched against wrong axis)
+%   T3. Reduction over wrong axis (sum-over-batch vs sum-over-feature)
+%   T4. Shape-correct but semantically swapped (B,H vs H,B)
+%   T5. Concatenation along the wrong axis
+%   T6. Stacking when concatenation was meant (or vice versa)
+
+\TODO{taxonomy table with 4--6 axis-bug classes, each with a 1-line
+\code{torch}/\code{numpy} reproduction. Cross-reference against the
+M1 landscape report.}
+
+\subsection{Landscape}
+\label{sec:bg-landscape}
+
+% Compressed from M1 comparison study. Two-axis classification:
+%   axis-name carrier:    string-literal  vs  type-parameter  vs  value
+%   check phase:          runtime          vs  compile-time
+
+\TODO{landscape table; axes = ``where axis names live'' $\times$
+``when they are checked''. Place einops, einx, Haliax, Penzai, xarray,
+named PyTorch, tinygrad, and our system in this 2-D grid. Result: our
+system uniquely occupies the (type-parameter, compile-time-when-known)
+cell. Compress to ${<}1$ column of body text.}
+
+\subsection{What remains open}
+\label{sec:bg-gap}
+
+The landscape leaves an explicit gap: \emph{compile-time axis checking
+that does not abandon the runtime-shape case}. The static approaches
+in the literature require either fully static shapes (no batch
+flexibility) or full type erasure at the kernel boundary. Our design
+target is to recover the latter without giving up the former.
+
+% ===========================================================================
+\section{Design 1: The \texorpdfstring{\udltex{}}{\_tex} Bridge}
+\label{sec:udl}
+
+% ~1.5 pages. The big idea: the formula IS the program. Show the
+% parse, show what it expands to, show that it's a real C++ feature
+% (consteval + UDL).
+
+\paragraph{The interface.}
+A contraction between an embedding matrix and a token-index vector
+appears in code as:
+
+\begin{lstlisting}[language=cppx]
+auto y = "ij,j->i"_tex(E, x);
+\end{lstlisting}
+
+The literal \udltex{ij,j{->}i} is parsed \emph{at compile time} into a
+structural representation of the contraction's axes, which becomes a
+template parameter on the underlying kernel call.
+
+\subsection{Parse pipeline}
+\label{sec:udl-parse}
+
+% The UDL operator hands the raw character pack to a consteval parser
+% that produces a structural type: { lhs_axes, rhs_axes, output_axes }.
+% Walk through the small grammar.
+
+\TODO{walk-through of the consteval parser: grammar (one-line BNF),
+the parsed AST type, how it becomes a non-type template parameter on
+the kernel.}
+
+\subsection{Why a UDL, not a string-typed API}
+\label{sec:udl-why}
+
+% Three reasons: (a) parse fires at compile time, errors land at the
+% literal's source location, (b) the type system sees the parsed
+% structure, not the string, (c) zero runtime overhead.
+
+\TODO{three-paragraph contrast against \code{einops.rearrange("...")},
+emphasising that the UDL pays the parse cost once at compile time and
+the runtime side sees a typed structural value, not a string.}
+
+\subsection{What the UDL is not}
+\label{sec:udl-limits}
+
+% Honest scope: it's not a full einops/einx replacement; broadcasts
+% are explicit; the formula must be a literal (not constructible at
+% runtime); ellipsis and partial application are deliberate non-goals.
+
+The \udltex{} literal accepts a restricted Einstein notation: explicit
+axes only, no ellipsis, no rank-polymorphic patterns. Patterns whose
+shape varies at runtime are handled by the hybrid system in
+\Cref{sec:hybrid} rather than by extending the literal grammar.
+
+% ===========================================================================
+\section{Design 2: Hybrid NTTP $\times$ DynamicShape}
+\label{sec:hybrid}
+
+% ~1.5 pages. Two compile-time paths and one runtime path; how they
+% compose at the kernel boundary.
+
+\subsection{The two paths}
+
+A named tensor carries its axis information in one of two ways:
+
+\begin{description}
+  \item[Compile-time path] axis names \emph{and} sizes are encoded as
+        non-type template parameters. The compiler refutes
+        \udltex{ij,j{->}i} applied to an $(I,K)$ matrix; the error
+        message names the offending axis.
+  \item[Runtime path] axis names are encoded as template parameters
+        (compile-time) but sizes live in a \code{DynamicShape} value
+        (runtime). The compiler refutes axis-\emph{name} mismatches;
+        size mismatches surface as a \code{ShapeError} at the kernel
+        call site.
+\end{description}
+
+\subsection{Promotion and demotion}
+
+% When a static-shaped tensor is fed into a code path that only knows
+% the names (e.g., a generic kernel over a batch axis of unknown
+% size), the static sizes "demote" transparently. The reverse
+% promotion is explicit and checked.
+
+\TODO{promotion/demotion rules with a one-page minimum example
+(static-shaped activations flowing into a runtime-batched op).
+Include the C++ snippet showing what the user writes vs what the
+compiler instantiates.}
+
+\subsection{Kernel boundary}
+
+The contract of a kernel is a function template parameterised by the
+axis structure (compile-time) accepting \code{DynamicShape} runtime
+sizes when needed. \emph{The same kernel} services both paths; the
+runtime-path overhead is one bounds check per call, not a separate
+kernel implementation.
+
+% ===========================================================================
+\section{Design 3: Hexagonal-lite Kernel Backend}
+\label{sec:hex-lite}
+
+% ~1 page. The port; the three adapters; why this matters for MLSys
+% specifically (substrate evolution, e.g., webgpu, is the active
+% research area).
+
+The named-axis layer should not know whether contractions are computed
+by hand-rolled loops, an Eigen template instantiation, or a WGSL
+kernel dispatched to a GPU. \emph{Hexagonal-lite} is a constrained
+form of the Hexagonal architecture~\cite{adr0021}: a single port
+(\code{KernelBackend}) with three concrete adapters.
+
+\subsection{The port}
+
+\TODO{one-page C++ listing of the \code{KernelBackend} concept (in the
+C++20 \code{concept} sense) --- the minimal operations a substrate
+must provide, with brief commentary on each requirement.}
+
+\subsection{Substrates}
+
+\begin{description}
+  \item[Reference] portable naive nested-loop implementation; defines
+        the semantics that the other substrates must match.
+  \item[Eigen] BLAS-routed contractions for CPU performance baseline;
+        loop fusion via Eigen's expression templates.
+  \item[WebGPU via Dawn]~\cite{dawn,adr0014} GPU substrate compiled to
+        WGSL; vcpkg-vendored Dawn to keep substrate provisioning
+        reproducible in CI.
+\end{description}
+
+The choice of substrate is a CMake variable
+(\code{-DTENSOR\_KERNEL\_BACKEND=\{reference,eigen,webgpu\}}) ---
+the named-axis layer is unchanged across all three.
+
+% ===========================================================================
+\section{Evaluation}
+\label{sec:eval}
+
+% ~2 pages. Two evaluations:
+%   §5.1 Static-catch benchmark (does the compile-time path actually
+%        reject the axis-bug taxonomy?)
+%   §5.2 Runtime case study (bundle adjustment; cross-backend perf;
+%        comparison against einops + Haliax baselines).
+%
+% Both depend on B-stage bench harness. Numbers are [BENCH:...]
+% placeholders for now.
+
+\subsection{Static-catch benchmark}
+\label{sec:eval-static}
+
+% Methodology: an axis-bug benchmark suite (each entry is a small
+% program known to be buggy). For each entry, score whether the
+% library catches the bug at compile time, at first runtime call, or
+% silently produces wrong output.
+
+\BENCH{Static-catch benchmark suite: $\sim$50 known-buggy programs
+spanning the taxonomy in \Cref{sec:bg-taxonomy}. Score each entry as
+\{compile-time, runtime, silent\} for each of: \code{tensor} (ours),
+\code{einops}, \code{einx}, \code{Haliax}, \code{Penzai}. Headline
+table = library $\times$ \{caught at CT, caught at RT, silent\} with
+percentages.}
+
+\subsection{Bundle-adjustment case study}
+\label{sec:eval-ba}
+
+\BENCH{50-view $\times$ 200-landmark bundle-adjustment scene from a
+public dataset (e.g., BAL). Three backends (reference / Eigen /
+WebGPU). Metrics: time-to-residual, time-to-gradient, peak memory.
+Comparison baselines: \code{einops.rearrange}-based Jacobian
+assembly, \code{haliax.NamedArray} on JAX backend.}
+
+\TODO{at minimum a single table with rows = backend, columns =
+metric. Append a small figure showing scaling with view count if
+space permits.}
+
+\subsection{Threats to validity}
+
+\TODO{honest discussion: benchmark size, single-author bias on the
+axis-bug suite, hardware/dataset variability for the BA case study.}
+
+% ===========================================================================
+\section{Related Work}
+\label{sec:related}
+
+% ~1 page. Compressed M1 landscape report. Group by paradigm:
+%   Named-string runtime: einops, einx
+%   Named language-level (runtime): Haliax, Penzai, xarray, named torch
+%   Tile/kernel-DSL adjacents: tinygrad, Halide, ATL
+%   Theory: Chiang & Rush (TMLR)
+
+\TODO{1-page synthesis from the M1 study \cite{landscape-comparison-2026}.
+Each paragraph closes with what our system carries over and what it
+diverges on. Notable: Chiang \& Rush \cite{chiang2024named} give the
+notation; we give a type-system implementation of it.}
+
+% ===========================================================================
+\section{Discussion and Limitations}
+\label{sec:discussion}
+
+% ~0.7 pages. Where the design helps; where it does not; what comes
+% next.
+
+\paragraph{When to reach for the compile-time path.}
+\TODO{small decision-aid: shapes known at site of use $\to$ CT path;
+batch size variable but axes named at compile time $\to$ hybrid;
+fully dynamic (e.g., loaded from disk) $\to$ runtime path with
+upgrade-to-CT after the first call.}
+
+\paragraph{Limitations.}
+\TODO{honest enumeration:
+(L1) UDL grammar deliberately small (no ellipsis, no rank polymorphism);
+(L2) compile-time error messages are template-instantiation-deep ---
+we provide diagnostic helpers but C++'s default error rendering is
+unhelpful;
+(L3) WebGPU substrate is in early adoption; portability beyond
+Dawn-supported platforms is currently constrained.}
+
+\paragraph{Future work.}
+\TODO{2--3 sentences: extending the UDL grammar towards full einx
+expressivity without losing the compile-time guarantee; auto-tuned
+substrate selection; integration with Triton-class kernel languages.}
+
+% ===========================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+Named-axis libraries should treat the host language's type system as
+load-bearing infrastructure, not as a place to attach metadata. The
+\code{tensor} library demonstrates that the static and dynamic worlds
+compose: a compile-time UDL bridge, a hybrid NTTP $\times$
+DynamicShape axis system, and a Hexagonal-lite kernel backend deliver
+substrate-portable, axis-typed tensor programs in a mainstream
+systems language. \TODO{one-sentence summary of the headline empirical
+result once \BENCH{} numbers land.}
+
+% ===========================================================================
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}

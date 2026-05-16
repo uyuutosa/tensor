@@ -1,0 +1,107 @@
+% ---------------------------------------------------------------------------
+% refs.bib — MLSys 2027 paper
+%
+% NOTE: this is a stub copy. PR #135 (workshop paper draft) carries a
+% richer bibliography at paper/refs.bib (21 entries). Once #135 lands on
+% develop we will collapse this venue-local file in favour of the
+% shared paper/refs.bib via a follow-up "papers/ restructure" PR.
+% Until then this stub holds the minimal entries required for the
+% skeleton to compile without "undefined citation" warnings.
+% ---------------------------------------------------------------------------
+
+% ----- External: named-tensor / axis-typing community -----
+
+@inproceedings{chiang2024named,
+  author    = {Chiang, David and Rush, Alexander M.},
+  title     = {Named Tensor Notation},
+  booktitle = {Transactions on Machine Learning Research},
+  year      = {2024},
+  note      = {Formalises named-axis notation as a typed calculus.}
+}
+
+@misc{einops,
+  author       = {Rogozhnikov, Alex},
+  title        = {einops: Clear and reliable tensor manipulations with Einstein-like notation},
+  howpublished = {\url{https://github.com/arogozhnikov/einops}},
+  year         = {2018--2026}
+}
+
+@misc{einx,
+  author       = {{einx contributors}},
+  title        = {einx: Universal tensor operations using Einstein notation},
+  howpublished = {\url{https://github.com/fferflo/einx}},
+  year         = {2023--2026}
+}
+
+@misc{haliax,
+  author       = {{Stanford CRFM and contributors}},
+  title        = {Haliax: Named tensors for JAX},
+  howpublished = {\url{https://github.com/stanford-crfm/haliax}},
+  year         = {2023--2026}
+}
+
+@misc{penzai,
+  author       = {{Google DeepMind and contributors}},
+  title        = {Penzai: A JAX research toolkit with named tensors},
+  howpublished = {\url{https://github.com/google-deepmind/penzai}},
+  year         = {2024--2026}
+}
+
+@article{xarray,
+  author  = {Hoyer, Stephan and Hamman, Joseph},
+  title   = {xarray: {N-D} labeled arrays and datasets in {Python}},
+  journal = {Journal of Open Research Software},
+  year    = {2017}
+}
+
+@misc{pytorch-named-tensors,
+  author       = {{PyTorch}},
+  title        = {Named Tensors (experimental)},
+  howpublished = {\url{https://pytorch.org/docs/stable/named_tensor.html}},
+  year         = {2019--2026},
+  note         = {API marked experimental; broad-broadcast semantics retained for compatibility.}
+}
+
+@misc{tinygrad,
+  author       = {Hotz, George and {tinygrad contributors}},
+  title        = {tinygrad: A deep-learning framework for the small},
+  howpublished = {\url{https://github.com/tinygrad/tinygrad}},
+  year         = {2020--2026}
+}
+
+@misc{dawn,
+  author       = {{Google Chrome}},
+  title        = {Dawn: A {WebGPU} implementation},
+  howpublished = {\url{https://dawn.googlesource.com/dawn}},
+  year         = {2020--2026}
+}
+
+% ----- Internal: ADRs and design reports -----
+
+@misc{adr0014,
+  author       = {{tensor project}},
+  title        = {{ADR-0014}: {Dawn-via-vcpkg} substrate strategy for the {WebGPU} kernel backend},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/main/docs/arc42/09-decisions/0014-dawn-via-vcpkg-substrate.md}},
+  year         = {2026}
+}
+
+@misc{adr0021,
+  author       = {{tensor project}},
+  title        = {{ADR-0021}: {Hexagonal-lite} kernel backend port boundary},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/main/docs/arc42/09-decisions/0021-hexagonal-lite-kernel-backend.md}},
+  year         = {2026}
+}
+
+@misc{adr0025,
+  author       = {{tensor project}},
+  title        = {{ADR-0025}: \texttt{\_tex} {UDL} for shape and contraction literals},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/main/docs/arc42/09-decisions/0025-tex-udl.md}},
+  year         = {2026}
+}
+
+@misc{landscape-comparison-2026,
+  author       = {{tensor project}},
+  title        = {{Phase 7a M1}: Named-tensor library landscape comparison study},
+  howpublished = {\url{https://github.com/uyuutosa/tensor/blob/main/docs/research/phase-7a-m1-landscape-comparison.md}},
+  year         = {2026}
+}
