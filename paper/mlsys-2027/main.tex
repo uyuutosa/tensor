@@ -139,8 +139,8 @@ This failure mode is endemic. PyTorch's named-tensor prototype was
 introduced in 2019 specifically to refute it; six years on it remains
 labelled ``prototype, subject to change'' and the
 community-tracking issue records that development has
-stalled~\cite{pytorch-named-tensors, landscape-comparison-2026}.
-JAX's analogous \code{xmap} was deleted in 2024~\cite{landscape-comparison-2026}.
+stalled~\cite{pytorch-named-tensors}.
+JAX's analogous \code{xmap} was deleted in 2024~\cite{jax-xmap-deletion}.
 The bug is well-known; what is missing is a design that the host
 language's type system can refuse, not merely a runtime that throws.
 Existing libraries respond along two axes:
@@ -184,7 +184,7 @@ design moves:
         two compose without bifurcating the kernel API.
   \item \textbf{Hexagonal-lite kernel-backend port}
         (\Cref{sec:hex-lite}): a single port boundary admits three
-        substrates (reference, Eigen, WebGPU-via-Dawn~\cite{dawn,adr0014})
+        substrates (reference, Eigen, WebGPU-via-Dawn~\cite{dawn})
         without leaking substrate concerns into the named-axis layer.
 \end{enumerate}
 
@@ -265,9 +265,7 @@ expanded version of this taxonomy.}
 
 Existing approaches to axis naming differ on two orthogonal axes:
 \emph{where the axis name lives} and \emph{when it is checked}
-(\Cref{tab:landscape}, compressed from our prior landscape
-study~\cite{landscape-comparison-2026}). The space splits into three
-clusters:
+(\Cref{tab:landscape}). The space splits into three clusters:
 
 \begin{table}[t]
 \centering\small
@@ -320,7 +318,7 @@ opportunity to refuse the program at compile time when the shapes
 are known. The PyTorch implementation has remained labelled
 ``prototype'' since its 2019 introduction and development has
 stalled~\cite{pytorch-named-tensors}; JAX's analogous \code{xmap} was
-deleted in 2024 in favour of \code{shard\_map}~\cite{landscape-comparison-2026}.
+deleted in 2024 in favour of \code{shard\_map}~\cite{jax-xmap-deletion}.
 
 \paragraph{Type-level (rare).}
 Outside of compiler-IR frameworks (TACO, MLIR \code{linalg}), only
@@ -468,11 +466,11 @@ The parser is presently runtime, executed at the literal's
 construction site. The natural \code{consteval} formulation is
 blocked by C++20's prohibition on \code{std::unique\_ptr} escaping a
 constant-evaluated context (the current AST is a
-\code{unique\_ptr}-of-variant tree). ADR-0005~\cite{adr0005} schedules
-a refactor that replaces the \code{unique\_ptr} representation with a
-fixed-size arena-of-variants whose lifetime is the literal's; that
-representation does escape constant evaluation and lifts the entire
-parse into the compiler.
+\code{unique\_ptr}-of-variant tree). A scheduled refactor replaces
+the \code{unique\_ptr} representation with a fixed-size
+arena-of-variants whose lifetime is the literal's; that representation
+does escape constant evaluation and lifts the entire parse into the
+compiler.
 
 Three properties of the current design are unchanged by the lift, and
 are this section's contribution:
@@ -601,7 +599,7 @@ kernel implementation.
 The named-axis layer should not know whether contractions are computed
 by hand-rolled loops, an Eigen template instantiation, or a WGSL
 kernel dispatched to a GPU. \emph{Hexagonal-lite} is a constrained
-form of the Hexagonal architecture~\cite{adr0021}: a single port
+form of Cockburn's Hexagonal architecture~\cite{cockburn-hexagonal}: a single port
 (\code{KernelBackend}) with three concrete adapters.
 
 \subsection{The Port}
@@ -680,7 +678,7 @@ point where the adapter is defined, not a runtime surprise.
         the semantics that the other substrates must match.
   \item[Eigen] BLAS-routed contractions for CPU performance baseline;
         loop fusion via Eigen's expression templates.
-  \item[WebGPU via Dawn]~\cite{dawn,adr0014} GPU substrate compiled to
+  \item[WebGPU via Dawn]~\cite{dawn} GPU substrate compiled to
         WGSL; vcpkg-vendored Dawn to keep substrate provisioning
         reproducible in CI.
 \end{description}
@@ -778,7 +776,7 @@ report both so the cost of opting into the static path is visible.
 \paragraph{Methodology.}
 We assemble residuals and Jacobians for the standard bundle-adjustment
 nonlinear least-squares problem on a 50-view $\times$ 200-landmark
-scene from the BAL dataset~\cite{landscape-comparison-2026}. The
+scene from the BAL dataset~\cite{agarwal2010bal}. The
 named-axis structure (\code{view}, \code{landmark}, \code{pose-dof},
 \code{obs}) is invariant across implementations; what varies is the
 library used to express the Jacobian-assembly contractions and the
@@ -791,8 +789,7 @@ two cross-library baselines:
   \item \emph{\code{tensor} / reference} --- the portable nested-loop
         reference backend (\Cref{sec:hex-port}).
   \item \emph{\code{tensor} / Eigen} --- the BLAS-routed CPU backend.
-  \item \emph{\code{tensor} / WebGPU (Dawn)} --- the GPU substrate
-        \cite{adr0014}.
+  \item \emph{\code{tensor} / WebGPU (Dawn)} --- the GPU substrate.
   \item \emph{\code{einops}} --- baseline contracting via NumPy.
   \item \emph{\code{Haliax} on JAX} --- baseline named-tensor library on
         the JAX backend.
@@ -908,19 +905,19 @@ exception'' --- a strict improvement. Two structural limits remain:
 check is doing avoidable work and emitting an avoidable diagnostic;
 (ii) the named-tensor lineage has had difficulty stabilising
 ergonomically (PyTorch's stalled prototype; JAX's deletion of
-\code{xmap}~\cite{landscape-comparison-2026}), suggesting that
+\code{xmap}~\cite{jax-xmap-deletion}), suggesting that
 runtime-only is not the final design point. Our hybrid system uses
 the runtime-named approach where shapes genuinely are dynamic and
 reaches for static-axis types when they are not.
 
 \paragraph{Type-level static axes.}
 Outside compiler frameworks, a small C++ literature attempts
-type-level axis tracking: \code{Einsums}~\cite{landscape-comparison-2026}
-encodes Einstein-pattern packs as template arguments;
-\code{Fastor}~\cite{landscape-comparison-2026} encodes positional
-axis extents as template parameters and the \code{einsum} as a
-formula at the type level; \code{Tenseur}~\cite{landscape-comparison-2026}
-explores lazy expression templates over BLAS. These libraries
+type-level axis tracking: \code{Einsums}~\cite{einsums-cpp} encodes
+Einstein-pattern packs as template arguments;
+\code{Fastor}~\cite{fastor} encodes positional axis extents as
+template parameters and the \code{einsum} as a formula at the type
+level; \code{Tenseur}~\cite{tenseur} explores lazy expression
+templates over BLAS. These libraries
 reject mismatches at compile time when the shape is fully static,
 but offer no escape hatch to a runtime-shape regime --- a tensor
 whose rank or extent is learned from disk cannot be expressed
@@ -930,15 +927,15 @@ the missing runtime path via \code{DynamicTensor} +
 \code{TypedTensor::from\_dynamic} (\Cref{sec:hybrid-promo}).
 
 \paragraph{Compiler-IR and DSLs.}
-\code{TACO}~\cite{landscape-comparison-2026},
-\code{COMET}~\cite{landscape-comparison-2026}, and MLIR's
-\code{linalg}/\code{tensor} dialects~\cite{landscape-comparison-2026}
-express index-name semantics formally, but at the compiler-IR level:
-the user writes either a target-DSL string or invokes the compiler
-toolchain rather than calling library-level operators. \code{Halide}
-similarly separates algorithm from schedule. \code{tinygrad}
-\cite{tinygrad} keeps the API at twelve primitive ops and infers
-shapes positionally. These are useful reference points for what
+\code{TACO}~\cite{kjolstad2017taco}, \code{COMET}~\cite{comet},
+and MLIR's \code{linalg}/\code{tensor}
+dialects~\cite{mlir-linalg} express index-name semantics formally,
+but at the compiler-IR level: the user writes either a target-DSL
+string or invokes the compiler toolchain rather than calling
+library-level operators.
+\code{Halide}~\cite{ragan-kelley2013halide} similarly separates
+algorithm from schedule. \code{tinygrad}~\cite{tinygrad} keeps the
+API at twelve primitive ops and infers shapes positionally. These are useful reference points for what
 ``maximal axis discipline'' looks like at the codegen level; our
 work targets the library-API level with no compiler stage.
 
@@ -1013,7 +1010,7 @@ as the bar. Diagnostic surface is genuine future work.
 
 \textbf{(L3) WebGPU substrate portability is constrained.}
 The Hexagonal-lite \code{webgpu} adapter is built atop
-Dawn~\cite{dawn,adr0014} and inherits Dawn's platform matrix
+Dawn~\cite{dawn} and inherits Dawn's platform matrix
 (Windows, macOS, Linux, ChromiumOS; Android is preview). On Linux,
 software emulation paths exist but performance numbers should not be
 extrapolated across them. Substrates beyond reference / Eigen /
@@ -1034,10 +1031,9 @@ The primary scheduled lift is moving the \udltex{} parser from
 runtime (literal-construction time) to \code{consteval} (compile
 time) by replacing the \code{unique\_ptr}-of-variant AST with a
 fixed-size arena representation that escapes constant evaluation
-(\Cref{sec:udl-limits-and-future}, ADR-0005~\cite{adr0005}); the
-output type and Evaluator pass are unchanged, so this is a
-mechanical refactor whose payoff is moving parse cost from program
-startup to compile time. Beyond that: extending the grammar towards
+(\Cref{sec:udl-limits-and-future}); the output type and Evaluator
+pass are unchanged, so this is a mechanical refactor whose payoff
+is moving parse cost from program startup to compile time. Beyond that: extending the grammar towards
 rank-polymorphic patterns without losing the structural-index
 property; auto-tuned substrate selection based on shape and target;
 integration with Triton-class kernel languages at the Hexagonal-lite
