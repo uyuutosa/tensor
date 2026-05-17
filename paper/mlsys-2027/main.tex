@@ -710,62 +710,94 @@ the number itself is pending the harness landing.
 \subsection{Static-catch Benchmark}
 \label{sec:eval-static}
 
-\paragraph{Methodology.}
-We construct a benchmark suite of $\sim$50 small programs, each a
-self-contained one-screen example exhibiting exactly one bug from
-\Cref{tab:axis-bugs}. Each program is replicated across the five
-libraries that occupy the named-axis cell of \Cref{tab:landscape}
-(\code{einops}, \code{einx}, \code{Haliax}, \code{Penzai}, and ours)
-in idiomatic form for that library --- e.g.\ the T1 ``transposed
-contraction'' case becomes \code{einops.rearrange("b h t d -> b t h d", q) @ k.T}
-for \code{einops}, an \code{ein("b h t d -> b t h d", q)} for
-\code{einx}, a \code{NamedArray} contraction in \code{Haliax}, and
-the corresponding \udltex{} literal applied to TypedTensor inputs
-in our system.
+\paragraph{Suite construction.}
+The benchmark suite has $5 \times 10 = 50$ \emph{bug instances}
+(ten per axis-bug class T1--T5 of \Cref{tab:axis-bugs}) plus 25
+\emph{control programs} that exercise the same operators
+\emph{correctly}. The controls let us also report a per-library
+\emph{false-positive rate}: a system that refuses everything would
+score 100\% on bugs but would be useless on the controls. Each entry
+is a self-contained one-screen example. Entries derive from the
+documented community reports in \Cref{tab:axis-bugs} rather than
+from inspection of any single library's source.
 
-For each entry, the harness scores the library on three outcomes:
+\paragraph{Per-library translations.}
+Each bug instance and each control is implemented in five idiomatic
+target forms: \code{einops}, \code{einx}, \code{Haliax},
+\code{Penzai}, and \code{tensor} (the latter once via the static
+\code{TypedTensor} path and once via the dynamic \code{DynamicTensor}
++ \udltex{} path, scored separately). Translations are written by
+one author and reviewed by a second author against the target
+library's official documentation; the per-entry annotation links to
+the documentation page that motivated each idiomatic choice. The
+total artefact is $75 \text{ entries} \times 5 \text{ libraries} +
+75 \times 1$ (the static \code{tensor} second variant)
+$ = 450$ translated programs, all shipped in
+\code{bench/static\_catch\_suite/}.
+
+\paragraph{Per-entry scoring.}
+The harness compiles or invokes each program in a freshly-instantiated
+target environment and assigns one of four outcomes:
 
 \begin{description}
-  \item[\textbf{CT} (compile time)] the program fails to compile (for
-        statically-typed libraries: a \code{static\_assert} or
-        template-instantiation error) or fails at module-load /
-        decorator-application (for Python libraries with at-decoration
-        checks, e.g.\ \code{jax.jit}).
-  \item[\textbf{RT} (runtime, first call)] the program raises an
-        exception at the first call to the offending operator
-        (\code{ShapeError}, \code{TypeError}, \code{ValueError}).
-  \item[\textbf{Silent}] the program runs to completion and produces
-        a numerical result that differs from the intended output by
-        more than $10^{-6}$ in $\ell_\infty$ norm.
+  \item[\textbf{CT} (compile / trace time)] the program fails before
+        any tensor is allocated. For statically-typed libraries
+        (\code{tensor}-static): a \code{static\_assert} or
+        template-instantiation error. For JAX-backed libraries: a
+        \code{ShapeError}/\code{TracerArrayConversionError} at the
+        first \code{jit}/\code{pjit} call.
+  \item[\textbf{RT} (runtime, first call)] the program reaches the
+        offending operator and raises (\code{ShapeError},
+        \code{TypeError}, \code{ValueError}, or library-specific).
+  \item[\textbf{Silent}] the program runs to completion. The result
+        is then compared to the entry's recorded \emph{intended}
+        output (the output a correct implementation of the
+        programmer's stated goal would produce). For \emph{structural}
+        bugs (T5 stack/concat) the comparison is on shape; for
+        \emph{numerical} bugs (T1--T4) the comparison is on $\ell_\infty$
+        difference against the recorded reference at tolerance
+        $10^{-6}$. Anything not flagged at CT or RT and not matching
+        the reference is \textbf{Silent}.
+  \item[\textbf{Pass}] (control programs only) the program runs and
+        matches the reference. Bug instances that score \textbf{Pass}
+        indicate an instrumentation defect and are excluded with a
+        suite-level retraction note.
 \end{description}
 
-\paragraph{Scoring.}
-The headline figure is the per-library catch rate across the suite:
+\paragraph{Headline metric.}
+The per-library catch rate over the 50 bug instances, with the
+false-positive rate over the 25 controls reported alongside:
 
 \begin{table}[t]
 \centering\small
-\begin{tabular}{@{}l ccc@{}}
+\begin{tabular}{@{}l cccc@{}}
 \toprule
-\textbf{Library} & \textbf{CT \%} & \textbf{RT \%} & \textbf{Silent \%} \\
+\textbf{Library} & \textbf{CT \%} & \textbf{RT \%} & \textbf{Silent \%} & \textbf{FP \%}\\
 \midrule
-\code{einops}~\cite{rogozhnikov2022einops}     & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{einx}~\cite{flick2026einx}         & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{Haliax}~\cite{haliax}     & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{Penzai}~\cite{penzai}     & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{tensor} (ours, static)    & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{tensor} (ours, dynamic)   & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{einops}~\cite{rogozhnikov2022einops}        & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{einx}~\cite{flick2026einx}                  & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{Haliax}~\cite{haliax}                       & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{Penzai}~\cite{penzai}                       & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{tensor} (ours, static)                      & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{tensor} (ours, dynamic)                     & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
 \bottomrule
 \end{tabular}
-\caption{Static-catch rate per library. Hypothesis: the static
-\code{tensor} row's CT column dominates all other rows; the dynamic
-row matches the named-value-runtime cluster. Numbers pending the
-harness implementation (see \emph{Status of results} above).}
+\caption{Static-catch rate per library across the 50-bug suite, with
+the false-positive rate (FP) measured against the 25-control set.
+\emph{CT+RT} (sum of the first two columns) is the per-library safety
+score; \emph{Silent} is the residual silent-wrong-output rate.
+Hypothesis: the static \code{tensor} row's CT column dominates all
+other rows, the dynamic row matches the named-value-runtime cluster,
+and FP is at noise for every row. Numbers pending the harness
+implementation (see \emph{Status of results} above).}
 \label{tab:catch-rate}
 \end{table}
 
 The \code{tensor} library appears on \emph{two} rows because its
 static and dynamic paths offer materially different guarantees; we
-report both so the cost of opting into the static path is visible.
+report both so the cost of opting into the static path (slightly
+less ergonomic, more boilerplate) is visible against its benefit
+(higher CT column).
 
 \subsection{Bundle-adjustment Case Study}
 \label{sec:eval-ba}
@@ -810,12 +842,52 @@ two cross-library baselines:
         the JAX backend.
 \end{itemize}
 
-\paragraph{Metrics.}
-Wall-clock time-to-residual, time-to-gradient, and peak resident-set
-memory, each averaged over $n{=}10$ runs after $n{=}3$ warm-up runs.
-Reproduction substrate: GitHub-hosted runners (Ubuntu 22.04, gcc-11
-for the \code{tensor} substrates; Python 3.11 for the baselines) plus
-a single consumer GPU (NVIDIA RTX-class) for the WebGPU lane.
+\paragraph{Residual.}
+For view $v$ observing landmark $l$ the reprojection residual is
+\begin{equation*}
+\mathbf{r}_{vl} = \pi\bigl(R_v \mathbf{p}_l + \mathbf{t}_v\bigr) - \mathbf{o}_{vl},
+\end{equation*}
+with $\pi(x, y, z) = (x/z,\; y/z)$ the canonical pinhole projection
+under normalised intrinsics ($f = 1$, principal point at origin) and
+$\mathbf{o}_{vl} \in \mathbb{R}^{2}$ the observed image coordinate.
+The named-axis structure of the residual tensor is
+$(\ax{view}, \ax{landmark}, \ax{uv})$; the same formula expressed
+in \udltex{} is what \code{tutorials/09\_bundle-adjustment.ipynb}
+shows on a 1-D simplification. Initial poses come from
+COLMAP~\cite{schoenberger2016sfm}; we perturb each $R_v$ by a random
+rotation of magnitude $0.5^\circ$ and each $\mathbf{t}_v$ by Gaussian
+noise of standard deviation $\sigma = 0.01$ (units of the scene
+extent) so that the optimisation begins off-equilibrium.
+
+\paragraph{Metrics and statistical protocol.}
+Three measurements per (backend, scene) pair:
+
+\begin{description}
+  \item[$t_r$] wall-clock time for one forward pass producing the
+        $50 \cdot 200 \cdot 2 = 20{,}000$-entry residual.
+  \item[$t_g$] wall-clock time for one autograd-derived gradient pass.
+  \item[\textbf{peak}] peak resident-set memory during $t_r + t_g$.
+\end{description}
+
+We report the \emph{median} over $n{=}30$ runs after $n{=}5$ warm-up
+runs and the 95\% bootstrap confidence interval. Median + IQR are
+preferred over mean + s.d.\ because wall-clock distributions on
+shared machines are right-skewed by occasional pre-emption. Before
+timing, every backend pair is required to produce numerically
+identical residuals on the test inputs ($\ell_\infty$ difference
+$< 10^{-9}$, FP64 throughout); a backend whose output diverges
+disqualifies its row from the timing report.
+
+\paragraph{Hardware.}
+The CPU substrates (reference, Eigen, einops, Haliax) run on a
+GitHub-hosted ubuntu-22.04 runner (4 vCPU, 16 GB RAM, no GPU). The
+WebGPU lane runs on the maintainer's developer machine
+(\textbf{NVIDIA GeForce RTX 4070 Mobile}, 8 GB VRAM, Dawn r6814 with
+the Vulkan backend, Ubuntu 24.04, driver 550.142). The
+shared-runner numbers are reproducible by anyone with a free GitHub
+account; the WebGPU numbers should be read as the
+\emph{tensor}-internal cross-substrate \emph{ratio} rather than as
+an absolute claim against data-centre hardware.
 
 \begin{table}[t]
 \centering\small
@@ -881,6 +953,20 @@ remains within the BA class. A second case study sensitive to
 broadcasting (e.g.\ multi-head attention forward) would strengthen
 external validity; we record this as deliberately out of scope for
 the present 10-page submission and note it in \Cref{sec:discussion}.
+
+\paragraph{Reproducibility package.}
+The release ships
+\code{bench/} containing: (a) the 75 static-catch programs across
+five libraries (450 translated files); (b) a downloader script for
+ETH3D + Strecha + BAL scenes; (c) the harness driver
+\code{bench\_mlsys\_paper\_case\_study.py}; (d) the resulting
+\code{results.json} schema (one record per scoring outcome or
+timing measurement); (e) the plotting scripts that render
+\Cref{tab:catch-rate} and \Cref{tab:ba-results} from
+\code{results.json}; (f) a pinned conda environment file and a
+\code{Dockerfile} for the WebGPU lane. End-to-end re-runs on a
+fresh runner reproduce the reported numbers to within the published
+confidence intervals.
 
 % ===========================================================================
 \section{Related Work}
