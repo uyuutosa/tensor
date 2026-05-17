@@ -1,0 +1,45 @@
+% Optional cover-page LaTeX snippet, included by Sphinx's PDF
+% builder when configured (Phase 7a M2). Not currently wired into
+% `latex_elements.maketitle` — included as a reference document
+% authors can `\input{pdf-cover}` from the Sphinx preamble if a
+% custom cover is desired.
+%
+% The default Sphinx LaTeX title page is sufficient for the
+% M2 release artifact; this file is committed so the cover-page
+% authoring surface is documented + version-controlled, not so
+% it is unconditionally rendered.
+%
+% Snapshot: 2026-05-15. Phase 7a Documentation-as-Product.
+
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+
+  {\Huge\bfseries tensor\par}
+  \vspace{0.5cm}
+  {\Large named-axis tensor algebra in modern C++\par}
+
+  \vspace{2cm}
+  {\large A C++20 header-only named-axis differentiable tensor
+   library with a \LaTeX-subset user-defined literal as
+   first-class expression surface.\par}
+
+  \vfill
+
+  {\large uyuutosa\par}
+  \vspace{0.3cm}
+  {\normalsize \url{https://github.com/uyuutosa/tensor}\par}
+
+  \vspace{1cm}
+  {\normalsize \today\par}
+
+  \vspace{0.3cm}
+  {\small This artifact is the canonical-reference packaging of
+   the project's arc42 + Diátaxis + ADR documentation system as of
+   the snapshot date. Cite ADR-0021 for the strategic-narrowing
+   positioning; the comparison study at
+   \texttt{docs/reports/2026-05-14\_named-tensor-library-comparison.md}
+   for the landscape placement.\par}
+\end{titlepage}
+
+\clearpage
