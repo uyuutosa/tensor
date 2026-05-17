@@ -25,7 +25,7 @@ Active → Superseded by next dated file. **Never edit a closed file** — write
 
 For details, see [`../WORKFLOW.md`](../WORKFLOW.md).
 
-## Index — plans in this project (7 as of 2026-05-14)
+## Index — plans in this project (9 as of 2026-05-14)
 
 | Date       | File                                                                                                       | Status                                                  |
 | ---------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
@@ -36,3 +36,5 @@ For details, see [`../WORKFLOW.md`](../WORKFLOW.md).
 | 2026-05-12 | [`2026-05-12_post-investigation-tasks.md`](./2026-05-12_post-investigation-tasks.md)                        | Closed (carry-over tasks from the 2026-05-12 strategic review). |
 | 2026-05-12 | [`2026-05-12_phase-6-python-sdk.md`](./2026-05-12_phase-6-python-sdk.md)                                    | Closed (Phase 6 shipped 2026-05-13 — see `phase-6-python-sdk-retrospective`). |
 | 2026-05-13 | [`2026-05-13_phase-6-5-set-backend.md`](./2026-05-13_phase-6-5-set-backend.md)                              | **Active** — Phase 6.5 (M1–M4 forward; exit `0.3.0`).  |
+| 2026-05-14 | [`2026-05-14_phase-6-6-r-p6-5-5-lift.md`](./2026-05-14_phase-6-6-r-p6-5-5-lift.md)                          | **Active** — Phase 6.6 (R-P6.5.5 lift via type-owner-separation; exit `0.4.0`). |
+| 2026-05-14 | [`2026-05-14_phase-7a-docs-as-product.md`](./2026-05-14_phase-7a-docs-as-product.md)                        | **Active** — Phase 7a Documentation-as-Product (citable PDF + workshop paper + comparison study; exit `0.5.0`). |
