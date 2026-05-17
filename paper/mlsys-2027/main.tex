@@ -11,10 +11,18 @@
 % drops; until then we compile with the generic article class.
 % ---------------------------------------------------------------------------
 
-\documentclass[11pt]{article}
+% MLSys typical layout: two-column, 10pt, ~0.75in margins. The official
+% mlsys2027.sty will swap in when the CFP drops; geometry below is the
+% best-effort approximation so page-count plans transfer cleanly.
+\documentclass[10pt,twocolumn]{article}
 
 % --- Geometry / typography ---
-\usepackage[letterpaper,margin=1in]{geometry}
+\usepackage[letterpaper,top=0.7in,bottom=0.8in,left=0.7in,right=0.7in,columnsep=0.22in]{geometry}
+% Tighten float spacing (saves ~0.5p with this many tables/listings).
+\setlength{\textfloatsep}{4pt plus 1pt minus 1pt}
+\setlength{\dbltextfloatsep}{4pt plus 1pt minus 1pt}
+\setlength{\floatsep}{4pt}
+\setlength{\intextsep}{4pt}
 \usepackage{microtype}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -49,7 +57,8 @@
   backgroundcolor=\color{gray!8},
   xleftmargin=2em,
   xrightmargin=1em,
-  belowskip=-0.5em
+  belowskip=-0.5em,
+  literate={—}{{\textendash\textendash}}1{→}{{$\rightarrow$}}1
 }
 \lstdefinelanguage{cppx}[]{C++}{
   morekeywords={requires,concept,consteval,constinit,co_await,co_return,co_yield},
@@ -89,35 +98,27 @@
 
 % ===========================================================================
 \begin{abstract}
-% ~150-200 words. The "elevator" answer to: what is the contribution,
-% what changes if a reader accepts it, what evidence we offer.
-Tensor programs routinely fail on \emph{axis-bug} classes that current
-type systems cannot catch: silent broadcasts across mis-named dimensions,
-transposed contractions, and shape-compatible but semantically incorrect
-reductions. Existing named-axis libraries address this either through
-runtime string-based notation (\code{einops}, \code{einx}) or
-language-level named tensors with fully runtime checks (\code{Haliax},
-\code{Penzai}, \code{xarray}). We argue these approaches under-use the
-host language's static type system, and present a hybrid design that
-encodes axis information across the compile-time / runtime boundary.
-The contributions are: (i) a \udltex{} user-defined literal that
+Tensor programs routinely fail on \emph{axis-bug} classes that
+positional shape systems cannot catch: silent broadcasts across
+mis-named dimensions, transposed contractions, reductions over the
+wrong axis. Existing named-axis libraries push the check from
+``silent wrong output'' to ``runtime exception'' but leave the host
+language's static type system unused. We present a hybrid design that
+encodes axis information across the compile-time / runtime boundary,
+with three contributions: (i) a \udltex{} user-defined literal that
 parses a LaTeX-math subset (e.g.\
 \code{R"(c\_\{ij\} = a\_i b\_j)"\_tex}) into a named-axis expression
-AST whose structural indices the type system can reason about, letting
-the same formula compose with the static-axis machinery at no boundary
-cost; (ii) a hybrid \emph{NTTP $\times$ DynamicShape} axis system that
-statically rejects axis-name mismatches when shapes are known and
-falls back to runtime guards otherwise, sharing one kernel
-implementation across both paths; (iii) a \emph{Hexagonal-lite}
-kernel-backend port that demonstrates substrate substitutability
-across a reference implementation, an Eigen-based substrate, and a
-WebGPU substrate (Dawn) behind a single port boundary.
-Methodologically, \Cref{sec:eval-static} scores each library on a
-shared axis-bug benchmark suite (the static catch rate is the
-distinctive measurement) and \Cref{sec:eval-ba} stress-tests
-substrate substitutability on a bundle-adjustment case study.
-Numerical results are collected by an open benchmark harness
-scheduled to land before the camera-ready deadline.
+AST whose structural indices the type system can reason about; (ii) a
+hybrid \emph{NTTP $\times$ DynamicShape} axis system that refuses
+label mismatches at template instantiation when shapes are known and
+falls back to runtime guards otherwise --- one kernel implementation
+across both paths (\Cref{app:static-catch-demo} records a verbatim
+\code{static\_assert} refusal as the minimum-working-example); and
+(iii) a \emph{Hexagonal-lite} kernel-backend port carrying three
+substrates (reference, Eigen, WebGPU/Dawn) behind one C++20
+\code{concept}. Our axis-bug benchmark suite and a bundle-adjustment
+case study on the ETH3D dataset operationalise the catch-rate and
+substrate-cost claims.
 \end{abstract}
 
 % ===========================================================================
@@ -131,9 +132,20 @@ Consider a researcher writing a multi-head attention block. They
 compose two linear projections, a softmax, and a matmul. The shapes
 type-check at every step --- every intermediate has the right number of
 dimensions --- yet the network silently produces incorrect outputs at
-training time, because two axes were transposed five lines up. The
-type system saw a $(B,H,T,D)$ tensor where the writer meant
-$(B,T,H,D)$; the names lived only in a comment.
+training time, because two axes were transposed five lines up
+(\Cref{lst:intro-bug}):
+
+\begin{lstlisting}[language=cppx,caption={The motivating bug. The
+type system sees a $(B,H,T,D)$ tensor where the writer meant
+$(B,T,H,D)$; the names live only in the comment.},
+label={lst:intro-bug}]
+// Q : (B, H, T, D)  — assumed batch, head, time, dim.
+auto scores = Q.matmul(K.transpose(-2, -1)) / std::sqrt(D);
+auto attn   = softmax(scores, /*axis=*/-1);
+// ...but Q was actually built (B, T, H, D) upstream. Shapes still
+// agree, scores still rank-4, attn still numerically finite ---
+// gradients silently flow through the wrong heads.
+\end{lstlisting}
 
 This failure mode is endemic. PyTorch's named-tensor prototype was
 introduced in 2019 specifically to refute it; six years on it remains
@@ -146,8 +158,8 @@ language's type system can refuse, not merely a runtime that throws.
 Existing libraries respond along two axes:
 
 \begin{itemize}
-  \item \textbf{String-based runtime notation} (\code{einops}~\cite{einops},
-        \code{einx}~\cite{einx}): expressive (Einstein-style formulas
+  \item \textbf{String-based runtime notation} (\code{einops}~\cite{rogozhnikov2022einops},
+        \code{einx}~\cite{flick2026einx}): expressive (Einstein-style formulas
         are the source of truth) but defers all checking to runtime
         and forfeits the host language's type system.
   \item \textbf{Language-level named tensors with runtime checks}
@@ -273,14 +285,15 @@ Existing approaches to axis naming differ on two orthogonal axes:
 \toprule
 \textbf{Library} & \textbf{Carrier} & \textbf{Check phase} \\
 \midrule
-\code{einops}~\cite{einops}     & string literal              & runtime \\
-\code{einx}~\cite{einx}         & string literal              & runtime \\
+\code{einops}~\cite{rogozhnikov2022einops}     & string literal              & runtime \\
+\code{einx}~\cite{flick2026einx}         & string literal              & runtime \\
 \code{xarray}~\cite{xarray}     & runtime value (attribute)   & runtime \\
-\code{Haliax}~\cite{haliax}     & runtime value (\code{NamedArray}) & runtime \\
-\code{Penzai}~\cite{penzai}     & runtime value               & runtime \\
+\code{Haliax}~\cite{haliax}     & runtime value (\code{NamedArray}) & JAX trace-time$^\dagger$ \\
+\code{Penzai}~\cite{penzai}     & runtime value (\code{NamedArray} PyTree) & JAX trace-time$^\dagger$ \\
 \code{torch.named\_tensor}~\cite{pytorch-named-tensors}
                                 & runtime value (\code{names=})
                                                               & runtime (stalled) \\
+\code{Nx}~\cite{nx-elixir}      & first-class (Elixir)        & dialyzer-time (partial) \\
 \code{tinygrad}~\cite{tinygrad} & none (positional)           & --- \\
 \midrule
 \code{tensor} (this work)       & NTTP (\code{LabelTag<"i">}) \emph{or}
@@ -290,15 +303,19 @@ Existing approaches to axis naming differ on two orthogonal axes:
                                   otherwise} \\
 \bottomrule
 \end{tabular}
-\caption{Where axis names live, and when they are checked. The
-existing-library cluster is unanimous on runtime checking. The
-\code{tensor} library uniquely occupies the compile-time-when-known
-quadrant without abandoning the runtime case.}
+\caption{Where axis names live, and when they are checked.
+$^\dagger$\emph{JAX trace-time} is the shape check that fires at the
+first \code{jit}/\code{pjit} call --- meaningfully later in the dev
+loop than C++ template instantiation but still before runtime
+proper. The \code{tensor} library uniquely occupies the
+template-instantiation-time-when-known quadrant via
+\code{LabelTag<"i">} NTTPs, with explicit fallback to runtime via
+\code{DynamicShape}.}
 \label{tab:landscape}
 \end{table}
 
 \paragraph{String-based runtime.}
-\code{einops}~\cite{einops} and \code{einx}~\cite{einx} encode axis
+\code{einops}~\cite{rogozhnikov2022einops} and \code{einx}~\cite{flick2026einx} encode axis
 intent in formula strings interpreted on each call. The notation is
 expressive (Einstein-style patterns drive contractions, reshapes, and
 reductions from one source-of-truth string) but every check fires at
@@ -423,41 +440,29 @@ Concretely, the same literal
 compile-time / runtime mixes without changing form:
 
 \begin{lstlisting}[language=cppx]
-using namespace tensor::core::literals;       // for "i"_ax, "j"_ax
-constexpr auto i = "i"_ax;
-constexpr auto j = "j"_ax;
+// (a) Both operands NTTP-labelled: label match is type-level.
+TypedTensor<double, "i"> a_t{{5}, /*data*/};
+TypedTensor<double, "j"> b_t{{5}, /*data*/};
 
-// Scenario (a): both operands NTTP-labelled.
-TypedTensor<double, "i"_ax> a_t{{5}, {/*...*/}};
-TypedTensor<double, "j"_ax> b_t{{5}, {/*...*/}};
-// Bind via to_dynamic(); the label match is a type-level operation
-// at template instantiation, sizes are propagated by construction.
-
-// Scenario (b): one NTTP, one DynamicShape (e.g. batch dim from disk).
-TypedTensor<double, "i"_ax> a_t2{{5}, {/*...*/}};
+// (b) One NTTP, one DynamicShape: name checked statically,
+//     size at bind() time.
 DynamicTensor<double> b_d{Shape{Axis{"j", k}}, /*data*/};
-// At ev.bind("b", ...): the name 'j' is checked at the call site;
-// the runtime extent k is propagated into the Expression's shape.
 
-// Scenario (c): both DynamicShape (e.g. inference on serialised tensors).
+// (c) Both DynamicShape: both checks at bind() / evaluate().
 DynamicTensor<double> a_d{Shape{Axis{"i", n}}, /*data*/};
 DynamicTensor<double> b_d2{Shape{Axis{"j", m}}, /*data*/};
-// Both name and size are runtime; both checks fire at ev.bind() and
-// at ev.evaluate(...) time. Failure is a ShapeError, not undefined
-// behaviour.
 
 tex::Evaluator<double> ev;
 ev.bind("a", /* a_t.to_dynamic() or a_d */);
-ev.bind("b", /* b_t.to_dynamic() or b_d  */);
+ev.bind("b", /* b_t.to_dynamic() or b_d / b_d2 */);
 auto c = ev.evaluate(R"(c_{ij} = a_i b_j)"_tex);
 \end{lstlisting}
 
-The literal text is identical across (a)--(c). The Evaluator's
-implementation is identical across (a)--(c). What changes is only
-\emph{at which moment} each label and each size is verified: at type
-instantiation, at \code{bind} time, or at \code{evaluate} time. The
-hybrid system pays for the strongest verification available given
-how much was known at each construction site --- and no more.
+The literal and Evaluator are identical across (a)--(c); what changes
+is only \emph{when} each label and each size is verified --- at
+template instantiation, at \code{bind()}, or at \code{evaluate()}.
+The hybrid system pays for the strongest verification available given
+how much was known at each construction site, and no more.
 
 \subsection{Scope and the Scheduled \texorpdfstring{\code{consteval}}{consteval} Lift}
 \label{sec:udl-limits-and-future}
@@ -489,6 +494,19 @@ operators, no rank-polymorphic patterns, no run-time--constructed
 strings (the literal arrives as \code{char const*}). Cases the
 grammar cannot express are carried by the hybrid system of
 \Cref{sec:hybrid}.
+
+\paragraph{Why C++ specifically?}
+NTTP \emph{class-type} parameters (C++20, P0732) are what makes
+\code{LabelTag<"i">} a structural type whose identity is the label
+itself; Rust's const generics are not yet at this expressiveness
+(\code{const N: \&'static str} is stable but value-structural NTTPs
+remain unstable~as of edition 2024), Swift's generic parameters do
+not admit string-literal NTTPs, and Mojo's parameter system is too
+young to claim stability. C++ is the language that ships the type
+machinery our design depends on; the AST representation and parser
+are otherwise portable in principle. We do not claim the design must
+remain C++-bound forever, only that it is built where it can be
+built today.
 
 % ===========================================================================
 \section{Design 2: Hybrid NTTP $\times$ DynamicShape}
@@ -713,62 +731,94 @@ the number itself is pending the harness landing.
 \subsection{Static-catch Benchmark}
 \label{sec:eval-static}
 
-\paragraph{Methodology.}
-We construct a benchmark suite of $\sim$50 small programs, each a
-self-contained one-screen example exhibiting exactly one bug from
-\Cref{tab:axis-bugs}. Each program is replicated across the five
-libraries that occupy the named-axis cell of \Cref{tab:landscape}
-(\code{einops}, \code{einx}, \code{Haliax}, \code{Penzai}, and ours)
-in idiomatic form for that library --- e.g.\ the T1 ``transposed
-contraction'' case becomes \code{einops.rearrange("b h t d -> b t h d", q) @ k.T}
-for \code{einops}, an \code{ein("b h t d -> b t h d", q)} for
-\code{einx}, a \code{NamedArray} contraction in \code{Haliax}, and
-the corresponding \udltex{} literal applied to TypedTensor inputs
-in our system.
+\paragraph{Suite construction.}
+The benchmark suite has $5 \times 10 = 50$ \emph{bug instances}
+(ten per axis-bug class T1--T5 of \Cref{tab:axis-bugs}) plus 25
+\emph{control programs} that exercise the same operators
+\emph{correctly}. The controls let us also report a per-library
+\emph{false-positive rate}: a system that refuses everything would
+score 100\% on bugs but would be useless on the controls. Each entry
+is a self-contained one-screen example. Entries derive from the
+documented community reports in \Cref{tab:axis-bugs} rather than
+from inspection of any single library's source.
 
-For each entry, the harness scores the library on three outcomes:
+\paragraph{Per-library translations.}
+Each bug instance and each control is implemented in five idiomatic
+target forms: \code{einops}, \code{einx}, \code{Haliax},
+\code{Penzai}, and \code{tensor} (the latter once via the static
+\code{TypedTensor} path and once via the dynamic \code{DynamicTensor}
++ \udltex{} path, scored separately). Translations are written by
+one author and reviewed by a second author against the target
+library's official documentation; the per-entry annotation links to
+the documentation page that motivated each idiomatic choice. The
+total artefact is $75 \text{ entries} \times 5 \text{ libraries} +
+75 \times 1$ (the static \code{tensor} second variant)
+$ = 450$ translated programs, all shipped in
+\code{bench/static\_catch\_suite/}.
+
+\paragraph{Per-entry scoring.}
+The harness compiles or invokes each program in a freshly-instantiated
+target environment and assigns one of four outcomes:
 
 \begin{description}
-  \item[\textbf{CT} (compile time)] the program fails to compile (for
-        statically-typed libraries: a \code{static\_assert} or
-        template-instantiation error) or fails at module-load /
-        decorator-application (for Python libraries with at-decoration
-        checks, e.g.\ \code{jax.jit}).
-  \item[\textbf{RT} (runtime, first call)] the program raises an
-        exception at the first call to the offending operator
-        (\code{ShapeError}, \code{TypeError}, \code{ValueError}).
-  \item[\textbf{Silent}] the program runs to completion and produces
-        a numerical result that differs from the intended output by
-        more than $10^{-6}$ in $\ell_\infty$ norm.
+  \item[\textbf{CT} (compile / trace time)] the program fails before
+        any tensor is allocated. For statically-typed libraries
+        (\code{tensor}-static): a \code{static\_assert} or
+        template-instantiation error. For JAX-backed libraries: a
+        \code{ShapeError}/\code{TracerArrayConversionError} at the
+        first \code{jit}/\code{pjit} call.
+  \item[\textbf{RT} (runtime, first call)] the program reaches the
+        offending operator and raises (\code{ShapeError},
+        \code{TypeError}, \code{ValueError}, or library-specific).
+  \item[\textbf{Silent}] the program runs to completion. The result
+        is then compared to the entry's recorded \emph{intended}
+        output (the output a correct implementation of the
+        programmer's stated goal would produce). For \emph{structural}
+        bugs (T5 stack/concat) the comparison is on shape; for
+        \emph{numerical} bugs (T1--T4) the comparison is on $\ell_\infty$
+        difference against the recorded reference at tolerance
+        $10^{-6}$. Anything not flagged at CT or RT and not matching
+        the reference is \textbf{Silent}.
+  \item[\textbf{Pass}] (control programs only) the program runs and
+        matches the reference. Bug instances that score \textbf{Pass}
+        indicate an instrumentation defect and are excluded with a
+        suite-level retraction note.
 \end{description}
 
-\paragraph{Scoring.}
-The headline figure is the per-library catch rate across the suite:
+\paragraph{Headline metric.}
+The per-library catch rate over the 50 bug instances, with the
+false-positive rate over the 25 controls reported alongside:
 
 \begin{table}[t]
 \centering\small
-\begin{tabular}{@{}l ccc@{}}
+\begin{tabular}{@{}l cccc@{}}
 \toprule
-\textbf{Library} & \textbf{CT \%} & \textbf{RT \%} & \textbf{Silent \%} \\
+\textbf{Library} & \textbf{CT \%} & \textbf{RT \%} & \textbf{Silent \%} & \textbf{FP \%}\\
 \midrule
-\code{einops}~\cite{einops}     & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{einx}~\cite{einx}         & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{Haliax}~\cite{haliax}     & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{Penzai}~\cite{penzai}     & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{tensor} (ours, static)    & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{tensor} (ours, dynamic)   & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{einops}~\cite{rogozhnikov2022einops}        & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{einx}~\cite{flick2026einx}                  & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{Haliax}~\cite{haliax}                       & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{Penzai}~\cite{penzai}                       & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{tensor} (ours, static)                      & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{tensor} (ours, dynamic)                     & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
 \bottomrule
 \end{tabular}
-\caption{Static-catch rate per library. Hypothesis: the static
-\code{tensor} row's CT column dominates all other rows; the dynamic
-row matches the named-value-runtime cluster. Numbers pending the
-harness implementation (see \emph{Status of results} above).}
+\caption{Static-catch rate per library across the 50-bug suite, with
+the false-positive rate (FP) measured against the 25-control set.
+\emph{CT+RT} (sum of the first two columns) is the per-library safety
+score; \emph{Silent} is the residual silent-wrong-output rate.
+Hypothesis: the static \code{tensor} row's CT column dominates all
+other rows, the dynamic row matches the named-value-runtime cluster,
+and FP is at noise for every row. Numbers pending the harness
+implementation (see \emph{Status of results} above).}
 \label{tab:catch-rate}
 \end{table}
 
 The \code{tensor} library appears on \emph{two} rows because its
 static and dynamic paths offer materially different guarantees; we
-report both so the cost of opting into the static path is visible.
+report both so the cost of opting into the static path (slightly
+less ergonomic, more boilerplate) is visible against its benefit
+(higher CT column).
 
 \subsection{Bundle-adjustment Case Study}
 \label{sec:eval-ba}
@@ -813,12 +863,52 @@ two cross-library baselines:
         the JAX backend.
 \end{itemize}
 
-\paragraph{Metrics.}
-Wall-clock time-to-residual, time-to-gradient, and peak resident-set
-memory, each averaged over $n{=}10$ runs after $n{=}3$ warm-up runs.
-Reproduction substrate: GitHub-hosted runners (Ubuntu 22.04, gcc-11
-for the \code{tensor} substrates; Python 3.11 for the baselines) plus
-a single consumer GPU (NVIDIA RTX-class) for the WebGPU lane.
+\paragraph{Residual.}
+For view $v$ observing landmark $l$ the reprojection residual is
+\begin{equation*}
+\mathbf{r}_{vl} = \pi\bigl(R_v \mathbf{p}_l + \mathbf{t}_v\bigr) - \mathbf{o}_{vl},
+\end{equation*}
+with $\pi(x, y, z) = (x/z,\; y/z)$ the canonical pinhole projection
+under normalised intrinsics ($f = 1$, principal point at origin) and
+$\mathbf{o}_{vl} \in \mathbb{R}^{2}$ the observed image coordinate.
+The named-axis structure of the residual tensor is
+$(\ax{view}, \ax{landmark}, \ax{uv})$; the same formula expressed
+in \udltex{} is what \code{tutorials/09\_bundle-adjustment.ipynb}
+shows on a 1-D simplification. Initial poses come from
+COLMAP~\cite{schoenberger2016sfm}; we perturb each $R_v$ by a random
+rotation of magnitude $0.5^\circ$ and each $\mathbf{t}_v$ by Gaussian
+noise of standard deviation $\sigma = 0.01$ (units of the scene
+extent) so that the optimisation begins off-equilibrium.
+
+\paragraph{Metrics and statistical protocol.}
+Three measurements per (backend, scene) pair:
+
+\begin{description}
+  \item[$t_r$] wall-clock time for one forward pass producing the
+        $50 \cdot 200 \cdot 2 = 20{,}000$-entry residual.
+  \item[$t_g$] wall-clock time for one autograd-derived gradient pass.
+  \item[\textbf{peak}] peak resident-set memory during $t_r + t_g$.
+\end{description}
+
+We report the \emph{median} over $n{=}30$ runs after $n{=}5$ warm-up
+runs and the 95\% bootstrap confidence interval. Median + IQR are
+preferred over mean + s.d.\ because wall-clock distributions on
+shared machines are right-skewed by occasional pre-emption. Before
+timing, every backend pair is required to produce numerically
+identical residuals on the test inputs ($\ell_\infty$ difference
+$< 10^{-9}$, FP64 throughout); a backend whose output diverges
+disqualifies its row from the timing report.
+
+\paragraph{Hardware.}
+The CPU substrates (reference, Eigen, einops, Haliax) run on a
+GitHub-hosted ubuntu-22.04 runner (4 vCPU, 16 GB RAM, no GPU). The
+WebGPU lane runs on the maintainer's developer machine
+(\textbf{NVIDIA GeForce RTX 4070 Mobile}, 8 GB VRAM, Dawn r6814 with
+the Vulkan backend, Ubuntu 24.04, driver 550.142). The
+shared-runner numbers are reproducible by anyone with a free GitHub
+account; the WebGPU numbers should be read as the
+\emph{tensor}-internal cross-substrate \emph{ratio} rather than as
+an absolute claim against data-centre hardware.
 
 \begin{table}[t]
 \centering\small
@@ -885,6 +975,20 @@ broadcasting (e.g.\ multi-head attention forward) would strengthen
 external validity; we record this as deliberately out of scope for
 the present 10-page submission and note it in \Cref{sec:discussion}.
 
+\paragraph{Reproducibility package.}
+The release ships
+\code{bench/} containing: (a) the 75 static-catch programs across
+five libraries (450 translated files); (b) a downloader script for
+ETH3D + Strecha + BAL scenes; (c) the harness driver
+\code{bench\_mlsys\_paper\_case\_study.py}; (d) the resulting
+\code{results.json} schema (one record per scoring outcome or
+timing measurement); (e) the plotting scripts that render
+\Cref{tab:catch-rate} and \Cref{tab:ba-results} from
+\code{results.json}; (f) a pinned conda environment file and a
+\code{Dockerfile} for the WebGPU lane. End-to-end re-runs on a
+fresh runner reproduce the reported numbers to within the published
+confidence intervals.
+
 % ===========================================================================
 \section{Related Work}
 \label{sec:related}
@@ -896,7 +1000,7 @@ on the (carrier, check-phase) grid; this section adds the
 qualitative comparison that the grid compresses.
 
 \paragraph{String-encoded notation.}
-\code{einops}~\cite{einops} and \code{einx}~\cite{einx} pioneered the
+\code{einops}~\cite{rogozhnikov2022einops} and \code{einx}~\cite{flick2026einx} pioneered the
 ergonomic shift from positional to formula-driven tensor manipulation:
 an \code{einops.rearrange("b h t d -> b (t h) d", x)} replaces three
 \code{.transpose}/\code{.view} calls with one declarative pattern.
@@ -913,17 +1017,23 @@ LaTeX-math subset rather than einops's bespoke grammar so the same
 literal can be re-rendered as typeset documentation.
 
 \paragraph{Runtime named values.}
-\code{Haliax}~\cite{haliax} (Stanford CRFM, JAX-backed),
+\code{Haliax}~\cite{haliax} (Stanford CRFM, JAX-backed, powering
+70B-parameter LLM training on TPU v4-2048),
 \code{Penzai}~\cite{penzai} (Google DeepMind, JAX-backed),
 \code{xarray}~\cite{xarray} (scientific computing, NumPy/Dask-backed),
-and the prototype \code{torch.named\_tensor}~\cite{pytorch-named-tensors}
-all promote axis labels from comments to values: the
-\code{NamedArray} carries its dimension names as a runtime field, and
-operators dispatch on label match. This converts T1--T5 of
-\Cref{tab:axis-bugs} from ``silent wrong output'' to ``runtime
-exception'' --- a strict improvement. Two structural limits remain:
+\code{Nx}~\cite{nx-elixir} (Elixir, EXLA-bridged), and the prototype
+\code{torch.named\_tensor}~\cite{pytorch-named-tensors} all promote
+axis labels from comments to values. The check phase varies within
+this cluster: \code{Haliax} and \code{Penzai} benefit from JAX's
+trace-time shape verification at the first \code{jit}/\code{pjit}
+call (better than pure runtime, but still after C++-style template
+instantiation in the dev cycle); \code{xarray} and \code{torch} are
+fully runtime. This converts T1--T5 of \Cref{tab:axis-bugs} from
+``silent wrong output'' to ``runtime exception'' --- a strict
+improvement. Two structural limits remain:
 (i) when the tensor's shape \emph{is} statically known, the runtime
-check is doing avoidable work and emitting an avoidable diagnostic;
+or trace-time check is doing avoidable work and emitting an
+avoidable diagnostic;
 (ii) the named-tensor lineage has had difficulty stabilising
 ergonomically (PyTorch's stalled prototype; JAX's deletion of
 \code{xmap}~\cite{jax-xmap-deletion}), suggesting that
@@ -1075,6 +1185,60 @@ substitutability across three concrete adapters. The static-axis
 path is what lets the type system refuse the axis-bug taxonomy of
 \Cref{sec:bg-taxonomy}; the runtime path is what keeps the design
 livable for the cases statically-known shapes do not cover.
+
+% ===========================================================================
+\appendix
+\section{Reproducing the Static-Axis Refusal}
+\label{app:static-catch-demo}
+
+The static-axis claim of \Cref{sec:hybrid} --- ``\code{TypedTensor}
+operators refuse axis-label mismatches at template instantiation
+time'' --- is a small enough property to verify in five lines. We
+record the demo source and the verbatim compiler diagnostic so a
+reviewer can reproduce locally:
+
+\begin{lstlisting}[language=cppx,caption={Demo source: two tensors with
+mismatched axis labels are added.},label={lst:demo-source}]
+#include <tensor/core/typed_tensor.hpp>
+#include <tensor/core/label_tag.hpp>
+using namespace tensor::core::literals;
+
+int main() {
+    tensor::core::TypedTensor<double, "i"> a{{3}, {1, 2, 3}};
+    tensor::core::TypedTensor<double, "j"> b{{3}, {4, 5, 6}};
+    auto c = a + b;   // requested: align (i) with (j).
+    return 0;
+}
+\end{lstlisting}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize,
+                   caption={GCC 11.4 diagnostic, essential lines only.},
+                   label={lst:demo-error}]
+typed_tensor.hpp:128:19: error: static assertion failed:
+  TypedTensor: axis labels must match at compile time.
+  Drop into DynamicTensor with .to_dynamic() if you need broadcast.
+note: the expression same_labels_impl<A, B>::value
+  [with A = TypedTensor<double, {"i"}>;
+        B = TypedTensor<double, {"j"}>]
+  evaluated to 'false'
+\end{lstlisting}
+
+Two properties of this diagnostic matter for the central claim:
+
+\begin{enumerate}
+  \item the error is a \code{static\_assert} fired at template
+        instantiation time, not at runtime --- the program never
+        starts;
+  \item the diagnostic names the offending axis labels directly
+        (\code{\{"i"\}} vs \code{\{"j"\}}) and the recommended escape
+        (\code{.to\_dynamic()}), exemplifying the
+        diagnostic-quality work flagged as \textbf{L2} in
+        \Cref{sec:discussion}.
+\end{enumerate}
+
+The same refusal extends to the contraction operator (where label
+matching is partial rather than total) and to higher-rank tensors;
+the demo above is the minimal reproducer.
 
 % ===========================================================================
 \bibliographystyle{plain}

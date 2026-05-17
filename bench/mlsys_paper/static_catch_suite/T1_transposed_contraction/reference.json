@@ -1,0 +1,12 @@
+{
+  "description": "T1 transposed contraction. The programmer intends Q @ K^T with Q : (B,H,T,D) and K : (B,H,T,D); the bug version receives a Q laid out (B,T,H,D) and the resulting attention matrix is the wrong tensor.",
+  "intended_output_shape": [2, 4, 8, 8],
+  "intended_output_axes": ["batch", "head", "query_time", "key_time"],
+  "intended_output_construction": "softmax(Q.einsum('bhtd, bhsd -> bhts', K) / sqrt(D), dim=-1)",
+  "bug_class": "T1",
+  "tolerance": {
+    "kind": "numerical_linf",
+    "value": 1e-6
+  },
+  "reference_value_npz_path": "reference_value.npz"
+}
