@@ -202,6 +202,210 @@
 }
 
 % ===========================================================================
+% ML frameworks (foundational)
+% ===========================================================================
+
+@inproceedings{paszke2019pytorch,
+  author    = {Paszke, Adam and Gross, Sam and Massa, Francisco and Lerer, Adam and Bradbury, James and Chanan, Gregory and Killeen, Trevor and Lin, Zeming and Gimelshein, Natalia and Antiga, Luca and others},
+  title     = {{PyTorch}: An Imperative Style, High-Performance Deep Learning Library},
+  booktitle = {Advances in Neural Information Processing Systems ({NeurIPS})},
+  year      = {2019}
+}
+
+@inproceedings{ansel2024pytorch2,
+  author    = {Ansel, Jason and Yang, Edward and He, Horace and Gimelshein, Natalia and Jain, Animesh and Voznesensky, Michael and Bao, Bin and Bell, Peter and Berard, David and Burovski, Evgeni and others},
+  title     = {{PyTorch} 2: Faster Machine Learning through Dynamic {P}ython Bytecode Transformation and Graph Compilation},
+  booktitle = {{ASPLOS}},
+  year      = {2024}
+}
+
+@misc{jax2018github,
+  author       = {Bradbury, James and Frostig, Roy and Hawkins, Peter and Johnson, Matthew James and Leary, Chris and Maclaurin, Dougal and Necula, George and Paszke, Adam and Vander{P}las, Jake and Wanderman-{M}ilne, Skye and Zhang, Qiao},
+  title        = {{JAX}: composable transformations of {P}ython{+}{N}um{P}y programs},
+  howpublished = {\url{http://github.com/jax-ml/jax}},
+  year         = {2018--2026}
+}
+
+% ===========================================================================
+% Compilers and IRs for ML
+% ===========================================================================
+
+@inproceedings{lattner2021mlir,
+  author    = {Lattner, Chris and Amini, Mehdi and Bondhugula, Uday and Cohen, Albert and Davis, Andy and Pienaar, Jacques and Riddle, River and Shpeisman, Tatiana and Vasilache, Nicolas and Zinenko, Oleksandr},
+  title     = {{MLIR}: Scaling Compiler Infrastructure for Domain Specific Computation},
+  booktitle = {{IEEE/ACM} International Symposium on Code Generation and Optimization ({CGO})},
+  year      = {2021}
+}
+
+@inproceedings{tillet2019triton,
+  author    = {Tillet, Philippe and Kung, H.~T. and Cox, David},
+  title     = {{Triton}: An Intermediate Language and Compiler for Tiled Neural Network Computations},
+  booktitle = {{ACM SIGPLAN} International Workshop on Machine Learning and Programming Languages ({MAPL})},
+  year      = {2019}
+}
+
+@inproceedings{maclaurin2019dex,
+  author    = {Maclaurin, Dougal and Radul, Alexey and Johnson, Matthew J. and Vytiniotis, Dimitrios},
+  title     = {You Only Linearize Once: Tangents Transpose to Gradients},
+  booktitle = {Proc.\ {ACM} Program.\ Lang.\ ({POPL})},
+  year      = {2023}
+}
+
+@inproceedings{paszke2021dex,
+  author    = {Paszke, Adam and Johnson, Daniel D.\ and Duvenaud, David and Vytiniotis, Dimitrios and Radul, Alexey and Johnson, Matthew J. and Ragan-Kelley, Jonathan and Maclaurin, Dougal},
+  title     = {Getting to the Point: Index Sets and Parallelism-Preserving Autodiff for Pointful Array Programming},
+  booktitle = {Proc.\ {ACM} Program.\ Lang.\ ({ICFP})},
+  year      = {2021},
+  note      = {The {D}ex language: index-set typed array programming.}
+}
+
+@misc{modular2024mojo,
+  author       = {{Modular}},
+  title        = {The {M}ojo programming language},
+  howpublished = {\url{https://www.modular.com/mojo}},
+  year         = {2023--2026},
+  note         = {{MLIR}-backed systems language with compile-time metaprogramming aimed at the {ML} domain.}
+}
+
+% ===========================================================================
+% Differentiable simulation and bundle adjustment
+% ===========================================================================
+
+@article{triggs2000bundle,
+  author    = {Triggs, Bill and McLauchlan, Philip F.\ and Hartley, Richard I.\ and Fitzgibbon, Andrew W.},
+  title     = {Bundle Adjustment --- A Modern Synthesis},
+  journal   = {Vision Algorithms: Theory and Practice ({S}pringer)},
+  year      = {2000}
+}
+
+@misc{agarwal2010ceres,
+  author       = {Agarwal, Sameer and Mierle, Keir and others},
+  title        = {{Ceres} {S}olver},
+  howpublished = {\url{http://ceres-solver.org}},
+  year         = {2010--2026},
+  note         = {The widely-deployed C++ nonlinear least-squares library; provides {B}A and {SLAM} reference implementations.}
+}
+
+@inproceedings{pineda2022theseus,
+  author    = {Pineda, Luis and Fan, Taosha and Monge, Maurizio and Venkataraman, Shobha and Sodhi, Paloma and Chen, Ricky T.~Q.\ and Ortiz, Joseph and DeTone, Daniel and Wang, Austin and Anderson, Stuart and others},
+  title     = {{Theseus}: A Library for Differentiable Nonlinear Optimization},
+  booktitle = {Advances in Neural Information Processing Systems ({NeurIPS})},
+  year      = {2022}
+}
+
+@inproceedings{hu2020difftaichi,
+  author    = {Hu, Yuanming and Anderson, Luke and Li, Tzu-Mao and Sun, Qi and Carr, Nathan and Ragan-Kelley, Jonathan and Durand, Fr{\'e}do},
+  title     = {{DiffTaichi}: Differentiable Programming for Physical Simulation},
+  booktitle = {International Conference on Learning Representations ({ICLR})},
+  year      = {2020}
+}
+
+% ===========================================================================
+% Modern C++: type-system features the design depends on
+% ===========================================================================
+
+@misc{cpp20-p0732,
+  author       = {Maurer, Jens},
+  title        = {{P0732}: Class Types in Non-Type Template Parameters},
+  howpublished = {{ISO C++ committee paper}, \url{https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0732r2.pdf}},
+  year         = {2018},
+  note         = {The C++20 feature that admits \texttt{FixedString} (structural class types) as non-type template parameters.}
+}
+
+@misc{cpp23-mdspan,
+  author       = {Hollman, D. S.\ and Sunderland, Damien and Mendoza, Nevin and Lelbach, Bryce and Vasylenko, Oleksandr and Rivera, Christian and Trott, Christian},
+  title        = {{P0009}: {MDSPAN} --- A {N}on-{O}wning {M}ulti{D}imensional {A}rray {R}eference},
+  howpublished = {{ISO C++ committee paper}, \url{https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0009r17.html}},
+  year         = {2022},
+  note         = {Standardised as C++23 \texttt{std::mdspan}; the non-owning view that every tensor library should interoperate with.}
+}
+
+@misc{cpp26-stdlinalg,
+  author       = {Hoemmen, Mark and Badwaik, Daisy and Bell, Mark and Coates, Jay and Crawford, Lyle and others},
+  title        = {{P1673}: A free function linear algebra interface based on the {BLAS}},
+  howpublished = {{ISO C++ committee paper}, \url{https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p1673r13.html}},
+  year         = {2023},
+  note         = {Slated for C++26; \texttt{std::linalg} over \texttt{std::mdspan}.}
+}
+
+@article{trott2022kokkos,
+  author    = {Trott, Christian and Berger-Vergiat, Luc and Poliakoff, David and Rajamanickam, Sivasankaran and Lebrun-Grandi{\'e}, Damien and Madsen, Jonathan and Awar, Nader Al and Gligoric, Milos and Shipman, Galen and Womeldorff, Geoff},
+  title     = {The {K}okkos Ecosystem: Comprehensive Performance Portability for High Performance Computing},
+  journal   = {Computing in Science \& Engineering},
+  year      = {2022}
+}
+
+@article{guennebaud2010eigen,
+  author    = {Guennebaud, Ga{\"e}l and Jacob, Beno{\^\i}t and others},
+  title     = {{Eigen} v3},
+  journal   = {\url{http://eigen.tuxfamily.org}},
+  year      = {2010--2026},
+  note      = {The de-facto C++ dense linear algebra template library.}
+}
+
+% ===========================================================================
+% Static / type-level axis checking in the literature
+% ===========================================================================
+
+@inproceedings{rink2018modeling,
+  author    = {Rink, Norman A.\ and Castrillon, Jeronimo},
+  title     = {Modeling of {L}anguages for {T}ensor {M}anipulation},
+  booktitle = {arXiv:1801.08771},
+  year      = {2018},
+  note      = {Surveys the design space of typed tensor languages; argues for axis-name-bearing types as the foundation.}
+}
+
+@article{hasktorch2020,
+  author    = {Stites, Sam and Hagensen, Austin and Misra, Sayak and Petrosyan, Vahagn and others},
+  title     = {Typed {T}ensors with {H}askell},
+  journal   = {Haskell Symposium informal proceedings},
+  year      = {2020},
+  note      = {Tensor library where Haskell's type system enforces dimension consistency; the type-level approach paid for in Haskell's higher-kinded types.}
+}
+
+@inproceedings{krishnan2024shapelang,
+  author    = {Krishnan, Vinay and Goens, Andr{\'e}s and Hoffmann, Henry and Cohen, Albert},
+  title     = {Shape-Polymorphic Functions for Tensor Programs},
+  booktitle = {{ICFP}},
+  year      = {2024},
+  note      = {Type-level rank polymorphism via index-set kinds; closest theoretical ancestor of the hybrid \texttt{NTTP} $\times$ \texttt{DynamicShape} approach.}
+}
+
+% ===========================================================================
+% Recent ML systems papers — substrate evolution
+% ===========================================================================
+
+@inproceedings{nvidia2017cutlass,
+  author    = {Kerr, Andrew and Demouth, Julien and Edelsbrunner, Jonathan and Kanwar, Manish and Lai, Wenchang and Mansur, Sufian and Ranjan, Aditya and Vinod, Vipin},
+  title     = {{CUTLASS}: A {NVIDIA} {C}++ Template Library for {GPU} {LinAlg}},
+  booktitle = {{GPU Technology Conference}},
+  year      = {2017--2026},
+  note      = {The C++ template library NVIDIA uses internally to express tile-level GEMM kernels.}
+}
+
+@inproceedings{abadi2016tensorflow,
+  author    = {Abadi, Mart{\'\i}n and Barham, Paul and Chen, Jianmin and Chen, Zhifeng and Davis, Andy and Dean, Jeffrey and Devin, Matthieu and Ghemawat, Sanjay and Irving, Geoffrey and Isard, Michael and others},
+  title     = {{TensorFlow}: A System for Large-Scale Machine Learning},
+  booktitle = {{USENIX} Symposium on Operating Systems Design and Implementation ({OSDI})},
+  year      = {2016}
+}
+
+@inproceedings{chen2018tvm,
+  author    = {Chen, Tianqi and Moreau, Thierry and Jiang, Ziheng and Zheng, Lianmin and Yan, Eddie and Cowan, Meghan and Shen, Haichen and Wang, Leyuan and Hu, Yuwei and Ceze, Luis and others},
+  title     = {{TVM}: An Automated End-to-End Optimizing Compiler for Deep Learning},
+  booktitle = {{USENIX} Symposium on Operating Systems Design and Implementation ({OSDI})},
+  year      = {2018}
+}
+
+@misc{burn2024rust,
+  author       = {Tracel-{AI}},
+  title        = {{Burn}: A Comprehensive Dynamic {D}eep {L}earning {F}ramework in {R}ust},
+  howpublished = {\url{https://github.com/tracel-ai/burn}},
+  year         = {2022--2026},
+  note         = {Rust ML framework with multi-backend support including WebGPU via \texttt{wgpu}; the closest non-C++ analogue to this work's substrate-portability claim.}
+}
+
+% ===========================================================================
 % GPU substrate
 % ===========================================================================
 
@@ -210,4 +414,12 @@
   title        = {{D}awn: A {W}eb{GPU} implementation},
   howpublished = {\url{https://dawn.googlesource.com/dawn}},
   year         = {2020--2026}
+}
+
+@inproceedings{kenwright2024webgpu,
+  author    = {Kenwright, Ben},
+  title     = {Introduction to {WebGPU} for the Browser},
+  booktitle = {{ACM SIGGRAPH} Courses},
+  year      = {2024},
+  note      = {Tutorial-level reference for the WebGPU model; complements the Dawn implementation URL.}
 }
