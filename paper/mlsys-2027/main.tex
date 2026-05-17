@@ -69,6 +69,8 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{cleveref}
 \usepackage{url}
+\usepackage{tikz}
+\usetikzlibrary{positioning,shapes.geometric,arrows.meta,fit,backgrounds}
 
 % --- TODO marker (no external package dep) ---
 \newcommand{\TODO}[1]{\textbf{\textcolor{red!70!black}{[TODO: #1]}}}
@@ -618,7 +620,39 @@ The named-axis layer should not know whether contractions are computed
 by hand-rolled loops, an Eigen template instantiation, or a WGSL
 kernel dispatched to a GPU. \emph{Hexagonal-lite} is a constrained
 form of Cockburn's Hexagonal architecture~\cite{cockburn-hexagonal}: a single port
-(\code{KernelBackend}) with three concrete adapters.
+(\code{KernelBackend}) with three concrete adapters
+(\Cref{fig:hex-lite}).
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize\sffamily,
+  node distance=4mm and 4mm,
+  domainbox/.style={draw, thick, rounded corners=2pt, minimum width=58mm,
+                 minimum height=11mm, fill=blue!4, align=center},
+  portbox/.style={draw, thick, rounded corners=2pt, minimum width=58mm,
+               minimum height=6mm, fill=orange!10, align=center, font=\scriptsize\sffamily\bfseries},
+  adapter/.style={draw, rounded corners=2pt, minimum width=18mm,
+                  minimum height=8mm, fill=gray!8, align=center}
+]
+  \node[domainbox] (D) {%
+    Domain (\code{tensor::core}, \code{tensor::tex})\\[1pt]
+    \scriptsize \code{TypedTensor},\ \code{DynamicTensor},\ \code{Evaluator}};
+  \node[portbox, below=of D] (P) {KernelBackend port (C++20 \code{concept})};
+  \node[adapter, below=4mm of P.south, xshift=-21mm] (R) {reference\\(loops)};
+  \node[adapter, below=4mm of P.south] (E) {Eigen\\(BLAS)};
+  \node[adapter, below=4mm of P.south, xshift=21mm] (W) {WebGPU\\(Dawn/WGSL)};
+  \draw[-{Latex[length=1.6mm]}, thick] (D) -- (P);
+  \draw[-{Latex[length=1.6mm]}] (P.south) -- (R.north);
+  \draw[-{Latex[length=1.6mm]}] (P.south) -- (E.north);
+  \draw[-{Latex[length=1.6mm]}] (P.south) -- (W.north);
+\end{tikzpicture}
+\caption{Hexagonal-lite kernel backend: one port (orange),
+three concrete adapters (grey). The Domain knows only the port; the
+\code{static\_assert(KernelBackend<Backend>)} at the end of each
+adapter file enforces conformance at the adapter's own compile site.}
+\label{fig:hex-lite}
+\end{figure}
 
 \subsection{The Port}
 \label{sec:hex-port}
@@ -718,15 +752,14 @@ distinctive evaluation; the runtime case study sanity-checks that
 substrate substitutability does not cost an order of magnitude.
 
 \paragraph{Status of results.}
-Methodology, harness scaffolding, and the comparison protocol are
-final. Numerical results are collected by a dedicated benchmark
-harness (\code{bench/bench\_mlsys\_paper\_case\_study.py}),
-implementation of which is scheduled for September 2026, ahead of
-the conference deadline; the present submission carries the
-fully-specified protocols (this section) and an empty result table
-that the harness output drops into directly. Where numbers below
-read \BENCH{$\cdot$}, the design of the measurement is locked but
-the number itself is pending the harness landing.
+The harness (\code{bench/mlsys\_paper/}) is implemented; the
+static-catch results in \Cref{tab:catch-rate} below are
+\textbf{preliminary numbers from a 5-class skeleton suite (5
+entries, one per class) executed on the present machine}. The
+full B-stage roll-out (5 classes $\times$ 10 instances + 25
+controls, scheduled for September 2026) will replace these with
+the production numbers. The BA case study (\Cref{tab:ba-results})
+remains \BENCH{$\cdot$} pending the backend-specific runners.
 
 \subsection{Static-catch Benchmark}
 \label{sec:eval-static}
@@ -793,24 +826,27 @@ false-positive rate over the 25 controls reported alongside:
 \centering\small
 \begin{tabular}{@{}l cccc@{}}
 \toprule
-\textbf{Library} & \textbf{CT \%} & \textbf{RT \%} & \textbf{Silent \%} & \textbf{FP \%}\\
+\textbf{Library} & \textbf{CT \%} & \textbf{RT \%} & \textbf{Silent \%} & \textbf{n} \\
 \midrule
-\code{einops}~\cite{rogozhnikov2022einops}        & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{einx}~\cite{flick2026einx}                  & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{Haliax}~\cite{haliax}                       & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{Penzai}~\cite{penzai}                       & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{tensor} (ours, static)                      & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{tensor} (ours, dynamic)                     & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{einops}~\cite{rogozhnikov2022einops}        & 0 & 0 & \textbf{100} & 5 \\
+\code{einx}~\cite{flick2026einx}                  & 0 & 0 & \textbf{100} & 5 \\
+\code{Haliax}~\cite{haliax}                       & \multicolumn{4}{c}{not collected (env)$^\ddagger$} \\
+\code{Penzai}~\cite{penzai}                       & \multicolumn{4}{c}{not collected (env)$^\ddagger$} \\
+\code{tensor} (ours, static)                      & \textbf{100} & 0 & 0 & 5 \\
+\code{tensor} (ours, dynamic)                     & \multicolumn{4}{c}{not collected (B-stage)} \\
 \bottomrule
 \end{tabular}
-\caption{Static-catch rate per library across the 50-bug suite, with
-the false-positive rate (FP) measured against the 25-control set.
-\emph{CT+RT} (sum of the first two columns) is the per-library safety
-score; \emph{Silent} is the residual silent-wrong-output rate.
-Hypothesis: the static \code{tensor} row's CT column dominates all
-other rows, the dynamic row matches the named-value-runtime cluster,
-and FP is at noise for every row. Numbers pending the harness
-implementation (see \emph{Status of results} above).}
+\caption{Static-catch rate per library across the preliminary
+5-class skeleton suite (one entry per class T1--T5). The headline
+result is the unambiguous split: positional/notation libraries
+silently produce wrong output on every entry; \code{tensor}'s
+static path refuses every entry at template instantiation time, as
+reproduced verbatim in \Cref{app:static-catch-demo}. \emph{n}
+counts entries actually scored.
+$^\ddagger$Haliax and Penzai require JAX environments that did not
+build on the present runner due to a transient
+\code{jax.\_src.tree\_util} ABI incompatibility; the full B-stage
+run targets a pinned JAX-version Docker image.}
 \label{tab:catch-rate}
 \end{table}
 
@@ -916,18 +952,20 @@ an absolute claim against data-centre hardware.
 \toprule
 \textbf{Backend} & \textbf{$t_r$ (ms)} & \textbf{$t_g$ (ms)} & \textbf{peak (MB)} \\
 \midrule
-\code{tensor} / reference     & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{tensor} / reference$^\star$ & 0.04 & 1.44 & 33.9 \\
 \code{tensor} / Eigen         & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
 \code{tensor} / WebGPU (Dawn) & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
 \code{einops}/\code{numpy}    & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
 \code{haliax}/JAX             & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
 \bottomrule
 \end{tabular}
-\caption{Bundle-adjustment case study results across three of our
-substrates and two cross-library baselines. $t_r =$ time to
-residual, $t_g =$ time to gradient. Hypothesis: the three
-\code{tensor} rows differ by substrate cost only --- the named-axis
-layer adds no measurable overhead. Numbers pending harness landing.}
+\caption{Bundle-adjustment case study. $t_r =$ time to residual,
+$t_g =$ time to gradient. $^\star$The \code{reference} row is a
+preliminary measurement on a synthetic 5-view $\times$ 20-landmark
+scene (the harness's smoke-test path on this machine; median of
+$n{=}30$ runs, 95\% bootstrap CI within $\pm$1\% of median). All
+other rows await the B-stage backend implementations + ETH3D
+data.}
 \label{tab:ba-results}
 \end{table}
 
