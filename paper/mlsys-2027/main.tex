@@ -57,7 +57,8 @@
   backgroundcolor=\color{gray!8},
   xleftmargin=2em,
   xrightmargin=1em,
-  belowskip=-0.5em
+  belowskip=-0.5em,
+  literate={—}{{\textendash\textendash}}1{→}{{$\rightarrow$}}1
 }
 \lstdefinelanguage{cppx}[]{C++}{
   morekeywords={requires,concept,consteval,constinit,co_await,co_return,co_yield},
@@ -131,9 +132,20 @@ Consider a researcher writing a multi-head attention block. They
 compose two linear projections, a softmax, and a matmul. The shapes
 type-check at every step --- every intermediate has the right number of
 dimensions --- yet the network silently produces incorrect outputs at
-training time, because two axes were transposed five lines up. The
-type system saw a $(B,H,T,D)$ tensor where the writer meant
-$(B,T,H,D)$; the names lived only in a comment.
+training time, because two axes were transposed five lines up
+(\Cref{lst:intro-bug}):
+
+\begin{lstlisting}[language=cppx,caption={The motivating bug. The
+type system sees a $(B,H,T,D)$ tensor where the writer meant
+$(B,T,H,D)$; the names live only in the comment.},
+label={lst:intro-bug}]
+// Q : (B, H, T, D)  — assumed batch, head, time, dim.
+auto scores = Q.matmul(K.transpose(-2, -1)) / std::sqrt(D);
+auto attn   = softmax(scores, /*axis=*/-1);
+// ...but Q was actually built (B, T, H, D) upstream. Shapes still
+// agree, scores still rank-4, attn still numerically finite ---
+// gradients silently flow through the wrong heads.
+\end{lstlisting}
 
 This failure mode is endemic. PyTorch's named-tensor prototype was
 introduced in 2019 specifically to refute it; six years on it remains
@@ -482,6 +494,19 @@ operators, no rank-polymorphic patterns, no run-time--constructed
 strings (the literal arrives as \code{char const*}). Cases the
 grammar cannot express are carried by the hybrid system of
 \Cref{sec:hybrid}.
+
+\paragraph{Why C++ specifically?}
+NTTP \emph{class-type} parameters (C++20, P0732) are what makes
+\code{LabelTag<"i">} a structural type whose identity is the label
+itself; Rust's const generics are not yet at this expressiveness
+(\code{const N: \&'static str} is stable but value-structural NTTPs
+remain unstable~as of edition 2024), Swift's generic parameters do
+not admit string-literal NTTPs, and Mojo's parameter system is too
+young to claim stability. C++ is the language that ships the type
+machinery our design depends on; the AST representation and parser
+are otherwise portable in principle. We do not claim the design must
+remain C++-bound forever, only that it is built where it can be
+built today.
 
 % ===========================================================================
 \section{Design 2: Hybrid NTTP $\times$ DynamicShape}
