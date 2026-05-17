@@ -149,14 +149,17 @@ auto attn   = softmax(scores, /*axis=*/-1);
 // gradients silently flow through the wrong heads.
 \end{lstlisting}
 
-This failure mode is endemic. PyTorch's named-tensor prototype was
-introduced in 2019 specifically to refute it; six years on it remains
-labelled ``prototype, subject to change'' and the
-community-tracking issue records that development has
-stalled~\cite{pytorch-named-tensors}.
-JAX's analogous \code{xmap} was deleted in 2024~\cite{jax-xmap-deletion}.
-The bug is well-known; what is missing is a design that the host
-language's type system can refuse, not merely a runtime that throws.
+This failure mode is endemic across the deep-learning framework
+generation~\cite{paszke2019pytorch, ansel2024pytorch2, jax2018github,
+abadi2016tensorflow}: every major framework's tensor type is rank-
+and shape-typed but axis-name agnostic. PyTorch's named-tensor
+prototype was introduced in 2019 specifically to refute the
+attention-block bug; six years on it remains labelled ``prototype,
+subject to change'' and the community-tracking issue records that
+development has stalled~\cite{pytorch-named-tensors}. JAX's analogous
+\code{xmap} was deleted in 2024~\cite{jax-xmap-deletion}. The bug is
+well-known; what is missing is a design that the host language's
+type system can refuse, not merely a runtime that throws.
 Existing libraries respond along two axes:
 
 \begin{itemize}
@@ -498,17 +501,23 @@ grammar cannot express are carried by the hybrid system of
 \Cref{sec:hybrid}.
 
 \paragraph{Why C++ specifically?}
-NTTP \emph{class-type} parameters (C++20, P0732) are what makes
-\code{LabelTag<"i">} a structural type whose identity is the label
-itself; Rust's const generics are not yet at this expressiveness
-(\code{const N: \&'static str} is stable but value-structural NTTPs
-remain unstable~as of edition 2024), Swift's generic parameters do
-not admit string-literal NTTPs, and Mojo's parameter system is too
-young to claim stability. C++ is the language that ships the type
-machinery our design depends on; the AST representation and parser
-are otherwise portable in principle. We do not claim the design must
-remain C++-bound forever, only that it is built where it can be
-built today.
+NTTP \emph{class-type} parameters (C++20, P0732~\cite{cpp20-p0732})
+are what makes \code{LabelTag<"i">} a structural type whose identity
+is the label itself. Rust's const generics are not yet at this
+expressiveness (\code{const N: \&'static str} is stable but
+value-structural NTTPs remain unstable as of edition 2024); Swift's
+generic parameters do not admit string-literal NTTPs;
+Mojo~\cite{modular2024mojo} is MLIR-backed with promising
+compile-time metaprogramming but is too young to claim stability.
+The complementary C++23 (\code{std::mdspan})~\cite{cpp23-mdspan} and
+C++26 (\code{std::linalg})~\cite{cpp26-stdlinalg} standardise the
+shape view and BLAS-flavoured operators that this design composes
+with at the kernel-substrate boundary. The Rust ecosystem's closest
+counterpart in spirit (\code{Burn}~\cite{burn2024rust}) shows the
+multi-backend portability claim ports cleanly across languages but
+its axis types remain runtime-checked. We do not claim the design
+must remain C++-bound forever, only that it is built where it can
+be built today.
 
 % ===========================================================================
 \section{Design 2: Hybrid NTTP $\times$ DynamicShape}
@@ -728,9 +737,13 @@ point where the adapter is defined, not a runtime surprise.
 \begin{description}
   \item[Reference] portable naive nested-loop implementation; defines
         the semantics that the other substrates must match.
-  \item[Eigen] BLAS-routed contractions for CPU performance baseline;
-        loop fusion via Eigen's expression templates.
-  \item[WebGPU via Dawn]~\cite{dawn} GPU substrate compiled to
+  \item[Eigen]~\cite{guennebaud2010eigen} BLAS-routed contractions
+        for CPU performance baseline; loop fusion via Eigen's
+        expression templates. Future substrates can target
+        Kokkos~\cite{trott2022kokkos} (the closest open-source
+        performance-portability framework) or
+        CUTLASS~\cite{nvidia2017cutlass} for GPU tile-level GEMMs.
+  \item[WebGPU via Dawn]~\cite{dawn,kenwright2024webgpu} GPU substrate compiled to
         WGSL; vcpkg-vendored Dawn to keep substrate provisioning
         reproducible in CI.
 \end{description}
@@ -828,25 +841,31 @@ false-positive rate over the 25 controls reported alongside:
 \toprule
 \textbf{Library} & \textbf{CT \%} & \textbf{RT \%} & \textbf{Silent \%} & \textbf{n} \\
 \midrule
-\code{einops}~\cite{rogozhnikov2022einops}        & 0 & 0 & \textbf{100} & 5 \\
-\code{einx}~\cite{flick2026einx}                  & 0 & 0 & \textbf{100} & 5 \\
-\code{Haliax}~\cite{haliax}                       & \multicolumn{4}{c}{not collected (env)$^\ddagger$} \\
-\code{Penzai}~\cite{penzai}                       & \multicolumn{4}{c}{not collected (env)$^\ddagger$} \\
-\code{tensor} (ours, static)                      & \textbf{100} & 0 & 0 & 5 \\
-\code{tensor} (ours, dynamic)                     & \multicolumn{4}{c}{not collected (B-stage)} \\
+\code{einops}~\cite{rogozhnikov2022einops}         & 0 & 0 & \textbf{100} & 5 \\
+\code{einx}~\cite{flick2026einx}                   & 0 & 0 & \textbf{100} & 5 \\
+\code{Penzai}~\cite{penzai}                        & 0 & 0 & \textbf{100} & 5 \\
+\code{torch.named\_tensor}~\cite{pytorch-named-tensors,paszke2019pytorch}
+                                                   & 0 & 20$^\sharp$ & 80 & 5 \\
+\code{Haliax}~\cite{haliax}                        & \multicolumn{4}{c}{not collected (env)$^\ddagger$} \\
+\code{tensor} (ours, static)                       & \textbf{100} & 0 & 0 & 5 \\
+\code{tensor} (ours, dynamic)                      & \multicolumn{4}{c}{not collected (B-stage)} \\
 \bottomrule
 \end{tabular}
 \caption{Static-catch rate per library across the preliminary
-5-class skeleton suite (one entry per class T1--T5). The headline
-result is the unambiguous split: positional/notation libraries
-silently produce wrong output on every entry; \code{tensor}'s
-static path refuses every entry at template instantiation time, as
-reproduced verbatim in \Cref{app:static-catch-demo}. \emph{n}
-counts entries actually scored.
-$^\ddagger$Haliax and Penzai require JAX environments that did not
-build on the present runner due to a transient
-\code{jax.\_src.tree\_util} ABI incompatibility; the full B-stage
-run targets a pinned JAX-version Docker image.}
+5-class skeleton suite (one entry per class T1--T5). The split is
+unambiguous: positional/notation libraries silently produce wrong
+output on every entry; \code{tensor}'s static path refuses every
+entry at template instantiation time, as reproduced verbatim in
+\Cref{app:static-catch-demo}.
+$^\sharp$\code{torch.named\_tensor}'s sole RT outcome was an
+\code{aten::permute is not yet supported with named tensors}
+exception --- a measurement of the operator-coverage gap noted in
+\cite{pytorch-named-tensors}, not of axis-mismatch detection.
+$^\ddagger$Haliax requires a pinned-{JAX} environment; the
+2026-05-17 runner shipped {JAX} 0.6 which is incompatible with
+Haliax's current \code{jax.\_src.tree\_util.BuiltInKeyEntry} import.
+The full B-stage roll-out targets a {D}ocker image with the JAX
+version Haliax pins against.}
 \label{tab:catch-rate}
 \end{table}
 
@@ -860,8 +879,13 @@ less ergonomic, more boilerplate) is visible against its benefit
 \label{sec:eval-ba}
 
 \paragraph{Workload.}
-We assemble residuals and Jacobians for the standard bundle-adjustment
-(BA) nonlinear least-squares problem on the
+Bundle adjustment is the canonical nonlinear least-squares problem
+in computer vision (the classical synthesis is
+\cite{triggs2000bundle}; the industrial reference solver is
+Ceres~\cite{agarwal2010ceres}; recent work has wrapped BA in
+differentiable nonlinear-optimisation
+frameworks~\cite{pineda2022theseus,hu2020difftaichi}). We assemble
+residuals and Jacobians for the standard BA formulation on the
 \emph{courtyard} scene of the ETH3D multi-view stereo
 benchmark~\cite{schoeps2017eth3d} (38 high-resolution images,
 COLMAP-format poses obtained via the canonical incremental SfM
@@ -1086,7 +1110,16 @@ Einstein-pattern packs as template arguments;
 \code{Fastor}~\cite{fastor} encodes positional axis extents as
 template parameters and the \code{einsum} as a formula at the type
 level; \code{Tenseur}~\cite{tenseur} explores lazy expression
-templates over BLAS. These libraries
+templates over BLAS. Outside C++, Haskell's
+Hasktorch~\cite{hasktorch2020} encodes dimensions in
+higher-kinded types, and the \code{Dex} array
+language~\cite{paszke2021dex,maclaurin2019dex} types arrays by
+explicit \emph{index sets} that prevent rank-and-name confusion at
+compile time. \cite{krishnan2024shapelang} formalises shape-
+polymorphic functions over index-set kinds, the closest theoretical
+ancestor to our hybrid NTTP $\times$ \code{DynamicShape} discipline;
+the survey~\cite{rink2018modeling} catalogues the design space of
+typed tensor languages. These libraries
 reject mismatches at compile time when the shape is fully static,
 but offer no escape hatch to a runtime-shape regime --- a tensor
 whose rank or extent is learned from disk cannot be expressed
@@ -1098,13 +1131,19 @@ the missing runtime path via \code{DynamicTensor} +
 \paragraph{Compiler-IR and DSLs.}
 \code{TACO}~\cite{kjolstad2017taco}, \code{COMET}~\cite{comet},
 and MLIR's \code{linalg}/\code{tensor}
-dialects~\cite{mlir-linalg} express index-name semantics formally,
-but at the compiler-IR level: the user writes either a target-DSL
-string or invokes the compiler toolchain rather than calling
-library-level operators.
-\code{Halide}~\cite{ragan-kelley2013halide} similarly separates
-algorithm from schedule. \code{tinygrad}~\cite{tinygrad} keeps the
-API at twelve primitive ops and infers shapes positionally. These are useful reference points for what
+dialects~\cite{mlir-linalg,lattner2021mlir} express index-name
+semantics formally, but at the compiler-IR level: the user writes
+either a target-DSL string or invokes the compiler toolchain rather
+than calling library-level operators.
+\code{Halide}~\cite{ragan-kelley2013halide} and
+\code{Triton}~\cite{tillet2019triton} similarly separate algorithm
+from schedule (Halide for image pipelines, Triton for tile-level
+GPU kernels). End-to-end compilers like
+\code{TVM}~\cite{chen2018tvm} and the modernised PyTorch 2
+compile path~\cite{ansel2024pytorch2} consume tensor IRs and
+produce target-specific code.
+\code{tinygrad}~\cite{tinygrad} keeps the API at twelve primitive
+ops and infers shapes positionally. These are useful reference points for what
 ``maximal axis discipline'' looks like at the codegen level; our
 work targets the library-API level with no compiler stage.
 
