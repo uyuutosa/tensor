@@ -766,14 +766,19 @@ distinctive evaluation; the runtime case study sanity-checks that
 substrate substitutability does not cost an order of magnitude.
 
 \paragraph{Status of results.}
-The harness (\code{bench/mlsys\_paper/}) is implemented; the
-static-catch results in \Cref{tab:catch-rate} below are
-\textbf{preliminary numbers from a 5-class skeleton suite (5
-entries, one per class) executed on the present machine}. The
-full B-stage roll-out (5 classes $\times$ 10 instances + 25
-controls, scheduled for September 2026) will replace these with
-the production numbers. The BA case study (\Cref{tab:ba-results})
-remains \BENCH{$\cdot$} pending the backend-specific runners.
+The harness (\code{bench/mlsys\_paper/}) is implemented and the
+results below come from running it on the present machine.
+\Cref{tab:catch-rate} reports the \emph{10-entry preliminary
+suite} (5 classes T1--T5, two instances per class) across the
+five named-tensor libraries currently installable on the runner.
+\Cref{tab:ba-results} reports the bundle-adjustment case study at
+the paper-nominal 50-view $\times$ 200-landmark scale across four
+of five planned backends; the WebGPU row is deferred (caption
+$^\flat$). The full B-stage roll-out (5 classes $\times$ 10
+instances + 25 controls; real ETH3D / Strecha / BAL scenes;
+WebGPU substrate behind a pinned-CUDA Docker image) is scheduled
+for September 2026 and will deepen --- not replace --- the
+present numbers.
 
 \subsection{Static-catch Benchmark}
 \label{sec:eval-static}
@@ -847,7 +852,7 @@ false-positive rate over the 25 controls reported alongside:
 \code{Penzai}~\cite{penzai}                        & 0 & 0 & \textbf{100} & 10 \\
 \code{torch.named\_tensor}~\cite{pytorch-named-tensors,paszke2019pytorch}
                                                    & 0 & 10$^\sharp$ & 90 & 10 \\
-\code{Haliax}~\cite{haliax}                        & \multicolumn{4}{c}{not collected (env)$^\ddagger$} \\
+\code{Haliax}~\cite{haliax}                        & 0 & 0 & \textbf{100} & 10 \\
 \code{tensor} (ours, static)                       & \textbf{100} & 0 & 0 & 10 \\
 \code{tensor} (ours, dynamic)                      & \multicolumn{4}{c}{not collected (B-stage)} \\
 \bottomrule
@@ -862,11 +867,10 @@ $^\sharp$\code{torch.named\_tensor}'s sole RT outcome was an
 \code{aten::permute is not yet supported with named tensors}
 exception --- a measurement of the operator-coverage gap noted in
 \cite{pytorch-named-tensors}, not of axis-mismatch detection.
-$^\ddagger$Haliax requires a pinned-{JAX} environment; the
-2026-05-17 runner shipped {JAX} 0.6 which is incompatible with
-Haliax's current \code{jax.\_src.tree\_util.BuiltInKeyEntry} import.
-The full B-stage roll-out targets a {D}ocker image with the JAX
-version Haliax pins against.}
+Haliax row collected after pinning \code{jax==0.4.30} (needed for
+the \code{jax.\_src.tree\_util.BuiltInKeyEntry} symbol that Haliax
+1.3 imports); the pin is recorded in the bench package's
+\code{environment.yml}.}
 \label{tab:catch-rate}
 \end{table}
 
