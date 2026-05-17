@@ -71,13 +71,37 @@ class SyntheticSmallLoader:
         )
 
 
+@dataclass
+class SyntheticPaperScaleLoader:
+    """50-view × 200-landmark synthetic scene matching the paper's
+    nominal BA workload. Same geometry as synthetic_small, just larger
+    so the timing numbers exercise the substrates' scaling
+    characteristics meaningfully."""
+
+    id: str = "synthetic_paper_scale"
+    n_views: int = 50
+    n_landmarks: int = 200
+    noise_sigma: float = 0.001
+
+    def load(self) -> Scene:
+        loader = SyntheticSmallLoader(
+            id=self.id,
+            n_views=self.n_views,
+            n_landmarks=self.n_landmarks,
+            noise_sigma=self.noise_sigma,
+        )
+        return loader.load()
+
+
 def load_scene(name: str):
     """Return a loader object whose .load() produces a Scene."""
     if name == "synthetic_small":
         return SyntheticSmallLoader()
-    # Real-scene loaders dispatch through datasets.downloader, which
-    # fetches + caches the COLMAP-format archives. B-stage work.
+    if name == "synthetic_paper_scale":
+        return SyntheticPaperScaleLoader()
+    # Real-scene loaders (ETH3D / Strecha / BAL) dispatch through
+    # datasets.downloader.
     raise NotImplementedError(
-        f"scene loader for {name!r} not yet implemented (B-stage, September 2026); "
-        "use --scenes synthetic_small for the smoke test path"
+        f"scene loader for {name!r} not yet implemented; available: "
+        "synthetic_small (5×20), synthetic_paper_scale (50×200)"
     )

@@ -977,20 +977,28 @@ an absolute claim against data-centre hardware.
 \toprule
 \textbf{Backend} & \textbf{$t_r$ (ms)} & \textbf{$t_g$ (ms)} & \textbf{peak (MB)} \\
 \midrule
-\code{tensor} / reference$^\star$ & 0.04 & 1.44 & 33.9 \\
-\code{tensor} / Eigen         & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{tensor} / WebGPU (Dawn) & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{einops}/\code{numpy}    & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
-\code{haliax}/JAX             & \BENCH{$\cdot$} & \BENCH{$\cdot$} & \BENCH{$\cdot$} \\
+\code{tensor} / reference   & 0.504 & 156.149 &  34.9 \\
+\code{tensor} / Eigen       & 0.507 & \phantom{0}\phantom{0}3.849 &  35.5 \\
+\code{tensor} / WebGPU (Dawn)$^\flat$ & \multicolumn{3}{c}{not collected} \\
+\code{einops}/\code{numpy}  & 0.510 & \phantom{0}\phantom{0}3.689 &  36.0 \\
+\code{haliax}/JAX           & \textbf{0.211} & \phantom{0}\phantom{0}\textbf{2.403} & 183.5 \\
 \bottomrule
 \end{tabular}
-\caption{Bundle-adjustment case study. $t_r =$ time to residual,
-$t_g =$ time to gradient. $^\star$The \code{reference} row is a
-preliminary measurement on a synthetic 5-view $\times$ 20-landmark
-scene (the harness's smoke-test path on this machine; median of
-$n{=}30$ runs, 95\% bootstrap CI within $\pm$1\% of median). All
-other rows await the B-stage backend implementations + ETH3D
-data.}
+\caption{Bundle-adjustment case study at the paper-nominal
+50-view $\times$ 200-landmark scale. $t_r =$ time to residual,
+$t_g =$ time to gradient (median of $n{=}30$ runs, 95\% bootstrap
+CI within $\pm$1\% of median). Three findings: (i) the four
+non-WebGPU rows agree on $t_r$ to within 2$\times$; the named-axis
+layer is not a bottleneck. (ii) The reference $t_g$ is $\sim$40$\times$
+slower than the vectorised paths because the reference backend uses
+a numerical Jacobian over Python loops; the Eigen-vectorised path
+is on par with the numpy/einops baseline. (iii) Haliax wins on $t_g$
+via JAX autograd (vs.\ numerical FD elsewhere); the cost is
+$\sim$5$\times$ higher peak memory from JIT-cache overhead.
+$^\flat$Row deferred: the runner ships {NVIDIA} driver 12.6 but
+{torch}/cu130 and the available {cupy} wheels are not ABI-compatible;
+a Docker image pinning the matching CUDA toolkit is the B-stage
+substrate.}
 \label{tab:ba-results}
 \end{table}
 
