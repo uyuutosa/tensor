@@ -841,18 +841,18 @@ false-positive rate over the 25 controls reported alongside:
 \toprule
 \textbf{Library} & \textbf{CT \%} & \textbf{RT \%} & \textbf{Silent \%} & \textbf{n} \\
 \midrule
-\code{einops}~\cite{rogozhnikov2022einops}         & 0 & 0 & \textbf{100} & 5 \\
-\code{einx}~\cite{flick2026einx}                   & 0 & 0 & \textbf{100} & 5 \\
-\code{Penzai}~\cite{penzai}                        & 0 & 0 & \textbf{100} & 5 \\
+\code{einops}~\cite{rogozhnikov2022einops}         & 0 & 0 & \textbf{100} & 10 \\
+\code{einx}~\cite{flick2026einx}                   & 0 & 0 & \textbf{100} & 10 \\
+\code{Penzai}~\cite{penzai}                        & 0 & 0 & \textbf{100} & 10 \\
 \code{torch.named\_tensor}~\cite{pytorch-named-tensors,paszke2019pytorch}
-                                                   & 0 & 20$^\sharp$ & 80 & 5 \\
+                                                   & 0 & 10$^\sharp$ & 90 & 10 \\
 \code{Haliax}~\cite{haliax}                        & \multicolumn{4}{c}{not collected (env)$^\ddagger$} \\
-\code{tensor} (ours, static)                       & \textbf{100} & 0 & 0 & 5 \\
+\code{tensor} (ours, static)                       & \textbf{100} & 0 & 0 & 10 \\
 \code{tensor} (ours, dynamic)                      & \multicolumn{4}{c}{not collected (B-stage)} \\
 \bottomrule
 \end{tabular}
 \caption{Static-catch rate per library across the preliminary
-5-class skeleton suite (one entry per class T1--T5). The split is
+10-entry suite (5 classes T1--T5, two instances each). The split is
 unambiguous: positional/notation libraries silently produce wrong
 output on every entry; \code{tensor}'s static path refuses every
 entry at template instantiation time, as reproduced verbatim in
