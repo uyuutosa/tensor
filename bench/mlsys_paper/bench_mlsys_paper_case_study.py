@@ -166,12 +166,16 @@ def run_static_catch_suite(suite_root: Path) -> list[CatchRecord]:
     for entry_dir in sorted(suite_root.iterdir()):
         if not entry_dir.is_dir():
             continue
+        if entry_dir.name.startswith("__"):  # __pycache__ etc.
+            continue
         entry_id = entry_dir.name
         bug_class = entry_id.split("_", 1)[0]  # e.g. "T1"
         # Each translation file is named <library>.{py,cpp}; reference.json
         # holds the intended output.
         for translation in sorted(entry_dir.iterdir()):
             if translation.name == "reference.json":
+                continue
+            if translation.suffix not in {".py", ".cpp"}:
                 continue
             library = translation.stem
             outcome, diag = _score_translation(translation, entry_dir / "reference.json")
@@ -190,14 +194,124 @@ def run_static_catch_suite(suite_root: Path) -> list[CatchRecord]:
 def _score_translation(translation: Path, reference: Path) -> tuple[str, str]:
     """Compile/run translation, compare to reference, return (outcome, diagnostic_excerpt).
 
-    B-stage: this is where the actual compile/run/compare logic goes.
-    The A-stage skeleton documents the contract: the result is one of
-    'CT' / 'RT' / 'Silent' / 'Pass' and the diagnostic is the first
-    200 chars of compiler or runtime output.
+    Outcomes:
+      CT           -- failed at compile / trace time (the bug was caught
+                      before any tensor was allocated). For C++: g++
+                      exited non-zero AND stderr mentions
+                      'static_assert' / 'static assertion'. For Python
+                      with JAX: ImportError or jit-time TracerError
+                      before runtime values flow.
+      RT           -- runtime exception during execution.
+      Silent       -- program completes without error (bug-class entry)
+                      OR matches reference (control entry: this becomes
+                      Pass post-aggregation).
+      UNAVAILABLE  -- the required toolchain or library is not on the
+                      runner; entry is excluded from per-library totals
+                      and the unavailability is recorded.
     """
-    # TODO(B-stage): implement compile (for .cpp) / exec (for .py) /
-    # tolerance comparison against reference.json.
-    return "PENDING", f"scoring not yet implemented for {translation.name}"
+    import subprocess
+
+    if translation.suffix == ".cpp":
+        return _score_cpp(translation)
+    if translation.suffix == ".py":
+        return _score_python(translation)
+    return "UNAVAILABLE", f"unrecognised extension {translation.suffix!r}"
+
+
+_TENSOR_INCLUDE = Path(__file__).resolve().parents[2] / "include"
+
+
+def _score_cpp(translation: Path) -> tuple[str, str]:
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            [
+                "g++",
+                "-std=c++20",
+                f"-I{_TENSOR_INCLUDE}",
+                "-fsyntax-only",
+                str(translation),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except FileNotFoundError:
+        return "UNAVAILABLE", "g++ not found"
+    except subprocess.TimeoutExpired:
+        return "UNAVAILABLE", "g++ timed out at 60s"
+
+    if result.returncode == 0:
+        return "Silent", "compiled cleanly (bug not caught at CT)"
+    full = result.stderr or result.stdout
+    # CT catch detection: the compile failed AND the error mentions one
+    # of the tensor library's typed-axis machinery. This catches both
+    # static_assert failures (SameLabels) and overload-resolution
+    # failures (passing wrong label-packed TypedTensor to a function
+    # expecting a different one) — both are compile-time axis catches.
+    ct_markers = (
+        "static assertion",
+        "static_assert",
+        "SameLabels",
+        "TypedTensor",
+        "FixedString",
+    )
+    if any(m in full for m in ct_markers):
+        # Trim to the most informative line if static_assert is present.
+        idx = full.find("static assertion")
+        if idx == -1:
+            idx = full.find("static_assert")
+        if idx == -1:
+            # Use the first 'error:' line as the highlight.
+            idx = full.find("error:")
+        if idx == -1:
+            idx = 0
+        diag_excerpt = full[max(0, idx - 50): idx + 350]
+        return "CT", diag_excerpt
+    # Other compile error (e.g. unrelated typo) — treat as UNAVAILABLE
+    # to avoid inflating the CT count.
+    return "UNAVAILABLE", full[:400]
+
+
+def _score_python(translation: Path) -> tuple[str, str]:
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["python3", str(translation)],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except FileNotFoundError:
+        return "UNAVAILABLE", "python3 not found"
+    except subprocess.TimeoutExpired:
+        return "UNAVAILABLE", "python3 timed out at 60s"
+
+    full_stderr = result.stderr or ""
+    stderr_excerpt = full_stderr[:400]
+    if result.returncode == 0:
+        return "Silent", "ran to completion (bug not caught at RT)"
+    # Scan the FULL stderr — warnings often push the real exception
+    # past the first 400 chars.
+    if (
+        "ModuleNotFoundError" in full_stderr
+        or "ImportError" in full_stderr
+        or "cannot import name" in full_stderr
+    ):
+        # Excerpt to the exception itself if present.
+        for marker in ("ModuleNotFoundError", "ImportError", "cannot import name"):
+            idx = full_stderr.find(marker)
+            if idx != -1:
+                stderr_excerpt = full_stderr[max(0, idx - 30): idx + 350]
+                break
+        return "UNAVAILABLE", stderr_excerpt
+    # Distinguish JAX trace-time error from regular RT exception.
+    if "TracerArrayConversionError" in full_stderr or "ConcretizationTypeError" in full_stderr:
+        return "CT", stderr_excerpt
+    # Default: regular runtime exception.
+    return "RT", stderr_excerpt
 
 
 # ─── CLI ────────────────────────────────────────────────────────────────

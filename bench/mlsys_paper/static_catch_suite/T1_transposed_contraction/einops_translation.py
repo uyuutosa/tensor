@@ -14,7 +14,9 @@ from __future__ import annotations
 import einops
 import numpy as np
 
-BATCH, HEAD, TIME, D = 2, 4, 8, 16
+# TIME == HEAD so the (B,T,H,D) vs (B,H,T,D) layout swap is shape-
+# compatible: einops cannot tell the bug from a feature.
+BATCH, HEAD, TIME, D = 2, 4, 4, 16
 rng = np.random.default_rng(42)
 
 # Upstream produced Q in BTHD layout (a bug in this entry's premise).
