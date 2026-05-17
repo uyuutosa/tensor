@@ -11,10 +11,18 @@
 % drops; until then we compile with the generic article class.
 % ---------------------------------------------------------------------------
 
-\documentclass[11pt]{article}
+% MLSys typical layout: two-column, 10pt, ~0.75in margins. The official
+% mlsys2027.sty will swap in when the CFP drops; geometry below is the
+% best-effort approximation so page-count plans transfer cleanly.
+\documentclass[10pt,twocolumn]{article}
 
 % --- Geometry / typography ---
-\usepackage[letterpaper,margin=1in]{geometry}
+\usepackage[letterpaper,top=0.7in,bottom=0.8in,left=0.7in,right=0.7in,columnsep=0.22in]{geometry}
+% Tighten float spacing (saves ~0.5p with this many tables/listings).
+\setlength{\textfloatsep}{4pt plus 1pt minus 1pt}
+\setlength{\dbltextfloatsep}{4pt plus 1pt minus 1pt}
+\setlength{\floatsep}{4pt}
+\setlength{\intextsep}{4pt}
 \usepackage{microtype}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -420,41 +428,29 @@ Concretely, the same literal
 compile-time / runtime mixes without changing form:
 
 \begin{lstlisting}[language=cppx]
-using namespace tensor::core::literals;       // for "i"_ax, "j"_ax
-constexpr auto i = "i"_ax;
-constexpr auto j = "j"_ax;
+// (a) Both operands NTTP-labelled: label match is type-level.
+TypedTensor<double, "i"> a_t{{5}, /*data*/};
+TypedTensor<double, "j"> b_t{{5}, /*data*/};
 
-// Scenario (a): both operands NTTP-labelled.
-TypedTensor<double, "i"_ax> a_t{{5}, {/*...*/}};
-TypedTensor<double, "j"_ax> b_t{{5}, {/*...*/}};
-// Bind via to_dynamic(); the label match is a type-level operation
-// at template instantiation, sizes are propagated by construction.
-
-// Scenario (b): one NTTP, one DynamicShape (e.g. batch dim from disk).
-TypedTensor<double, "i"_ax> a_t2{{5}, {/*...*/}};
+// (b) One NTTP, one DynamicShape: name checked statically,
+//     size at bind() time.
 DynamicTensor<double> b_d{Shape{Axis{"j", k}}, /*data*/};
-// At ev.bind("b", ...): the name 'j' is checked at the call site;
-// the runtime extent k is propagated into the Expression's shape.
 
-// Scenario (c): both DynamicShape (e.g. inference on serialised tensors).
+// (c) Both DynamicShape: both checks at bind() / evaluate().
 DynamicTensor<double> a_d{Shape{Axis{"i", n}}, /*data*/};
 DynamicTensor<double> b_d2{Shape{Axis{"j", m}}, /*data*/};
-// Both name and size are runtime; both checks fire at ev.bind() and
-// at ev.evaluate(...) time. Failure is a ShapeError, not undefined
-// behaviour.
 
 tex::Evaluator<double> ev;
 ev.bind("a", /* a_t.to_dynamic() or a_d */);
-ev.bind("b", /* b_t.to_dynamic() or b_d  */);
+ev.bind("b", /* b_t.to_dynamic() or b_d / b_d2 */);
 auto c = ev.evaluate(R"(c_{ij} = a_i b_j)"_tex);
 \end{lstlisting}
 
-The literal text is identical across (a)--(c). The Evaluator's
-implementation is identical across (a)--(c). What changes is only
-\emph{at which moment} each label and each size is verified: at type
-instantiation, at \code{bind} time, or at \code{evaluate} time. The
-hybrid system pays for the strongest verification available given
-how much was known at each construction site --- and no more.
+The literal and Evaluator are identical across (a)--(c); what changes
+is only \emph{when} each label and each size is verified --- at
+template instantiation, at \code{bind()}, or at \code{evaluate()}.
+The hybrid system pays for the strongest verification available given
+how much was known at each construction site, and no more.
 
 \subsection{Scope and the Scheduled \texorpdfstring{\code{consteval}}{consteval} Lift}
 \label{sec:udl-limits-and-future}
@@ -1191,23 +1187,14 @@ int main() {
 \end{lstlisting}
 
 \begin{lstlisting}[basicstyle=\ttfamily\scriptsize,
-                   caption={Verbatim GCC 11.4 diagnostic, abbreviated
-                   to the essential lines.},label={lst:demo-error}]
-typed_tensor.hpp: In instantiation of
-  'TypedTensor<T,La...> operator+(const TypedTensor<T,La...>&,
-                                  const TypedTensor<T,Lb...>&)
-   [with T=double; La={FixedString<2>{"i"}};
-                   Lb={FixedString<2>{"j"}}]':
-demo.cpp:8:18:   required from here
+                   caption={GCC 11.4 diagnostic, essential lines only.},
+                   label={lst:demo-error}]
 typed_tensor.hpp:128:19: error: static assertion failed:
   TypedTensor: axis labels must match at compile time.
   Drop into DynamicTensor with .to_dynamic() if you need broadcast.
-  128 |     static_assert(SameLabels<TypedTensor<T, La...>,
-                                     TypedTensor<T, Lb...>>,
-typed_tensor.hpp:118:54: note:
-  the expression 'same_labels_impl<A, B>::value
-   [with A = TypedTensor<double, {"i"}>;
-         B = TypedTensor<double, {"j"}>]'
+note: the expression same_labels_impl<A, B>::value
+  [with A = TypedTensor<double, {"i"}>;
+        B = TypedTensor<double, {"j"}>]
   evaluated to 'false'
 \end{lstlisting}
 
